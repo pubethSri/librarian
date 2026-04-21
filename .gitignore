@@ -27,3 +27,7 @@ vite.config.ts.timestamp-*
 context.md
 PLAN.md
 STATUS.md
+
+
+#Airtable Exports
+AirtableExport/
