@@ -22,12 +22,7 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Project context (local only)
+# Project context & data (local only)
 .agent/
-context.md
-PLAN.md
-STATUS.md
-
-
-#Airtable Exports
-AirtableExport/
+docs/
+AirtableExport/1

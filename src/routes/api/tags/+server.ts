@@ -1,12 +1,22 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { tags } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { tags, seriesTags } from '$lib/server/db/schema';
+import { eq, count, sql } from 'drizzle-orm';
 
-// GET /api/tags — List all tags
+// GET /api/tags — List all tags with usage count
 export const GET: RequestHandler = async () => {
-	const result = await db.select().from(tags).orderBy(tags.name);
+	const result = await db
+		.select({
+			id: tags.id,
+			name: tags.name,
+			seriesCount: count(seriesTags.seriesId)
+		})
+		.from(tags)
+		.leftJoin(seriesTags, eq(tags.id, seriesTags.tagId))
+		.groupBy(tags.id)
+		.orderBy(tags.name);
+
 	return json(result);
 };
 
