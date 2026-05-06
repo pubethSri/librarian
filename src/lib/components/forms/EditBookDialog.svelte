@@ -7,12 +7,23 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import { Switch } from '$lib/components/ui/switch';
 	import { createBookUpdateMutation } from '$lib/queries/books';
-	import type { BookLocation, BookSource, BookWithReadings } from '$lib/types';
+	import type { BookLocation, BookSource } from '$lib/types';
 	import { toast } from 'svelte-sonner';
+
+	/** Accepts both BookListItem and BookWithReadings — only the editable fields matter */
+	type EditableBook = {
+		id: number;
+		volumeNumber: string;
+		location: BookLocation;
+		source: BookSource | null;
+		boughtAt: string | null;
+		price: string | null;
+		isDraft: boolean;
+	};
 
 	type Props = {
 		open: boolean;
-		book: BookWithReadings;
+		book: EditableBook;
 		onclose?: () => void;
 	};
 

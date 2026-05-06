@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { books, series } from '$lib/server/db/schema';
+import { books, series, seriesTags, tags } from '$lib/server/db/schema';
 import { eq, ilike, sql } from 'drizzle-orm';
 
 // GET /api/books — List all books with optional filters
@@ -24,7 +24,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	const where = conditions.length > 0 ? sql`${sql.join(conditions, sql` AND `)}` : undefined;
 
-	const result = await db
+	const rows = await db
 		.select({
 			id: books.id,
 			seriesId: books.seriesId,
@@ -44,6 +44,33 @@ export const GET: RequestHandler = async ({ url }) => {
 		.innerJoin(series, eq(books.seriesId, series.id))
 		.where(where)
 		.orderBy(series.shortName, books.volumeNumber);
+
+	// Fetch series tags for these books (grouped by seriesId)
+	const seriesIds = [...new Set(rows.map((r) => r.seriesId))];
+	let tagMap: Map<number, { id: number; name: string }[]> = new Map();
+
+	if (seriesIds.length > 0) {
+		const tagRows = await db
+			.select({
+				seriesId: seriesTags.seriesId,
+				tagId: tags.id,
+				tagName: tags.name
+			})
+			.from(seriesTags)
+			.innerJoin(tags, eq(seriesTags.tagId, tags.id))
+			.where(sql`${seriesTags.seriesId} IN (${sql.join(seriesIds.map((id) => sql`${id}`), sql`, `)})`);
+
+		for (const row of tagRows) {
+			const existing = tagMap.get(row.seriesId) || [];
+			existing.push({ id: row.tagId, name: row.tagName });
+			tagMap.set(row.seriesId, existing);
+		}
+	}
+
+	const result = rows.map((r) => ({
+		...r,
+		seriesTags: tagMap.get(r.seriesId) || []
+	}));
 
 	return json(result);
 };

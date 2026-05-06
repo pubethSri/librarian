@@ -1,6 +1,5 @@
 <script lang="ts">
 	import {
-		BookOpen,
 		LogOut,
 		PanelLeftClose,
 		PanelLeft
@@ -60,30 +59,9 @@
 	class:w-44={!collapsed}
 	class:w-12={collapsed}
 >
-	<!-- Brand -->
-	<div class="flex h-12 items-center border-b border-sidebar-border {collapsed ? 'justify-center px-0' : 'gap-2 px-4'}">
-		<a href="/" class="flex items-center gap-2 transition-colors hover:text-sidebar-foreground">
-			<BookOpen class="h-4 w-4 shrink-0 text-sidebar-foreground" />
-			{#if !collapsed}
-				<span class="text-sm font-bold tracking-tight text-sidebar-foreground">Librarian</span>
-			{/if}
-		</a>
-	</div>
-
-	<!-- Nav sections -->
-	<nav class="flex-1 overflow-y-auto py-3 {collapsed ? 'px-1' : 'px-3'}">
-		{#if collapsed}
-			<!-- Collapsed: just a subtle dot per section -->
-			<div class="flex flex-col items-center gap-2 pt-2">
-				<button
-					onclick={() => (collapsed = false)}
-					class="flex h-8 w-8 items-center justify-center rounded text-sidebar-foreground/50 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
-					title="Expand sidebar"
-				>
-					<PanelLeft class="h-4 w-4" />
-				</button>
-			</div>
-		{:else}
+	<!-- Nav sections — vertically centered -->
+	<nav class="flex-1 flex flex-col justify-center overflow-y-auto {collapsed ? 'px-1' : 'px-3'}">
+		{#if !collapsed}
 			{#each sections as section, i}
 				{#if i > 0}
 					<div class="my-2"></div>
@@ -106,17 +84,20 @@
 		{/if}
 	</nav>
 
-	<!-- Footer -->
+	<!-- Footer — always at bottom for both states -->
 	<div class="border-t border-sidebar-border py-2 {collapsed ? 'px-1' : 'px-3'} space-y-0.5">
-		{#if !collapsed}
-			<button
-				onclick={() => (collapsed = true)}
-				class="flex h-8 w-full items-center gap-2 rounded px-2 text-[13px] font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-			>
+		<button
+			onclick={() => (collapsed = !collapsed)}
+			class="flex h-8 w-full items-center rounded text-[13px] font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground {collapsed ? 'justify-center px-0' : 'gap-2 px-2'}"
+			title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+		>
+			{#if collapsed}
+				<PanelLeft class="h-3.5 w-3.5 shrink-0" />
+			{:else}
 				<PanelLeftClose class="h-3.5 w-3.5 shrink-0" />
 				<span>Collapse</span>
-			</button>
-		{/if}
+			{/if}
+		</button>
 		<button
 			onclick={handleLogout}
 			class="flex h-8 w-full items-center rounded text-[13px] font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground {collapsed ? 'justify-center px-0' : 'gap-2 px-2'}"
@@ -138,12 +119,11 @@
 			</Button>
 		</Sheet.Trigger>
 		<Sheet.Content side="left" class="w-52 p-0">
-			<Sheet.Header class="flex h-12 items-center gap-2 border-b border-border px-4">
-				<BookOpen class="h-4 w-4 text-foreground" />
+			<Sheet.Header class="flex h-12 items-center border-b border-border px-4">
 				<Sheet.Title class="text-sm font-bold tracking-tight">Librarian</Sheet.Title>
 			</Sheet.Header>
 
-			<nav class="px-3 py-3">
+			<nav class="flex-1 flex flex-col justify-center px-3 py-3">
 				{#each sections as section, i}
 					{#if i > 0}
 						<div class="my-2"></div>

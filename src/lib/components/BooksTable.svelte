@@ -1,9 +1,14 @@
 <script lang="ts">
-	import type { BookListItem } from '$lib/types';
+	import type { BookListItem, TagWithCount } from '$lib/types';
 	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS } from '$lib/types';
 	import EmptyState from '$lib/components/EmptyState.svelte';
-	import AdvancedFilter from '$lib/components/AdvancedFilter.svelte';
-	import { applyCondition, type FilterColumnDef, type FilterCondition } from '$lib/components/advancedFilterUtils';
+	import TagChipsBar from '$lib/components/TagChipsBar.svelte';
+	import {
+		type UnifiedFilterState,
+		createEmptyFilterState,
+		applyUnifiedFilter,
+		matchesTextSearch
+	} from '$lib/components/filterEngine';
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
@@ -13,49 +18,44 @@
 
 	type Props = {
 		data: BookListItem[];
+		allTags?: TagWithCount[];
 		onDelete?: (id: number) => void;
 		onEdit?: (book: BookListItem) => void;
 	};
 
-	let { data, onDelete, onEdit }: Props = $props();
+	let { data, allTags = [], onDelete, onEdit }: Props = $props();
 
-	// Filter state
+	// ─── Unified filter state ───────────────────────────────────────────────────
+	let filterState = $state<UnifiedFilterState>(createEmptyFilterState());
+
+	// Convenience getters for quick filter dropdowns
+	let locationFilter = $derived(filterState.quickFilters['location'] || 'all');
+	let sourceFilter = $derived(filterState.quickFilters['source'] || 'all');
+	let draftFilter = $derived(filterState.quickFilters['isDraft'] || 'all');
+
+	function setQuickFilter(key: string, value: string) {
+		filterState.quickFilters = { ...filterState.quickFilters, [key]: value };
+	}
+
+	// Tag chip toggle
+	function toggleTag(tagName: string) {
+		const lower = tagName.toLowerCase();
+		const idx = filterState.includeTags.findIndex((t) => t.toLowerCase() === lower);
+		if (idx >= 0) {
+			filterState.includeTags = filterState.includeTags.filter((_, i) => i !== idx);
+		} else {
+			filterState.includeTags = [...filterState.includeTags, tagName];
+		}
+	}
+
+	function clearTags() {
+		filterState.includeTags = [];
+	}
+
+	// Search state (will be replaced by booru bar in sub-feature 5)
 	let search = $state('');
-	let locationFilter = $state<string>('all');
-	let sourceFilter = $state<string>('all');
-	let draftFilter = $state<string>('all');
 
-	// Advanced filter state
-	let advancedConditions = $state<FilterCondition[]>([]);
-
-	const advancedFilterColumns: FilterColumnDef[] = [
-		{ key: 'seriesShortName', label: 'Series', type: 'text' },
-		{ key: 'volumeNumber', label: 'Volume', type: 'number' },
-		{
-			key: 'location',
-			label: 'Location',
-			type: 'select',
-			options: [
-				{ value: 'home', label: 'Home' },
-				{ value: 'apartment', label: 'Apartment' }
-			]
-		},
-		{
-			key: 'source',
-			label: 'Source',
-			type: 'select',
-			options: [
-				{ value: 'bookstore', label: 'Bookstore' },
-				{ value: 'bookfair', label: 'Bookfair' },
-				{ value: 'online', label: 'Online' }
-			]
-		},
-		{ key: 'boughtAt', label: 'Purchase Date', type: 'text' },
-		{ key: 'price', label: 'Price', type: 'number' },
-		{ key: 'isDraft', label: 'Draft', type: 'boolean' }
-	];
-
-	// Sort state
+	// ─── Sort state ─────────────────────────────────────────────────────────────
 	let sortKey = $state<string>('seriesShortName');
 	let sortDir = $state<'asc' | 'desc'>('asc');
 
@@ -72,34 +72,43 @@
 		}
 	}
 
+	// ─── Filter pipeline ────────────────────────────────────────────────────────
 	const filtered = $derived(() => {
 		let result = data;
 
+		// Text search (temporary — will be absorbed by booru bar later)
 		if (search) {
-			const s = search.toLowerCase();
-			result = result.filter(
-				(r) => r.seriesShortName.toLowerCase().includes(s) || r.seriesFullName.toLowerCase().includes(s)
+			result = result.filter((r) =>
+				matchesTextSearch(r as unknown as Record<string, unknown>, search, [
+					'seriesShortName',
+					'seriesFullName'
+				])
 			);
 		}
 
-		if (locationFilter !== 'all') {
-			result = result.filter((r) => r.location === locationFilter);
-		}
-		if (sourceFilter !== 'all') {
-			result = result.filter((r) => r.source === sourceFilter);
-		}
-		if (draftFilter === 'drafts') {
+		// Quick filter: draft needs special handling (it's a boolean, not enum)
+		let quickFiltersForEngine = { ...filterState.quickFilters };
+		// Handle draft filter separately since 'drafts' !== 'true'
+		const draftVal = quickFiltersForEngine['isDraft'];
+		if (draftVal === 'drafts') {
+			// Remove from quick filters, handle manually
+			delete quickFiltersForEngine['isDraft'];
 			result = result.filter((r) => r.isDraft);
+		} else {
+			delete quickFiltersForEngine['isDraft'];
 		}
 
-		// Advanced filters
-		if (advancedConditions.length > 0) {
-			result = result.filter((row) =>
-				advancedConditions.every((cond) =>
-					applyCondition(row as unknown as Record<string, unknown>, cond, advancedFilterColumns)
-				)
-			);
-		}
+		// Unified filter (quick filters + tags + param filters)
+		const stateForEngine = { ...filterState, quickFilters: quickFiltersForEngine };
+		result = result.filter((row) =>
+			applyUnifiedFilter(row as unknown as Record<string, unknown>, stateForEngine, {
+				searchFields: ['seriesShortName', 'seriesFullName'],
+				getTagNames: (r) => {
+					const typed = r as unknown as BookListItem;
+					return typed.seriesTags?.map((t) => t.name) || [];
+				}
+			})
+		);
 
 		return result;
 	});
@@ -144,7 +153,11 @@
 	const pageCount = $derived(() => Math.max(1, Math.ceil(sorted().length / pageSize)));
 
 	$effect(() => {
-		search; locationFilter; sourceFilter; draftFilter; advancedConditions;
+		search;
+		filterState.quickFilters;
+		filterState.includeTags;
+		filterState.excludeTags;
+		filterState.paramFilters;
 		pageIndex = 0;
 	});
 
@@ -169,7 +182,7 @@
 </script>
 
 <!-- Toolbar -->
-<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
+<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
 	<Input
 		placeholder="Search by series name..."
 		class="h-9 w-full sm:max-w-xs"
@@ -177,7 +190,7 @@
 		oninput={(e: Event) => (search = (e.currentTarget as HTMLInputElement).value)}
 	/>
 	<div class="flex flex-wrap items-center gap-2">
-		<Select.Root type="single" value={locationFilter} onValueChange={(v: string | undefined) => (locationFilter = v || 'all')}>
+		<Select.Root type="single" value={locationFilter} onValueChange={(v: string | undefined) => setQuickFilter('location', v || 'all')}>
 			<Select.Trigger class="h-9 w-32 text-xs">
 				{locationFilter === 'all' ? 'All Locations' : BOOK_LOCATION_LABELS[locationFilter as keyof typeof BOOK_LOCATION_LABELS]}
 			</Select.Trigger>
@@ -187,7 +200,7 @@
 				<Select.Item value="apartment" label="Apartment" />
 			</Select.Content>
 		</Select.Root>
-		<Select.Root type="single" value={sourceFilter} onValueChange={(v: string | undefined) => (sourceFilter = v || 'all')}>
+		<Select.Root type="single" value={sourceFilter} onValueChange={(v: string | undefined) => setQuickFilter('source', v || 'all')}>
 			<Select.Trigger class="h-9 w-32 text-xs">
 				{sourceFilter === 'all' ? 'All Sources' : BOOK_SOURCE_LABELS[sourceFilter as keyof typeof BOOK_SOURCE_LABELS]}
 			</Select.Trigger>
@@ -198,7 +211,7 @@
 				<Select.Item value="online" label="Online" />
 			</Select.Content>
 		</Select.Root>
-		<Select.Root type="single" value={draftFilter} onValueChange={(v: string | undefined) => (draftFilter = v || 'all')}>
+		<Select.Root type="single" value={draftFilter} onValueChange={(v: string | undefined) => setQuickFilter('isDraft', v || 'all')}>
 			<Select.Trigger class="h-9 w-32 text-xs">
 				{draftFilter === 'all' ? 'All Books' : 'Drafts Only'}
 			</Select.Trigger>
@@ -210,14 +223,17 @@
 	</div>
 </div>
 
-<!-- Advanced Filter -->
-<div class="mb-4">
-	<AdvancedFilter
-		columns={advancedFilterColumns}
-		bind:conditions={advancedConditions}
-		onchange={(c) => (advancedConditions = c)}
-	/>
-</div>
+<!-- Tag Chips -->
+{#if allTags.length > 0}
+	<div class="mb-4">
+		<TagChipsBar
+			tags={allTags}
+			activeTags={filterState.includeTags}
+			ontoggle={toggleTag}
+			onclear={clearTags}
+		/>
+	</div>
+{/if}
 
 <!-- Table -->
 <div class="rounded-md border border-border">

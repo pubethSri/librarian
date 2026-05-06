@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createSeriesListQuery, createSeriesUpdateMutation } from '$lib/queries/series';
+	import { createTagsListQuery } from '$lib/queries/tags';
 	import type { SeriesStatus } from '$lib/types';
 	import SeriesTable from '$lib/components/SeriesTable.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -9,6 +10,7 @@
 	import { toast } from 'svelte-sonner';
 
 	const seriesQuery = createSeriesListQuery();
+	const tagsQuery = createTagsListQuery();
 	const updateMutation = createSeriesUpdateMutation();
 
 	let showNewSeriesDialog = $state(false);
@@ -72,6 +74,7 @@
 	{:else if seriesQuery.data}
 		<SeriesTable
 			data={seriesQuery.data}
+			allTags={tagsQuery.data ?? []}
 			onStatusChange={handleStatusChange}
 			onWatchlistToggle={handleWatchlistToggle}
 		/>

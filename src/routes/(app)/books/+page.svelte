@@ -1,23 +1,32 @@
 <script lang="ts">
 	import { createBooksListQuery, createBookDeleteMutation } from '$lib/queries/books';
+	import { createTagsListQuery } from '$lib/queries/tags';
+	import type { BookListItem } from '$lib/types';
 	import BooksTable from '$lib/components/BooksTable.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import NewVolumeDialog from '$lib/components/forms/NewVolumeDialog.svelte';
+	import EditBookDialog from '$lib/components/forms/EditBookDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 
 	const booksQuery = createBooksListQuery();
+	const tagsQuery = createTagsListQuery();
 	const deleteMutation = createBookDeleteMutation();
 
 	let showAddVolume = $state(false);
 	let deleteId = $state<number | null>(null);
 	let showDeleteConfirm = $state(false);
+	let editingBook = $state<BookListItem | null>(null);
 
 	function handleDelete(id: number) {
 		deleteId = id;
 		showDeleteConfirm = true;
+	}
+
+	function handleEdit(book: BookListItem) {
+		editingBook = book;
 	}
 
 	function confirmDelete() {
@@ -66,7 +75,7 @@
 			</Button>
 		</div>
 	{:else if booksQuery.data}
-		<BooksTable data={booksQuery.data} onDelete={handleDelete} />
+		<BooksTable data={booksQuery.data} allTags={tagsQuery.data ?? []} onDelete={handleDelete} onEdit={handleEdit} />
 	{/if}
 </div>
 
@@ -81,3 +90,10 @@
 		deleteId = null;
 	}}
 />
+{#if editingBook}
+	<EditBookDialog
+		open={true}
+		book={editingBook}
+		onclose={() => (editingBook = null)}
+	/>
+{/if}

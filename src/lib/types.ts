@@ -138,6 +138,7 @@ export type BookListItem = {
 	isDraft: boolean;
 	createdAt: string;
 	updatedAt: string;
+	seriesTags: { id: number; name: string }[];
 };
 
 // ─── Mutation Payloads ───────────────────────────────────────────────────────
