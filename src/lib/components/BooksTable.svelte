@@ -2,25 +2,58 @@
 	import type { BookListItem } from '$lib/types';
 	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS } from '$lib/types';
 	import EmptyState from '$lib/components/EmptyState.svelte';
+	import AdvancedFilter from '$lib/components/AdvancedFilter.svelte';
+	import { applyCondition, type FilterColumnDef, type FilterCondition } from '$lib/components/advancedFilterUtils';
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
-	import { ArrowUp, ArrowDown, ChevronsUpDown, Trash2 } from '@lucide/svelte';
+	import { ArrowUp, ArrowDown, ChevronsUpDown, Trash2, Pencil } from '@lucide/svelte';
 
 	type Props = {
 		data: BookListItem[];
 		onDelete?: (id: number) => void;
+		onEdit?: (book: BookListItem) => void;
 	};
 
-	let { data, onDelete }: Props = $props();
+	let { data, onDelete, onEdit }: Props = $props();
 
 	// Filter state
 	let search = $state('');
 	let locationFilter = $state<string>('all');
 	let sourceFilter = $state<string>('all');
 	let draftFilter = $state<string>('all');
+
+	// Advanced filter state
+	let advancedConditions = $state<FilterCondition[]>([]);
+
+	const advancedFilterColumns: FilterColumnDef[] = [
+		{ key: 'seriesShortName', label: 'Series', type: 'text' },
+		{ key: 'volumeNumber', label: 'Volume', type: 'number' },
+		{
+			key: 'location',
+			label: 'Location',
+			type: 'select',
+			options: [
+				{ value: 'home', label: 'Home' },
+				{ value: 'apartment', label: 'Apartment' }
+			]
+		},
+		{
+			key: 'source',
+			label: 'Source',
+			type: 'select',
+			options: [
+				{ value: 'bookstore', label: 'Bookstore' },
+				{ value: 'bookfair', label: 'Bookfair' },
+				{ value: 'online', label: 'Online' }
+			]
+		},
+		{ key: 'boughtAt', label: 'Purchase Date', type: 'text' },
+		{ key: 'price', label: 'Price', type: 'number' },
+		{ key: 'isDraft', label: 'Draft', type: 'boolean' }
+	];
 
 	// Sort state
 	let sortKey = $state<string>('seriesShortName');
@@ -52,13 +85,20 @@
 		if (locationFilter !== 'all') {
 			result = result.filter((r) => r.location === locationFilter);
 		}
-
 		if (sourceFilter !== 'all') {
 			result = result.filter((r) => r.source === sourceFilter);
 		}
-
 		if (draftFilter === 'drafts') {
 			result = result.filter((r) => r.isDraft);
+		}
+
+		// Advanced filters
+		if (advancedConditions.length > 0) {
+			result = result.filter((row) =>
+				advancedConditions.every((cond) =>
+					applyCondition(row as unknown as Record<string, unknown>, cond, advancedFilterColumns)
+				)
+			);
 		}
 
 		return result;
@@ -104,7 +144,7 @@
 	const pageCount = $derived(() => Math.max(1, Math.ceil(sorted().length / pageSize)));
 
 	$effect(() => {
-		search; locationFilter; sourceFilter; draftFilter;
+		search; locationFilter; sourceFilter; draftFilter; advancedConditions;
 		pageIndex = 0;
 	});
 
@@ -129,7 +169,7 @@
 </script>
 
 <!-- Toolbar -->
-<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
 	<Input
 		placeholder="Search by series name..."
 		class="h-9 w-full sm:max-w-xs"
@@ -170,6 +210,15 @@
 	</div>
 </div>
 
+<!-- Advanced Filter -->
+<div class="mb-4">
+	<AdvancedFilter
+		columns={advancedFilterColumns}
+		bind:conditions={advancedConditions}
+		onchange={(c) => (advancedConditions = c)}
+	/>
+</div>
+
 <!-- Table -->
 <div class="rounded-md border border-border">
 	<Table.Root>
@@ -196,7 +245,7 @@
 						</div>
 					</Table.Head>
 				{/each}
-				<Table.Head class="w-[50px]"></Table.Head>
+				<Table.Head class="w-[80px]"></Table.Head>
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
@@ -222,19 +271,33 @@
 							<Badge variant="outline" class="text-xs text-amber-600 border-amber-300">
 								Draft
 							</Badge>
+						{:else}
+							<span class="text-xs text-muted-foreground/50">—</span>
 						{/if}
 					</Table.Cell>
 					<Table.Cell>
-						{#if onDelete}
-							<Button
-								variant="ghost"
-								size="icon"
-								class="h-7 w-7 text-muted-foreground hover:text-destructive"
-								onclick={() => onDelete?.(row.id)}
-							>
-								<Trash2 class="h-3.5 w-3.5" />
-							</Button>
-						{/if}
+						<div class="flex items-center gap-1">
+							{#if onEdit}
+								<Button
+									variant="ghost"
+									size="icon"
+									class="h-7 w-7 text-muted-foreground hover:text-foreground"
+									onclick={() => onEdit?.(row)}
+								>
+									<Pencil class="h-3.5 w-3.5" />
+								</Button>
+							{/if}
+							{#if onDelete}
+								<Button
+									variant="ghost"
+									size="icon"
+									class="h-7 w-7 text-muted-foreground hover:text-destructive"
+									onclick={() => onDelete?.(row.id)}
+								>
+									<Trash2 class="h-3.5 w-3.5" />
+								</Button>
+							{/if}
+						</div>
 					</Table.Cell>
 				</Table.Row>
 			{:else}

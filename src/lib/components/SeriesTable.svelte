@@ -4,11 +4,14 @@
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
+	import AdvancedFilter from '$lib/components/AdvancedFilter.svelte';
+	import type { FilterColumnDef, FilterCondition } from '$lib/components/advancedFilterUtils';
 	import { Star, ArrowUp, ArrowDown, ChevronsUpDown } from '@lucide/svelte';
 	import * as Table from '$lib/components/ui/table';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
+	import { Badge } from '$lib/components/ui/badge';
 
 	type Props = {
 		data: SeriesListItem[];
@@ -22,6 +25,37 @@
 	let search = $state('');
 	let typeFilter = $state<string>('all');
 	let statusFilter = $state<string>('all');
+
+	// Advanced filter state
+	let advancedConditions = $state<FilterCondition[]>([]);
+
+	const advancedFilterColumns: FilterColumnDef[] = [
+		{ key: 'shortName', label: 'Name', type: 'text' },
+		{ key: 'fullName', label: 'Full Name', type: 'text' },
+		{
+			key: 'type',
+			label: 'Type',
+			type: 'select',
+			options: [
+				{ value: 'light_novel', label: 'Light Novel' },
+				{ value: 'manga', label: 'Manga' }
+			]
+		},
+		{
+			key: 'status',
+			label: 'Status',
+			type: 'select',
+			options: [
+				{ value: 'ongoing', label: 'Ongoing' },
+				{ value: 'ended', label: 'Ended' },
+				{ value: 'dropped', label: 'Dropped' }
+			]
+		},
+		{ key: 'publisher', label: 'Publisher', type: 'text' },
+		{ key: 'tags', label: 'Tags', type: 'text' },
+		{ key: 'bookCount', label: 'Volumes', type: 'number' },
+		{ key: 'watchlist', label: 'Watchlist', type: 'boolean' }
+	];
 
 	// Sort state
 	let sortKey = $state<string>('shortName');
@@ -40,6 +74,58 @@
 		}
 	}
 
+	// Apply a single advanced condition, with special handling for tags (array)
+	function matchesCondition(row: SeriesListItem, cond: FilterCondition): boolean {
+		// Special case: tags column — search in the tag names array
+		if (cond.column === 'tags') {
+			const tagNames = row.tags.map((t) => t.name.toLowerCase());
+			const val = cond.value.toLowerCase();
+			switch (cond.operator) {
+				case 'contains':
+					return tagNames.some((t) => t.includes(val));
+				case 'equals':
+					return tagNames.some((t) => t === val);
+				case 'not_equals':
+					return !tagNames.some((t) => t === val);
+				case 'is_empty':
+					return tagNames.length === 0;
+				case 'is_not_empty':
+					return tagNames.length > 0;
+				default:
+					return true;
+			}
+		}
+
+		// Standard columns — use the generic applyCondition from AdvancedFilter
+		const rawValue = (row as Record<string, unknown>)[cond.column];
+		const strValue = rawValue != null ? String(rawValue).toLowerCase() : '';
+		const filterValue = cond.value.toLowerCase();
+
+		switch (cond.operator) {
+			case 'contains':
+				return strValue.includes(filterValue);
+			case 'equals':
+				if (cond.column === 'watchlist') return String(!!rawValue) === cond.value;
+				return strValue === filterValue;
+			case 'not_equals':
+				return strValue !== filterValue;
+			case 'is_empty':
+				return !rawValue || strValue === '';
+			case 'is_not_empty':
+				return !!rawValue && strValue !== '';
+			case 'gt':
+				return Number(rawValue) > Number(cond.value);
+			case 'lt':
+				return Number(rawValue) < Number(cond.value);
+			case 'gte':
+				return Number(rawValue) >= Number(cond.value);
+			case 'lte':
+				return Number(rawValue) <= Number(cond.value);
+			default:
+				return true;
+		}
+	}
+
 	// Filtered data
 	const filtered = $derived(() => {
 		let result = data;
@@ -52,14 +138,19 @@
 			);
 		}
 
-		// Type filter
+		// Quick filters
 		if (typeFilter !== 'all') {
 			result = result.filter((r) => r.type === typeFilter);
 		}
-
-		// Status filter
 		if (statusFilter !== 'all') {
 			result = result.filter((r) => r.status === statusFilter);
+		}
+
+		// Advanced filters
+		if (advancedConditions.length > 0) {
+			result = result.filter((row) =>
+				advancedConditions.every((cond) => matchesCondition(row, cond))
+			);
 		}
 
 		return result;
@@ -108,8 +199,7 @@
 
 	// Reset page when filters change
 	$effect(() => {
-		// Touch filter values to track them
-		search; typeFilter; statusFilter;
+		search; typeFilter; statusFilter; advancedConditions;
 		pageIndex = 0;
 	});
 
@@ -119,13 +209,14 @@
 		{ key: 'type', label: 'Type', sortable: true },
 		{ key: 'status', label: 'Status', sortable: true },
 		{ key: 'publisher', label: 'Publisher', sortable: true },
+		{ key: 'tags', label: 'Tags', sortable: false },
 		{ key: 'volumes', label: 'Volumes', sortable: true },
 		{ key: 'watchlist', label: '★', sortable: true }
 	];
 </script>
 
 <!-- Toolbar -->
-<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
 	<Input
 		placeholder="Search series..."
 		class="h-9 w-full sm:max-w-xs"
@@ -155,6 +246,15 @@
 			</Select.Content>
 		</Select.Root>
 	</div>
+</div>
+
+<!-- Advanced Filter -->
+<div class="mb-4">
+	<AdvancedFilter
+		columns={advancedFilterColumns}
+		bind:conditions={advancedConditions}
+		onchange={(c) => (advancedConditions = c)}
+	/>
 </div>
 
 <!-- Table -->
@@ -206,6 +306,20 @@
 					</Table.Cell>
 					<Table.Cell class="text-sm text-muted-foreground">
 						{row.publisher || '—'}
+					</Table.Cell>
+					<Table.Cell>
+						{#if row.tags.length > 0}
+							<div class="flex flex-wrap gap-1 max-w-[180px]">
+								{#each row.tags.slice(0, 3) as tag}
+									<Badge variant="outline" class="text-[10px] px-1.5 py-0">{tag.name}</Badge>
+								{/each}
+								{#if row.tags.length > 3}
+									<span class="text-[10px] text-muted-foreground">+{row.tags.length - 3}</span>
+								{/if}
+							</div>
+						{:else}
+							<span class="text-xs text-muted-foreground/40">—</span>
+						{/if}
 					</Table.Cell>
 					<Table.Cell>
 						<ProgressBar owned={row.bookCount} total={row.totalVolumes} />

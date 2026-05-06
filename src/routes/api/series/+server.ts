@@ -26,7 +26,8 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	const where = conditions.length > 0 ? sql`${sql.join(conditions, sql` AND `)}` : undefined;
 
-	const result = await db
+	// Fetch series with book count
+	const seriesRows = await db
 		.select({
 			id: series.id,
 			shortName: series.shortName,
@@ -45,6 +46,34 @@ export const GET: RequestHandler = async ({ url }) => {
 		.where(where)
 		.groupBy(series.id)
 		.orderBy(series.shortName);
+
+	// Fetch all tags for these series in one query
+	const seriesIds = seriesRows.map((s) => s.id);
+	let tagMap: Map<number, { id: number; name: string }[]> = new Map();
+
+	if (seriesIds.length > 0) {
+		const tagRows = await db
+			.select({
+				seriesId: seriesTags.seriesId,
+				tagId: tags.id,
+				tagName: tags.name
+			})
+			.from(seriesTags)
+			.innerJoin(tags, eq(seriesTags.tagId, tags.id))
+			.where(sql`${seriesTags.seriesId} IN (${sql.join(seriesIds.map((id) => sql`${id}`), sql`, `)})`);
+
+		for (const row of tagRows) {
+			const existing = tagMap.get(row.seriesId) || [];
+			existing.push({ id: row.tagId, name: row.tagName });
+			tagMap.set(row.seriesId, existing);
+		}
+	}
+
+	// Merge tags into series results
+	const result = seriesRows.map((s) => ({
+		...s,
+		tags: tagMap.get(s.id) || []
+	}));
 
 	return json(result);
 };

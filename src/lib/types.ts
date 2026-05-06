@@ -56,6 +56,7 @@ export type SeriesListItem = {
 	createdAt: string;
 	updatedAt: string;
 	bookCount: number;
+	tags: { id: number; name: string }[];
 };
 
 /** Reading entry */

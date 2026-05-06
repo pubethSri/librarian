@@ -13,6 +13,7 @@
 	import EditSeriesDialog from '$lib/components/series/EditSeriesDialog.svelte';
 	import TagsEditor from '$lib/components/series/TagsEditor.svelte';
 	import NewVolumeDialog from '$lib/components/forms/NewVolumeDialog.svelte';
+	import EditBookDialog from '$lib/components/forms/EditBookDialog.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -33,6 +34,7 @@
 	let showDeleteConfirm = $state(false);
 	let deleteBookId = $state<number | null>(null);
 	let showDeleteBookConfirm = $state(false);
+	let editingBook = $state<import('$lib/types').BookWithReadings | null>(null);
 
 	function handleStatusChange(status: SeriesStatus) {
 		updateMutation.mutate(
@@ -233,7 +235,7 @@
 								<Table.Head>Purchased</Table.Head>
 								<Table.Head>Price</Table.Head>
 								<Table.Head>Status</Table.Head>
-								<Table.Head class="w-[50px]"></Table.Head>
+								<Table.Head class="w-[80px]"></Table.Head>
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
@@ -265,17 +267,27 @@
 										</Badge>
 									</Table.Cell>
 									<Table.Cell>
-										<Button
-											variant="ghost"
-											size="icon"
-											class="h-7 w-7 text-muted-foreground hover:text-destructive"
-											onclick={() => {
-												deleteBookId = book.id;
-												showDeleteBookConfirm = true;
-											}}
-										>
-											<Trash2 class="h-3.5 w-3.5" />
-										</Button>
+										<div class="flex items-center gap-1">
+											<Button
+												variant="ghost"
+												size="icon"
+												class="h-7 w-7 text-muted-foreground hover:text-foreground"
+												onclick={() => (editingBook = book)}
+											>
+												<Pencil class="h-3.5 w-3.5" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="icon"
+												class="h-7 w-7 text-muted-foreground hover:text-destructive"
+												onclick={() => {
+													deleteBookId = book.id;
+													showDeleteBookConfirm = true;
+												}}
+											>
+												<Trash2 class="h-3.5 w-3.5" />
+											</Button>
+										</div>
 									</Table.Cell>
 								</Table.Row>
 							{/each}
@@ -294,6 +306,7 @@
 		bind:open={showDeleteConfirm}
 		title="Delete Series"
 		description={'This will permanently delete "' + s.shortName + '" and all ' + s.books.length + ' volumes. This action cannot be undone.'}
+		confirmText="I want to delete"
 		loading={deleteMutation.isPending}
 		onconfirm={handleDeleteSeries}
 		oncancel={() => (showDeleteConfirm = false)}
@@ -309,4 +322,11 @@
 			deleteBookId = null;
 		}}
 	/>
+	{#if editingBook}
+		<EditBookDialog
+			open={true}
+			book={editingBook}
+			onclose={() => (editingBook = null)}
+		/>
+	{/if}
 {/if}
