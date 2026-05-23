@@ -14,7 +14,7 @@ export type UnifiedFilterState = {
 	/** Quick filters from dropdowns */
 	quickFilters: Record<string, string>; // { type: 'manga', status: 'all' }
 
-	/** Tags to include (from chips and/or booru syntax) */
+	/** Tags to include (from chips toggle — strict tag match) */
 	includeTags: string[];
 
 	/** Tags to exclude (from booru syntax `-tag`) */
@@ -22,6 +22,9 @@ export type UnifiedFilterState = {
 
 	/** Parameter filters (from booru syntax `key:value`) */
 	paramFilters: ParamFilter[];
+
+	/** Search terms — bare words from booru input that match tag OR name (OR per term, AND across terms) */
+	searchTerms: string[];
 
 	/** Raw booru query text (for the input field) */
 	booruQuery: string;
@@ -34,11 +37,12 @@ export function createEmptyFilterState(): UnifiedFilterState {
 		includeTags: [],
 		excludeTags: [],
 		paramFilters: [],
+		searchTerms: [],
 		booruQuery: ''
 	};
 }
 
-// ─── Column definitions (reused from old advancedFilterUtils) ────────────────
+// ─── Column definitions ─────────────────────────────────────────────────────
 
 export type FilterColumnDef = {
 	key: string;
@@ -59,7 +63,7 @@ export function applyUnifiedFilter<T extends FilterableRow>(
 	row: T,
 	state: UnifiedFilterState,
 	options: {
-		/** Fields to search when booruQuery contains bare words (name search) */
+		/** Fields to search when booru query contains bare words (name search) */
 		searchFields?: string[];
 		/** How to extract tag names from a row (for tag filtering) */
 		getTagNames?: (row: T) => string[];
@@ -74,7 +78,7 @@ export function applyUnifiedFilter<T extends FilterableRow>(
 		if (rowValue == null || String(rowValue) !== value) return false;
 	}
 
-	// 2. Include tags — row must have ALL included tags
+	// 2. Include tags (from chips — strict: row must have ALL)
 	if (state.includeTags.length > 0 && getTagNames) {
 		const rowTags = getTagNames(row).map((t) => t.toLowerCase());
 		for (const tag of state.includeTags) {
@@ -90,7 +94,22 @@ export function applyUnifiedFilter<T extends FilterableRow>(
 		}
 	}
 
-	// 4. Parameter filters (from booru syntax)
+	// 4. Search terms (bare words from booru input)
+	// Each term must match EITHER a tag name OR a search field (OR per term, AND across terms)
+	if (state.searchTerms.length > 0) {
+		const rowTags = getTagNames ? getTagNames(row).map((t) => t.toLowerCase()) : [];
+		for (const term of state.searchTerms) {
+			const lower = term.toLowerCase();
+			const matchesTag = rowTags.some((rt) => rt.includes(lower));
+			const matchesField = searchFields.some((field) => {
+				const val = row[field];
+				return val != null && String(val).toLowerCase().includes(lower);
+			});
+			if (!matchesTag && !matchesField) return false;
+		}
+	}
+
+	// 5. Parameter filters (from booru syntax)
 	for (const pf of state.paramFilters) {
 		if (!applyParamFilter(row, pf)) return false;
 	}
@@ -102,7 +121,19 @@ export function applyUnifiedFilter<T extends FilterableRow>(
  * Apply a single param filter to a row.
  */
 function applyParamFilter(row: FilterableRow, pf: ParamFilter): boolean {
-	const rawValue = row[pf.key];
+	// Handle 'name' param specially — search across common name fields
+	if (pf.key === 'name') {
+		const nameFields = ['shortName', 'fullName', 'seriesShortName', 'seriesFullName'];
+		const filterValue = pf.value.toLowerCase();
+		return nameFields.some((field) => {
+			const val = row[field];
+			return val != null && String(val).toLowerCase().includes(filterValue);
+		});
+	}
+
+	// Handle 'volumes' param — map to bookCount
+	const actualKey = pf.key === 'volumes' ? 'bookCount' : pf.key;
+	const rawValue = row[actualKey];
 	const strValue = rawValue != null ? String(rawValue).toLowerCase() : '';
 	const filterValue = pf.value.toLowerCase();
 
@@ -112,9 +143,16 @@ function applyParamFilter(row: FilterableRow, pf: ParamFilter): boolean {
 			if (filterValue === 'true' || filterValue === 'false') {
 				return String(!!rawValue) === filterValue;
 			}
+			// For numeric values, use exact numeric equality
+			if (!isNaN(Number(pf.value)) && rawValue != null && !isNaN(Number(rawValue))) {
+				return Number(rawValue) === Number(pf.value);
+			}
 			// For text, use contains for more forgiving matching
 			return strValue.includes(filterValue) || strValue === filterValue;
 		case '!=':
+			if (!isNaN(Number(pf.value)) && rawValue != null && !isNaN(Number(rawValue))) {
+				return Number(rawValue) !== Number(pf.value);
+			}
 			return strValue !== filterValue && !strValue.includes(filterValue);
 		case '>':
 			return Number(rawValue) > Number(pf.value);
@@ -127,21 +165,4 @@ function applyParamFilter(row: FilterableRow, pf: ParamFilter): boolean {
 		default:
 			return true;
 	}
-}
-
-/**
- * Simple text search across multiple fields.
- * Returns true if ANY field contains the search string.
- */
-export function matchesTextSearch(
-	row: FilterableRow,
-	searchText: string,
-	fields: string[]
-): boolean {
-	if (!searchText) return true;
-	const s = searchText.toLowerCase();
-	return fields.some((field) => {
-		const val = row[field];
-		return val != null && String(val).toLowerCase().includes(s);
-	});
 }

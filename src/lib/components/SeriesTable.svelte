@@ -5,16 +5,16 @@
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import TagChipsBar from '$lib/components/TagChipsBar.svelte';
+	import BooruSearchBar from '$lib/components/BooruSearchBar.svelte';
 	import {
 		type UnifiedFilterState,
 		createEmptyFilterState,
-		applyUnifiedFilter,
-		matchesTextSearch
+		applyUnifiedFilter
 	} from '$lib/components/filterEngine';
+	import { parseBooruQuery, buildBooruQuery } from '$lib/utils/booruParser';
 	import { Star, ArrowUp, ArrowDown, ChevronsUpDown } from '@lucide/svelte';
 	import * as Table from '$lib/components/ui/table';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 
@@ -38,7 +38,16 @@
 		filterState.quickFilters = { ...filterState.quickFilters, [key]: value };
 	}
 
-	// Tag chip toggle
+	// ─── Booru search handler ──────────────────────────────────────────────────
+	function handleBooruChange(query: string) {
+		const parsed = parseBooruQuery(query);
+		filterState.booruQuery = query;
+		filterState.searchTerms = parsed.searchTerms;
+		filterState.excludeTags = parsed.excludeTags;
+		filterState.paramFilters = parsed.params;
+	}
+
+	// ─── Tag chip toggle (separate from booru search terms) ────────────────────
 	function toggleTag(tagName: string) {
 		const lower = tagName.toLowerCase();
 		const idx = filterState.includeTags.findIndex((t) => t.toLowerCase() === lower);
@@ -52,9 +61,6 @@
 	function clearTags() {
 		filterState.includeTags = [];
 	}
-
-	// Search state (will be replaced by booru bar in sub-feature 5)
-	let search = $state('');
 
 	// ─── Sort state ─────────────────────────────────────────────────────────────
 	let sortKey = $state<string>('shortName');
@@ -75,20 +81,7 @@
 
 	// ─── Filter pipeline ────────────────────────────────────────────────────────
 	const filtered = $derived(() => {
-		let result = data;
-
-		// Text search (temporary — will be absorbed by booru bar later)
-		if (search) {
-			result = result.filter((r) =>
-				matchesTextSearch(r as unknown as Record<string, unknown>, search, [
-					'shortName',
-					'fullName'
-				])
-			);
-		}
-
-		// Unified filter (quick filters + tags + param filters)
-		result = result.filter((row) =>
+		return data.filter((row) =>
 			applyUnifiedFilter(row as unknown as Record<string, unknown>, filterState, {
 				searchFields: ['shortName', 'fullName'],
 				getTagNames: (r) => {
@@ -97,8 +90,6 @@
 				}
 			})
 		);
-
-		return result;
 	});
 
 	// Sorted data
@@ -144,11 +135,11 @@
 
 	// Reset page when filters change
 	$effect(() => {
-		search;
 		filterState.quickFilters;
 		filterState.includeTags;
 		filterState.excludeTags;
 		filterState.paramFilters;
+		filterState.searchTerms;
 		pageIndex = 0;
 	});
 
@@ -166,12 +157,14 @@
 
 <!-- Toolbar -->
 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-	<Input
-		placeholder="Search series..."
-		class="h-9 w-full sm:max-w-xs"
-		value={search}
-		oninput={(e: Event) => (search = (e.currentTarget as HTMLInputElement).value)}
-	/>
+	<div class="w-full sm:max-w-sm">
+		<BooruSearchBar
+			allTags={allTags}
+			bind:value={filterState.booruQuery}
+			placeholder="Search... e.g. isekai status:ended volumes:>=4"
+			onchange={handleBooruChange}
+		/>
+	</div>
 	<div class="flex items-center gap-2">
 		<Select.Root type="single" value={typeFilter} onValueChange={(v: string | undefined) => setQuickFilter('type', v || 'all')}>
 			<Select.Trigger class="h-9 w-32 text-xs">

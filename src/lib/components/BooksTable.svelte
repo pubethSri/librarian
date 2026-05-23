@@ -3,16 +3,16 @@
 	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS } from '$lib/types';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import TagChipsBar from '$lib/components/TagChipsBar.svelte';
+	import BooruSearchBar from '$lib/components/BooruSearchBar.svelte';
 	import {
 		type UnifiedFilterState,
 		createEmptyFilterState,
-		applyUnifiedFilter,
-		matchesTextSearch
+		applyUnifiedFilter
 	} from '$lib/components/filterEngine';
+	import { parseBooruQuery } from '$lib/utils/booruParser';
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import { ArrowUp, ArrowDown, ChevronsUpDown, Trash2, Pencil } from '@lucide/svelte';
 
@@ -37,6 +37,15 @@
 		filterState.quickFilters = { ...filterState.quickFilters, [key]: value };
 	}
 
+	// ─── Booru search handler ──────────────────────────────────────────────────
+	function handleBooruChange(query: string) {
+		const parsed = parseBooruQuery(query);
+		filterState.booruQuery = query;
+		filterState.searchTerms = parsed.searchTerms;
+		filterState.excludeTags = parsed.excludeTags;
+		filterState.paramFilters = parsed.params;
+	}
+
 	// Tag chip toggle
 	function toggleTag(tagName: string) {
 		const lower = tagName.toLowerCase();
@@ -51,9 +60,6 @@
 	function clearTags() {
 		filterState.includeTags = [];
 	}
-
-	// Search state (will be replaced by booru bar in sub-feature 5)
-	let search = $state('');
 
 	// ─── Sort state ─────────────────────────────────────────────────────────────
 	let sortKey = $state<string>('seriesShortName');
@@ -76,29 +82,16 @@
 	const filtered = $derived(() => {
 		let result = data;
 
-		// Text search (temporary — will be absorbed by booru bar later)
-		if (search) {
-			result = result.filter((r) =>
-				matchesTextSearch(r as unknown as Record<string, unknown>, search, [
-					'seriesShortName',
-					'seriesFullName'
-				])
-			);
-		}
-
-		// Quick filter: draft needs special handling (it's a boolean, not enum)
+		// Draft filter: special handling
 		let quickFiltersForEngine = { ...filterState.quickFilters };
-		// Handle draft filter separately since 'drafts' !== 'true'
 		const draftVal = quickFiltersForEngine['isDraft'];
 		if (draftVal === 'drafts') {
-			// Remove from quick filters, handle manually
 			delete quickFiltersForEngine['isDraft'];
 			result = result.filter((r) => r.isDraft);
 		} else {
 			delete quickFiltersForEngine['isDraft'];
 		}
 
-		// Unified filter (quick filters + tags + param filters)
 		const stateForEngine = { ...filterState, quickFilters: quickFiltersForEngine };
 		result = result.filter((row) =>
 			applyUnifiedFilter(row as unknown as Record<string, unknown>, stateForEngine, {
@@ -153,11 +146,11 @@
 	const pageCount = $derived(() => Math.max(1, Math.ceil(sorted().length / pageSize)));
 
 	$effect(() => {
-		search;
 		filterState.quickFilters;
 		filterState.includeTags;
 		filterState.excludeTags;
 		filterState.paramFilters;
+		filterState.searchTerms;
 		pageIndex = 0;
 	});
 
@@ -183,12 +176,14 @@
 
 <!-- Toolbar -->
 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-	<Input
-		placeholder="Search by series name..."
-		class="h-9 w-full sm:max-w-xs"
-		value={search}
-		oninput={(e: Event) => (search = (e.currentTarget as HTMLInputElement).value)}
-	/>
+	<div class="w-full sm:max-w-sm">
+		<BooruSearchBar
+			allTags={allTags}
+			bind:value={filterState.booruQuery}
+			placeholder="Search... e.g. isekai source:bookfair location:home"
+			onchange={handleBooruChange}
+		/>
+	</div>
 	<div class="flex flex-wrap items-center gap-2">
 		<Select.Root type="single" value={locationFilter} onValueChange={(v: string | undefined) => setQuickFilter('location', v || 'all')}>
 			<Select.Trigger class="h-9 w-32 text-xs">

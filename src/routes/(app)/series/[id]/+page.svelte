@@ -35,6 +35,7 @@
 	let deleteBookId = $state<number | null>(null);
 	let showDeleteBookConfirm = $state(false);
 	let editingBook = $state<import('$lib/types').BookWithReadings | null>(null);
+	let showEditBookDialog = $state(false);
 
 	function handleStatusChange(status: SeriesStatus) {
 		updateMutation.mutate(
@@ -272,7 +273,7 @@
 												variant="ghost"
 												size="icon"
 												class="h-7 w-7 text-muted-foreground hover:text-foreground"
-												onclick={() => (editingBook = book)}
+												onclick={() => { editingBook = book; showEditBookDialog = true; }}
 											>
 												<Pencil class="h-3.5 w-3.5" />
 											</Button>
@@ -324,9 +325,9 @@
 	/>
 	{#if editingBook}
 		<EditBookDialog
-			open={true}
+			open={showEditBookDialog}
 			book={editingBook}
-			onclose={() => (editingBook = null)}
+			onclose={() => { showEditBookDialog = false; editingBook = null; }}
 		/>
 	{/if}
 {/if}
