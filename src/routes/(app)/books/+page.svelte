@@ -19,6 +19,7 @@
 	let deleteId = $state<number | null>(null);
 	let showDeleteConfirm = $state(false);
 	let editingBook = $state<BookListItem | null>(null);
+	let showEditBookDialog = $state(false);
 
 	function handleDelete(id: number) {
 		deleteId = id;
@@ -27,6 +28,7 @@
 
 	function handleEdit(book: BookListItem) {
 		editingBook = book;
+		showEditBookDialog = true;
 	}
 
 	function confirmDelete() {
@@ -92,8 +94,8 @@
 />
 {#if editingBook}
 	<EditBookDialog
-		open={true}
+		open={showEditBookDialog}
 		book={editingBook}
-		onclose={() => (editingBook = null)}
+		onclose={() => { showEditBookDialog = false; editingBook = null; }}
 	/>
 {/if}

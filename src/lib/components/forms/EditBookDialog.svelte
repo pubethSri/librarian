@@ -69,7 +69,7 @@
 				isDraft
 			});
 			toast.success(`Volume ${volumeNumber} updated`);
-			open = false;
+			onclose?.();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to update book');
 		} finally {
@@ -151,7 +151,7 @@
 		</div>
 
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
+			<Button variant="outline" onclick={() => onclose?.()}>Cancel</Button>
 			<Button onclick={handleSubmit} disabled={isSubmitting}>
 				{isSubmitting ? 'Saving...' : 'Save Changes'}
 			</Button>
