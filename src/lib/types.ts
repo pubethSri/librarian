@@ -107,6 +107,16 @@ export type Bookfair = {
 	createdAt: string;
 };
 
+/** Bookfair list item with book count — returned by GET /api/bookfairs */
+export type BookfairWithCount = Bookfair & {
+	bookCount: number;
+};
+
+/** Bookfair detail — returned by GET /api/bookfairs/[id] */
+export type BookfairDetail = BookfairWithCount & {
+	totalSpent: number;
+};
+
 /** Series detail — returned by GET /api/series/[id] */
 export type SeriesDetail = {
 	id: number;
@@ -167,3 +177,49 @@ export type CreateBookPayload = {
 };
 
 export type UpdateBookPayload = Partial<Omit<CreateBookPayload, 'seriesId'>>;
+
+// ─── Bookfair Payloads ──────────────────────────────────────────────────────
+
+export type CreateBookfairPayload = {
+	name: string;
+	date: string;
+	location?: string;
+};
+
+export type UpdateBookfairPayload = Partial<CreateBookfairPayload>;
+
+// ─── Reading Payloads ───────────────────────────────────────────────────────
+
+export type CreateReadingPayload = {
+	status?: ReadingStatus;
+	startedAt?: string;
+	finishedAt?: string;
+	rating?: number;
+	notes?: string;
+};
+
+export type UpdateReadingPayload = Partial<CreateReadingPayload>;
+
+// ─── Console Types ──────────────────────────────────────────────────────────
+
+/** Staged book entry (for Console preview — new additions) */
+export type StagedBookEntry = {
+	tempId: string;
+	seriesId: number;
+	seriesShortName: string;
+	volumeNumber: number;
+	location: BookLocation;
+	source?: BookSource;
+	sourceEventId?: number;
+	boughtAt?: string;
+	price?: number;
+	isDraft: boolean;
+};
+
+/** Staged edit (for Console preview — pending bulk changes) */
+export type StagedEdit = {
+	bookId: number;
+	field: string;
+	oldValue: unknown;
+	newValue: unknown;
+};

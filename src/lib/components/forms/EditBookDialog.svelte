@@ -7,6 +7,7 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import { Switch } from '$lib/components/ui/switch';
 	import { createBookUpdateMutation } from '$lib/queries/books';
+	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import type { BookLocation, BookSource } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 
@@ -16,6 +17,7 @@
 		volumeNumber: string;
 		location: BookLocation;
 		source: BookSource | null;
+		sourceEventId: number | null;
 		boughtAt: string | null;
 		price: string | null;
 		isDraft: boolean;
@@ -30,11 +32,13 @@
 	let { open = $bindable(false), book, onclose }: Props = $props();
 
 	const updateMutation = createBookUpdateMutation();
+	const bookfairsQuery = createBookfairsListQuery();
 
 	// Form state — initialized from the book prop
 	let volumeNumber = $state(String(book.volumeNumber));
 	let location = $state<BookLocation>(book.location);
 	let source = $state<BookSource | ''>(book.source || '');
+	let sourceEventId = $state<number | null>(book.sourceEventId);
 	let boughtAt = $state(book.boughtAt ? book.boughtAt.split('T')[0] : '');
 	let price = $state(book.price ? String(book.price) : '');
 	let isDraft = $state(book.isDraft);
@@ -44,6 +48,7 @@
 		volumeNumber = String(book.volumeNumber);
 		location = book.location;
 		source = book.source || '';
+		sourceEventId = book.sourceEventId;
 		boughtAt = book.boughtAt ? book.boughtAt.split('T')[0] : '';
 		price = book.price ? String(book.price) : '';
 		isDraft = book.isDraft;
@@ -64,6 +69,7 @@
 				volumeNumber: Number(volumeNumber),
 				location,
 				source: source || undefined,
+				sourceEventId: source === 'bookfair' ? (sourceEventId ?? undefined) : null,
 				boughtAt: boughtAt || undefined,
 				price: price ? Number(price) : undefined,
 				isDraft
@@ -115,7 +121,7 @@
 
 			<div class="space-y-2">
 				<Label>Source</Label>
-				<Select.Root type="single" bind:value={source}>
+				<Select.Root type="single" bind:value={source} onValueChange={() => { sourceEventId = null; }}>
 					<Select.Trigger class="w-full">
 						{source ? source.charAt(0).toUpperCase() + source.slice(1) : 'Select source...'}
 					</Select.Trigger>
@@ -126,6 +132,27 @@
 					</Select.Content>
 				</Select.Root>
 			</div>
+
+			{#if source === 'bookfair' && bookfairsQuery.data && bookfairsQuery.data.length > 0}
+				<div class="space-y-2">
+					<Label>Bookfair Event</Label>
+					<Select.Root type="single" bind:value={sourceEventId}>
+						<Select.Trigger class="w-full">
+							{#if sourceEventId}
+								{@const selected = bookfairsQuery.data.find((bf) => bf.id === sourceEventId)}
+								{selected?.name ?? 'Select event...'}
+							{:else}
+								Select event...
+							{/if}
+						</Select.Trigger>
+						<Select.Content>
+							{#each bookfairsQuery.data as bf (bf.id)}
+								<Select.Item value={bf.id} label={bf.name} />
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+			{/if}
 
 			<div class="space-y-2">
 				<Label for="edit-date">Purchase Date</Label>

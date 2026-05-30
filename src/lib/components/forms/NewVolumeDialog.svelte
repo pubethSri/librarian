@@ -8,6 +8,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import SeriesSearch from '$lib/components/forms/SeriesSearch.svelte';
 	import { createBookMutation } from '$lib/queries/books';
+	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import type { SeriesListItem, BookLocation, BookSource } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 
@@ -19,11 +20,13 @@
 	let { open = $bindable(false), preselectedSeriesId = null }: Props = $props();
 
 	const bookMutation = createBookMutation();
+	const bookfairsQuery = createBookfairsListQuery();
 
 	let selectedSeriesId = $state<number | null>(preselectedSeriesId);
 	let volumeNumber = $state<number>(1);
 	let location = $state<BookLocation>('home');
 	let source = $state<BookSource | ''>('');
+	let sourceEventId = $state<number | null>(null);
 	let boughtAt = $state(new Date().toISOString().split('T')[0]);
 	let price = $state<string>('');
 	let isDraft = $state(false);
@@ -38,6 +41,7 @@
 		volumeNumber = 1;
 		location = 'home';
 		source = '';
+		sourceEventId = null;
 		boughtAt = new Date().toISOString().split('T')[0];
 		price = '';
 		isDraft = false;
@@ -55,6 +59,7 @@
 				volumeNumber,
 				location,
 				source: source || undefined,
+				sourceEventId: source === 'bookfair' && sourceEventId ? sourceEventId : undefined,
 				boughtAt: boughtAt || undefined,
 				price: price ? Number(price) : undefined,
 				isDraft
@@ -111,7 +116,7 @@
 
 			<div class="space-y-2">
 				<Label>Source</Label>
-				<Select.Root type="single" bind:value={source}>
+				<Select.Root type="single" bind:value={source} onValueChange={() => { sourceEventId = null; }}>
 					<Select.Trigger class="w-full">
 						{source ? source.charAt(0).toUpperCase() + source.slice(1) : 'Select source...'}
 					</Select.Trigger>
@@ -122,6 +127,27 @@
 					</Select.Content>
 				</Select.Root>
 			</div>
+
+			{#if source === 'bookfair' && bookfairsQuery.data && bookfairsQuery.data.length > 0}
+				<div class="space-y-2">
+					<Label>Bookfair Event</Label>
+					<Select.Root type="single" bind:value={sourceEventId}>
+						<Select.Trigger class="w-full">
+							{#if sourceEventId}
+								{@const selected = bookfairsQuery.data.find((bf) => bf.id === sourceEventId)}
+								{selected?.name ?? 'Select event...'}
+							{:else}
+								Select event...
+							{/if}
+						</Select.Trigger>
+						<Select.Content>
+							{#each bookfairsQuery.data as bf (bf.id)}
+								<Select.Item value={bf.id} label={bf.name} />
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+			{/if}
 
 			<div class="space-y-2">
 				<Label for="bought-at">Purchase Date</Label>

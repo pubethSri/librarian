@@ -9,6 +9,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	const seriesId = url.searchParams.get('seriesId');
 	const location = url.searchParams.get('location');
 	const isDraft = url.searchParams.get('isDraft');
+	const sourceEventId = url.searchParams.get('sourceEventId');
 
 	const conditions = [];
 
@@ -20,6 +21,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 	if (isDraft === 'true') {
 		conditions.push(eq(books.isDraft, true));
+	}
+	if (sourceEventId) {
+		conditions.push(eq(books.sourceEventId, Number(sourceEventId)));
 	}
 
 	const where = conditions.length > 0 ? sql`${sql.join(conditions, sql` AND `)}` : undefined;

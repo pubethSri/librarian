@@ -35,18 +35,26 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 	const existing = await db.query.books.findFirst({ where: eq(books.id, id) });
 	if (!existing) throw error(404, 'Book not found');
 
+	// Build update fields
+	const updateFields: Record<string, unknown> = {};
+	if (body.volumeNumber !== undefined) updateFields.volumeNumber = Number(body.volumeNumber).toFixed(1);
+	if (body.location !== undefined) updateFields.location = body.location;
+	if (body.boughtAt !== undefined) updateFields.boughtAt = body.boughtAt ? new Date(body.boughtAt) : null;
+	if (body.price !== undefined) updateFields.price = body.price;
+	if (body.source !== undefined) updateFields.source = body.source;
+	if (body.sourceEventId !== undefined) updateFields.sourceEventId = body.sourceEventId;
+	if (body.isDraft !== undefined) updateFields.isDraft = body.isDraft;
+
+	// Clear sourceEventId if source is changed away from 'bookfair'
+	if (body.source !== undefined && body.source !== 'bookfair') {
+		updateFields.sourceEventId = null;
+	}
+
+	updateFields.updatedAt = new Date();
+
 	const [updated] = await db
 		.update(books)
-		.set({
-			...(body.volumeNumber !== undefined && { volumeNumber: Number(body.volumeNumber).toFixed(1) }),
-			...(body.location !== undefined && { location: body.location }),
-			...(body.boughtAt !== undefined && { boughtAt: body.boughtAt ? new Date(body.boughtAt) : null }),
-			...(body.price !== undefined && { price: body.price }),
-			...(body.source !== undefined && { source: body.source }),
-			...(body.sourceEventId !== undefined && { sourceEventId: body.sourceEventId }),
-			...(body.isDraft !== undefined && { isDraft: body.isDraft }),
-			updatedAt: new Date()
-		})
+		.set(updateFields)
 		.where(eq(books.id, id))
 		.returning();
 

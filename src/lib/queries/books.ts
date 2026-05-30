@@ -16,6 +16,22 @@ export function createBooksListQuery() {
 	}));
 }
 
+/** Fetch books linked to a specific bookfair event */
+async function fetchBooksByEvent(eventId: number): Promise<BookListItem[]> {
+	const res = await fetch(`/api/books?sourceEventId=${eventId}`);
+	if (!res.ok) throw new Error('Failed to fetch books');
+	return res.json();
+}
+
+/** Query: list books for a specific bookfair event */
+export function createBooksByEventQuery(eventId: number) {
+	return createQuery<BookListItem[]>(() => ({
+		queryKey: ['books', 'event', eventId],
+		queryFn: () => fetchBooksByEvent(eventId),
+		enabled: eventId > 0
+	}));
+}
+
 /** Mutation: create a new book */
 export function createBookMutation() {
 	const queryClient = useQueryClient();
