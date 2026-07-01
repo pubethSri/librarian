@@ -33,6 +33,7 @@
 			label: 'TOOLS',
 			items: [
 				{ href: '/bookfairs', label: 'Bookfairs' },
+				{ href: '/console', label: 'Console' },
 				{ href: '/tags', label: 'Tags' }
 			]
 		},

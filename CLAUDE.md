@@ -1,0 +1,85 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+Librarian is a personal full-stack web app for cataloging a physical collection of light novels and manga, replacing a legacy Airtable setup. It serves a data-rich desktop dashboard plus (planned) a mobile PWA "Field Mode" for rapid data entry at bookstores/bookfairs.
+
+**Current project state — always read these; they own the truth, not this file:**
+- `docs/STATUS.md` — **single source of truth for current state**: version, what's done, decisions log, changelog, next step
+- `docs/ROADMAP.md` — forward roadmap (phases, versioning, open-item recommendations); no completion checkboxes
+- `docs/design_direction.md` — visual identity, layout, theming rules
+- `docs/context.md` — original requirements / data model rationale
+
+## Commands
+
+```bash
+npm run dev              # Vite dev server (localhost:5173)
+npm run build            # Production build (adapter-node) — must pass with 0 errors before committing
+npm run preview          # Serve the production build
+npm run check            # svelte-kit sync + svelte-check (type checking)
+npm run lint             # prettier --check . && eslint .
+npm run format           # prettier --write .
+npm test                 # vitest run (unit tests)
+npm run test:watch       # vitest in watch mode
+```
+
+Tests: Vitest is scoped to `src/**/*.test.ts` (see `vite.config.ts`) — pure unit tests only, not Svelte component tests. Run a single file or test with:
+```bash
+npx vitest run src/lib/utils/booruParser.test.ts
+npx vitest run -t "parses mixed include and exclude"   # by test name
+```
+
+Database (requires Docker; `DATABASE_URL` must be set — see `.env.example`):
+```bash
+npm run db:start         # docker compose up -d db  (Postgres 16)
+npm run db:stop
+npm run db:push          # drizzle-kit push — sync schema to DB (dev)
+npm run db:generate      # generate a SQL migration from schema changes
+npm run db:migrate       # apply migrations
+npm run db:studio        # Drizzle Studio
+npm run db:seed          # tsx scripts/seed.ts
+npm run migrate:airtable # one-time Airtable CSV → Postgres import (:dry for dry-run)
+```
+
+## Stack
+
+SvelteKit 2 + **Svelte 5 runes** (runes mode is forced in `svelte.config.js` for all non-`node_modules` files) · TypeScript (strict) · Tailwind CSS v4 (CSS-first — no `tailwind.config.js`; theme tokens live in `src/routes/layout.css`) · shadcn-svelte (`nova` style, `zinc` base color, OKLCH) · PostgreSQL + Drizzle ORM · TanStack Query v6 · adapter-node.
+
+## Architecture
+
+**Request flow:** Client component → TanStack Query hook (`src/lib/queries/<entity>.ts`) → `fetch` → SvelteKit API route (`src/routes/api/**/+server.ts`) → Drizzle → Postgres. There is no server `load`-based data fetching for entity data; the client owns it via Query. `QueryClientProvider` is set up in the root `src/routes/+layout.svelte` (staleTime 5min, no refetch on focus). Mutations call `queryClient.invalidateQueries` on the relevant keys (`['books']`, `['series']`, `['bookfairs']`, …) to keep the cache consistent — follow this pattern when adding mutations.
+
+**Data model** (`src/lib/server/db/schema.ts`): `series` 1→many `books`; `books` 1→many `reading` (a separate row per read/re-read, so reading history is decoupled from the physical book); `bookfairs` 1→many `books` (via `books.sourceEventId`); `tags` ↔ `series` many-to-many through `seriesTags`. The DB client is exported as `db` from `src/lib/server/db/index.ts`.
+
+**Types:** All client-facing types and enum label maps live in `src/lib/types.ts`, hand-kept in sync with the Drizzle schema — API response shapes must match these. Update both when the schema changes.
+
+**Auth:** Single-user password gate. `src/hooks.server.ts` redirects any request without a valid session cookie to `/login`, except `PUBLIC_PATHS` (`/login`, `/api/health`) and static assets. The cookie (`librarian_session`) is an HMAC-SHA256-signed timestamp verified in `src/lib/server/auth.ts`; `AUTH_PASSWORD` / `AUTH_SECRET` come from env. `event.locals.authenticated` is set for downstream code.
+
+**Routing:** Everything under the `src/routes/(app)/` group shares the authenticated sidebar shell (`+layout.svelte`). `/login` sits outside the group. API routes are under `src/routes/api/`.
+
+**Filtering (two layers — don't conflate them):**
+- *Coarse, server-side:* `GET /api/books` filters on `seriesId`, `location`, `isDraft`, `sourceEventId` query params via Drizzle.
+- *Rich, client-side:* `src/lib/components/filterEngine.ts` defines `UnifiedFilterState`, the single source of truth applied in-memory over the already-fetched list. It's shared by `SeriesTable`, `BooksTable`, `TagChipsBar`, and `BooruSearchBar`. Booru-style query text (`isekai -harem status:ended volumes:>=4 type:ln`) is parsed by `src/lib/utils/booruParser.ts` (unit-tested) into include/exclude tags, `key:op value` params, and bare search terms. Note the param remapping in the engine (e.g. `volumes` → `bookCount`). Client-side filtering/pagination is a deliberate choice because the dataset is small (per `docs/design_direction.md`).
+
+**Console** (`src/routes/(app)/console/`): a full-page two-panel bulk workbench for adding/editing many books. Edits are *staged* in component state (`StagedBookEntry` / `StagedEdit` in `types.ts`) and previewed before commit, then flushed through the batch (`POST /api/books/batch`) and bulk (`PATCH /api/books/bulk`) endpoints. The bulk endpoint enforces an `ALLOWED_FIELDS` allowlist and clears `sourceEventId` when `source` moves off `bookfair`. Note: the mutation hooks in `queries/batch.ts` / `queries/bulk.ts` are currently unused — the Console calls these endpoints directly with `fetch` and calls `refetch()` manually, instead of going through the hooks + `invalidateQueries` like the rest of the app.
+
+**Airtable export:** `GET /api/export/airtable` produces a CSV formatted for emergency re-import — the escape hatch back to the legacy setup.
+
+## Conventions
+
+- **Svelte 5 runes** throughout (`$state`, `$props`, `$derived`, `$effect`). Form dialogs use `$state` for form values and `$effect` to sync from props.
+- **Formatting** (`.prettierrc`): tabs, single quotes, no trailing commas, printWidth 100; `prettier-plugin-tailwindcss` sorts classes.
+- **shadcn-svelte primitives** live in `src/lib/components/ui/` — add/update them via the shadcn-svelte CLI (config in `components.json`) rather than editing by hand. App components sit directly in `src/lib/components/` (with `forms/` and `series/` subfolders).
+- **Path aliases:** `$lib` plus the shadcn aliases (`$lib/components`, `$lib/components/ui`, `$lib/utils`, `$lib/hooks`).
+
+## Working agreement
+
+This project follows a strict phased workflow (plan the phase → get approval → execute one sub-feature per prompt → verify before the next). The durable, non-negotiable rules:
+- **The build must pass after every change** (`npm run build`, 0 errors) and tests must pass.
+- **Update `docs/STATUS.md` at each version bump** — it is the *only* file that tracks current state (record decisions there; `ROADMAP.md` changes only when the plan itself changes).
+
+> Currently mid-`v0.3`, revived after a pause. The immediate focus is the **Consolidation milestone** in `docs/ROADMAP.md` (decompose the Console, wire the batch/bulk hooks, test `filterEngine`, derive types via `drizzle-zod`) — do this before the Phase 3 remainder (Activity Log, Hitlist).
+
+A design-reference skill is available at `.agent/skills/ui-ux-pro-max/` for UI/UX work (invoke its `scripts/search.py` from that directory).
