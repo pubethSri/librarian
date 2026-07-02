@@ -65,7 +65,7 @@
 	const eventBooksQuery = createBooksByEventQuery(bookfairDetailId);
 
 	// ─── Scoped Books ───────────────────────────────────────────────────────────
-	const scopedBooks = $derived<BookListItem[]>(() => {
+	const scopedBooks = $derived.by<BookListItem[]>(() => {
 		if (scopeType === 'bookfair' && scopeId) {
 			return eventBooksQuery.data ?? [];
 		}
@@ -103,7 +103,7 @@
 	let activeTab = $state('add');
 
 	// Bookfair scope defaults
-	const bookfairDefaults = $derived(() => {
+	const bookfairDefaults = $derived.by(() => {
 		if (scopeType !== 'bookfair' || !bookfairDetailQuery.data) return null;
 		const bf = bookfairDetailQuery.data;
 		return {
@@ -118,7 +118,7 @@
 		selectedSeriesId = series.id;
 		selectedSeriesName = series.shortName;
 		// Auto-set volumeFrom to next volume
-		const existingVols = scopedBooks().filter((b) => b.seriesId === series.id);
+		const existingVols = scopedBooks.filter((b) => b.seriesId === series.id);
 		const stagedVols = stagedEntries.filter((e) => e.seriesId === series.id);
 		const allVols = [
 			...existingVols.map((b) => Number(b.volumeNumber)),
@@ -147,12 +147,12 @@
 			return;
 		}
 
-		const defaults = bookfairDefaults();
+		const defaults = bookfairDefaults;
 		const newEntries: StagedBookEntry[] = [];
 
 		for (let v = volumeFrom; v <= volumeTo; v++) {
 			// Check for duplicates against existing books
-			const existing = scopedBooks().find(
+			const existing = scopedBooks.find(
 				(b) => b.seriesId === selectedSeriesId && Number(b.volumeNumber) === v
 			);
 			if (existing) {
@@ -321,13 +321,13 @@
 	}
 
 	// Affected books: books matching all conditions (only existing, not staged)
-	const affectedBooks = $derived<BookListItem[]>(() => {
+	const affectedBooks = $derived.by<BookListItem[]>(() => {
 		if (activeTab !== 'edit' || !bulkAction || !bulkValue) return [];
-		return scopedBooks().filter((b) => matchesConditions(b));
+		return scopedBooks.filter((b) => matchesConditions(b));
 	});
 
-	const affectedBookIds = $derived<Set<string>>(() => {
-		return new Set(affectedBooks().map((b) => String(b.id)));
+	const affectedBookIds = $derived.by<Set<string>>(() => {
+		return new Set(affectedBooks.map((b) => String(b.id)));
 	});
 
 	// What's the old value for an affected book?
@@ -345,7 +345,7 @@
 	}
 
 	async function executeBulkEdit() {
-		const affected = affectedBooks();
+		const affected = affectedBooks;
 		if (affected.length === 0) return;
 		isBulkExecuting = true;
 
@@ -394,8 +394,8 @@
 	}
 
 	// Combined preview list: existing + staged
-	const previewRows = $derived(() => {
-		const existing = scopedBooks().map((b) => ({
+	const previewRows = $derived.by(() => {
+		const existing = scopedBooks.map((b) => ({
 			type: 'existing' as const,
 			id: String(b.id),
 			seriesShortName: b.seriesShortName,
@@ -436,8 +436,8 @@
 		previewFilterState.paramFilters = parsed.params;
 	}
 
-	const filteredPreviewRows = $derived(() => {
-		const rows = previewRows();
+	const filteredPreviewRows = $derived.by(() => {
+		const rows = previewRows;
 		if (!previewFilterState.booruQuery && previewFilterState.paramFilters.length === 0) {
 			return rows;
 		}
@@ -554,7 +554,7 @@
 							<Skeleton class="h-10 w-full" />
 						{/each}
 					</div>
-				{:else if previewRows().length === 0}
+				{:else if previewRows.length === 0}
 					<div class="flex h-full items-center justify-center p-8">
 						<EmptyState
 							icon={BookOpen}
@@ -562,7 +562,7 @@
 							description="Use the Add Books tab to stage new entries."
 						/>
 					</div>
-				{:else if filteredPreviewRows().length === 0}
+				{:else if filteredPreviewRows.length === 0}
 					<div class="flex h-full items-center justify-center p-8">
 						<EmptyState
 							icon={BookOpen}
@@ -583,8 +583,8 @@
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
-							{#each filteredPreviewRows() as row (row.id)}
-								{@const isAffected = row.type === 'existing' && affectedBookIds().has(row.id)}
+							{#each filteredPreviewRows as row (row.id)}
+								{@const isAffected = row.type === 'existing' && affectedBookIds.has(row.id)}
 								<Table.Row
 									class={row.type === 'staged'
 										? 'border-l-2 border-l-green-600/60 bg-green-500/5'
@@ -655,7 +655,7 @@
 			</div>
 
 			<!-- Bottom bar -->
-			{#if stagedEntries.length > 0 || affectedBooks().length > 0 || isPreviewFiltered}
+			{#if stagedEntries.length > 0 || affectedBooks.length > 0 || isPreviewFiltered}
 				<div
 					class="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5"
 				>
@@ -666,15 +666,15 @@
 								{stagedEntries.length} new
 							</span>
 						{/if}
-						{#if affectedBooks().length > 0}
+						{#if affectedBooks.length > 0}
 							<span class="flex items-center gap-1 text-amber-600">
 								<Pencil class="h-3.5 w-3.5" />
-								{affectedBooks().length} affected
+								{affectedBooks.length} affected
 							</span>
 						{/if}
 						{#if isPreviewFiltered}
 							<span class="text-xs">
-								{filteredPreviewRows().length} / {previewRows().length} shown
+								{filteredPreviewRows.length} / {previewRows.length} shown
 							</span>
 						{/if}
 					</div>
@@ -937,8 +937,8 @@
 						{#if bulkAction && bulkValue}
 							<div class="rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
 								<p class="text-sm">
-									<span class="font-medium text-amber-600">{affectedBooks().length}</span>
-									<span class="text-muted-foreground"> book{affectedBooks().length !== 1 ? 's' : ''} will be updated</span>
+									<span class="font-medium text-amber-600">{affectedBooks.length}</span>
+									<span class="text-muted-foreground"> book{affectedBooks.length !== 1 ? 's' : ''} will be updated</span>
 								</p>
 							</div>
 
@@ -952,7 +952,7 @@
 								</Button>
 								<Button
 									class="flex-1 gap-1.5"
-									disabled={affectedBooks().length === 0}
+									disabled={affectedBooks.length === 0}
 									onclick={() => (showBulkConfirm = true)}
 								>
 									<Zap class="h-3.5 w-3.5" />
@@ -971,7 +971,7 @@
 <DeleteConfirmDialog
 	bind:open={showBulkConfirm}
 	title="Confirm Bulk Edit"
-	description={`Apply "${bulkAction === 'location' ? 'Change location' : bulkAction === 'source' ? 'Set source' : 'Set draft status'}" to ${affectedBooks().length} book${affectedBooks().length !== 1 ? 's' : ''}? This cannot be undone.`}
+	description={`Apply "${bulkAction === 'location' ? 'Change location' : bulkAction === 'source' ? 'Set source' : 'Set draft status'}" to ${affectedBooks.length} book${affectedBooks.length !== 1 ? 's' : ''}? This cannot be undone.`}
 	loading={isBulkExecuting}
 	onconfirm={executeBulkEdit}
 	oncancel={() => (showBulkConfirm = false)}
