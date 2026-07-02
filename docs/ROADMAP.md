@@ -42,6 +42,25 @@ The project was paused and is being revived. Before adding new features, pay dow
 
 **Exit criteria:** Console files under ~300 lines each, batch/bulk go through hooks, `filterEngine` covered by tests, types/validation derived from the schema, build + tests green.
 
+### Console follow-ups (found in the v0.3.x visual test, 2026-07-02)
+
+Surfaced while verifying the `$derived.by` reactivity fix. Fold into the decompose/wire work rather than one-off patches where possible.
+
+**Bugs**
+- **Scope switch stalls the preview.** Opening the Console pre-scoped to a bookfair works, but *changing* scope via the dropdown leaves the preview stuck loading (no books shown). Root cause: `bookfairDetailId` is passed to `createBookfairDetailQuery`/`createBooksByEventQuery` by value, capturing only the initial value (svelte-check `state_referenced_locally` warnings at `console/+page.svelte:64–65`) — the queries never react to scope changes. Fix belongs with the **batch/bulk hook-wiring** item (pass a reactive getter / reconfigure the query on scope change).
+- **Preview filter ignores series-level keys.** `location:` and `volumes:` work, but `publisher:`, `status:`, `type:`, `tag:` do nothing. Preview rows only carry `seriesShortName/volumeNumber/location/source/price/isDraft/seriesTags`, so the other fields aren't present to match, and `tag:` isn't a handled param (tags flow through include/exclude). Fix: enrich preview rows with the series fields (`publisher/status/type`) and map `tag:` in the Console remapping.
+
+**Behavior**
+- **Next-volume suggestion ignores out-of-scope ownership.** In a bookfair scope, selecting a series *not* in that event suggests volume 1 instead of the next unowned volume, because it reads `scopedBooks`. Compute next-unowned from *all* owned books, not just the in-scope set.
+
+**Enhancements / polish**
+- Add a **Location selector** to the Add Books form, defaulting to **Apartment**.
+- **Bulk-edit confirm dialog** reuses `DeleteConfirmDialog`, so its button reads "Delete"/"Cancel" — misleading for an edit. Use an apply-styled confirm ("Apply"/"Confirm").
+- Add **`volumes` (volumeNumber)** as a bulk-edit condition column.
+- Let bulk-edit **conditions also scope the preview** (show only matched rows) — and, relatedly, a way to select rows directly from the preview.
+- Keep the **preview count/summary bar always visible** (sticky) regardless of list length.
+- Optional **series-grouping toggle** in the preview.
+
 ## Then — finish Phase 3 (→ v0.3)
 
 - **Activity Log** — `activity_log` table, read-only "Recent Activity" on the Console.

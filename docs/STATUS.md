@@ -3,10 +3,11 @@
 > **This file is the single source of truth for "where the project is now."**
 > Roadmap / future scope lives in [`ROADMAP.md`](./ROADMAP.md); how to work in the repo lives in [`../CLAUDE.md`](../CLAUDE.md); product vision in [`context.md`](./context.md); design in [`design_direction.md`](./design_direction.md). Update *this* file at every version bump.
 
-## State as of 2026-07-01 (revived after pause)
+## State as of 2026-07-02
 
-- **Current version:** v0.3 — **in progress** (Phase 3, revived after a multi-month pause).
+- **Current version:** v0.3 — **in progress** (Phase 3; Consolidation milestone underway, revived after a multi-month pause).
 - **Direction:** *Consolidation first.* Before finishing Phase 3, pay down debt found on return (see the Consolidation milestone in `ROADMAP.md`). Theme: single source of truth, in code and docs.
+- **Latest:** `filterEngine` now has unit tests; Console overhaul Step 1 (`$derived.by` fix) done and browser-verified. Next: Step 2 (decompose the Console).
 - **Docs reconciled** this date: `STATUS.md` is now the only state tracker; `PLAN.md` became `ROADMAP.md` (no completion checkboxes); `HANDOFF.md` (a one-time Antigravity→Claude Code migration artifact) and `note_to_self.txt` (a stale, already-fixed bug note) were retired.
 
 ### Phase 3 progress
@@ -19,10 +20,23 @@
 | 4 | Source tracking with event linking | ✅ Done |
 | 5 | Console — Preview Panel + Add Books tab | ✅ Done |
 | 6 | Console — Bulk Edit tab | ✅ Done |
-| — | **Consolidation milestone** (debt paydown) | ⬜ **Next — do before #7** |
+| — | **Consolidation milestone** (debt paydown) | 🔵 **In progress** (see below) |
 | 7 | Activity Log | ⬜ Pending |
 | 8 | Bookfair Hitlist | ⬜ Pending |
 | 9 | Polish, sidebar links, build verification → tag `v0.3` | ⬜ Pending |
+
+### Consolidation progress (v0.3.x)
+
+| Item | Status |
+|---|---|
+| `filterEngine` unit tests (26 characterization tests, incl. numeric-`=` regression guard) | ✅ Done |
+| Console overhaul — Step 1: fix `$derived` misuse (`$derived.by`), svelte-check 31 → 0 | ✅ Done (browser-verified) |
+| Console overhaul — Step 2: decompose into panels + `.svelte.ts` rune modules | ⬜ Next |
+| Console overhaul — Step 3: wire `batch`/`bulk` hooks + `invalidateQueries` (fold in scope-switch query-reactivity bug) | ⬜ Pending |
+| Types + validation via `drizzle-zod` (Tier 1) | ⬜ Pending |
+| Tier 2 (relational `/api/books`, move `filterEngine` to `lib/`, session token expiry) | ⬜ Pending |
+
+A visual test on 2026-07-02 confirmed the Step 1 reactivity fix and surfaced a set of Console bugs/polish items — logged as **"Console follow-ups"** in `ROADMAP.md`.
 
 ## Completed Phases
 
@@ -124,6 +138,12 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Consolidation before features:** On revival, decompose the Console, wire the orphaned batch/bulk query hooks, add `filterEngine` tests, and derive types/validation from the schema (`drizzle-zod`) before building Activity Log. Rationale + full item list in `ROADMAP.md`.
 - **Docs single-source-of-truth:** `STATUS.md` owns current state; `ROADMAP.md` owns forward plan (no checkboxes); `CLAUDE.md` owns how-to-work. `HANDOFF.md` and `note_to_self.txt` retired.
 
+### Consolidation Decisions (2026-07-02)
+- **Console overhaul is staged, one variable per step:** (1) fix the `$derived` reactivity/type bug in place, (2) decompose behavior-preserving, (3) wire the hooks. Each step is verified (svelte-check + build + tests + a browser smoke test) before the next, so any regression is attributable. Step 1 is done and browser-verified.
+- **`$derived` vs `$derived.by`:** `$derived(() => x)` stores the *function*; use `$derived.by(() => x)` (or `$derived(x)` for a plain expression) when the body is a closure. This was the root cause of the Console's 31 svelte-check errors.
+- **Tests are committed to the repo:** executable specs travel with the code (matches the already-tracked `booruParser.test.ts`); they don't ship in the build. This is distinct from the local-only `docs/`-style context.
+- **Console scope-switch bug** traced to query args captured by value (`state_referenced_locally` at `console/+page.svelte:64–65`); scheduled to be fixed with the batch/bulk hook-wiring step. See "Console follow-ups" in `ROADMAP.md`.
+
 ## Key Files
 | File | Purpose |
 |---|---|
@@ -180,3 +200,4 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 | 2026-05-26 | v0.2.3 done — numeric `=` fix, edit dialog re-open fix, Phase 2 complete |
 | 2026-05-27 | Phase 3 begun — bookfairs CRUD + detail, source/event linking, unified Console (Add Books + Bulk Edit) |
 | 2026-07-01 | **Project revived after pause.** Docs consolidated (STATUS = single source of truth; PLAN → ROADMAP, no checkboxes; HANDOFF + note_to_self retired). Consolidation milestone inserted before the Phase 3 remainder. |
+| 2026-07-02 | Consolidation started — `filterEngine` unit tests added (58 tests total); Console overhaul Step 1 (`$derived.by` fix, svelte-check 31 → 0, browser-verified). Visual-test findings logged as Console follow-ups in `ROADMAP.md`. |
