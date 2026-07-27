@@ -54,7 +54,22 @@ A visual test on 2026-07-02 confirmed the Step 1 reactivity fix and surfaced a s
 | `src/lib/components/console/AddBooksPanel.svelte` | 141 | Series picker, volume range, price |
 | `src/lib/components/console/ScopeBar.svelte` | 79 | Scope selector + bookfair chip |
 
-Test count 58 → **107**. svelte-check: 6 errors (all pre-existing, none in `console/`); warnings 34 → 31, with the Console's own down 5 → 2 — those two are the captured-by-value query args, i.e. the Step 3 bug markers.
+Test count 58 → **107**. svelte-check: 6 errors (all pre-existing, none in `console/`); warnings 34 → 31, with the Console's own down 5 → 2 — those two are the captured-by-value query args at `+page.svelte:35–36`, i.e. the Step 3 bug markers.
+
+**Where the `ROADMAP.md` "Console follow-ups" items now live** (that list still describes the pre-decomposition layout):
+
+| Follow-up | Now in |
+|---|---|
+| Scope switch stalls the preview (root cause) | `+page.svelte:35–36` |
+| Preview filter ignores series-level keys (`publisher:`/`status:`/`type:`) | `PreviewRow` in `console/types.ts`; `buildPreviewRows` in `logic.ts` |
+| `tag:` not handled in the Console remapping | `remapPreviewFilterState` in `logic.ts` |
+| Next-volume ignores out-of-scope ownership | `nextVolumeFor` in `logic.ts`, called from `AddBooksPanel.svelte` |
+| Location selector for the Add Books form | `AddBooksPanel.svelte` |
+| Bulk-edit confirm dialog wording | `+page.svelte` (the dialog stayed on the page) |
+| `volumes` as a bulk-edit condition column | `matchesConditions` in `logic.ts`; `BulkEditPanel.svelte` |
+| Sticky preview count bar, series grouping | `PreviewPanel.svelte` |
+
+Note: the four new components are **unformatted** — prettier cannot process any `.svelte` file in this repo (see the tooling note in the decisions below), so expect a sizeable reformat diff over them once that is fixed.
 
 **Browser smoke test to run before Step 3** (this is what the automated gate cannot prove):
 
@@ -64,8 +79,8 @@ Test count 58 → **107**. svelte-check: 6 errors (all pre-existing, none in `co
 4. Bulk Edit tab: action = location → home, condition `series = <name>` → amber EDIT badges, `→ Home` arrows, "N affected" in the bottom bar.
 5. **Switch to the Add tab → the amber badges and the "N affected" counter must disappear.** This is the `activeTab` gate — the highest-risk silent regression.
 6. **Switch back and forth between tabs → the Add form keeps its series and volume values** (bits-ui hides rather than unmounts tab content; this proves the panel wasn't remounted).
-7. Bulk Edit → Execute → confirm → applies, form resets.
-8. Deep-link `/console?scope=bookfair&id=<n>` → bookfair chip and pre-filled defaults appear. *Changing scope via the dropdown still stalls the preview — that is the known Step 3 bug and **must still be broken**.*
+7. Still on Bulk Edit: remove a condition with its `X`, then hit **Reset** — action, value and conditions all clear (these are store methods reached through a prop). Re-enter them, then **Execute** → confirm → applies, and the form resets on success.
+8. Deep-link `/console?scope=bookfair&id=<n>` → bookfair chip in the scope bar and the "Bookfair mode:" banner in the Add tab. Stage one volume → **the new preview row's Location reads "Apartment", not "Home"**. That is the only visible proof the bookfair defaults crossed the new page → `defaults` prop → panel seam (there is no Location selector yet — that's a pending follow-up). Commit → the created book carries the event's source and date. *Changing scope via the dropdown still stalls the preview — that is the known Step 3 bug and **must still be broken**.*
 
 ## Completed Phases
 
@@ -171,7 +186,7 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Console overhaul is staged, one variable per step:** (1) fix the `$derived` reactivity/type bug in place, (2) decompose behavior-preserving, (3) wire the hooks. Each step is verified (svelte-check + build + tests + a browser smoke test) before the next, so any regression is attributable. Step 1 is done and browser-verified.
 - **`$derived` vs `$derived.by`:** `$derived(() => x)` stores the *function*; use `$derived.by(() => x)` (or `$derived(x)` for a plain expression) when the body is a closure. This was the root cause of the Console's 31 svelte-check errors.
 - **Tests are committed to the repo:** executable specs travel with the code (matches the already-tracked `booruParser.test.ts`); they don't ship in the build. This is distinct from the local-only `docs/`-style context.
-- **Console scope-switch bug** traced to query args captured by value (`state_referenced_locally` at `console/+page.svelte:64–65`); scheduled to be fixed with the batch/bulk hook-wiring step. See "Console follow-ups" in `ROADMAP.md`.
+- **Console scope-switch bug** traced to query args captured by value (`state_referenced_locally`, now at `console/+page.svelte:35–36` after the Step 2 decomposition); scheduled to be fixed with the batch/bulk hook-wiring step. See "Console follow-ups" in `ROADMAP.md`.
 
 ### Consolidation Decisions (2026-07-27)
 
