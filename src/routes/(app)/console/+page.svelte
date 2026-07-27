@@ -41,12 +41,12 @@
 		BookLocation,
 		BookSource
 	} from '$lib/types';
+	import type { ScopeType, BulkAction, Condition } from '$lib/console/types';
 
 	// ─── URL Params / Scope ─────────────────────────────────────────────────────
 	const urlScope = $page.url.searchParams.get('scope');
 	const urlId = $page.url.searchParams.get('id');
 
-	type ScopeType = 'all' | 'bookfair' | 'series';
 	let scopeType = $state<ScopeType>(
 		urlScope === 'bookfair' ? 'bookfair' : urlScope === 'series' ? 'series' : 'all'
 	);
@@ -252,11 +252,6 @@
 	}
 
 	// ─── Bulk Edit ──────────────────────────────────────────────────────────────
-	type BulkAction = 'location' | 'source' | 'isDraft' | '';
-	type ConditionColumn = 'series' | 'location' | 'source' | 'isDraft';
-	type ConditionOp = '=' | '!=';
-	type Condition = { id: string; column: ConditionColumn; op: ConditionOp; value: string };
-
 	let bulkAction = $state<BulkAction>('');
 	let bulkValue = $state<string>('');
 	let conditions = $state<Condition[]>([]);
