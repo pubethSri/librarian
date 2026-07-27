@@ -9,6 +9,7 @@ import {
 	matchesConditions,
 	nextVolumeFor,
 	remapPreviewFilterState,
+	toAffectedIds,
 	toBatchPayload,
 	toBulkUpdates
 } from './logic';
@@ -147,6 +148,20 @@ describe('matchesConditions', () => {
 		// A freshly added condition starts with value: '' — until the user picks
 		// a value it excludes every book rather than being ignored.
 		expect(matchesConditions(book(), [cond({ value: '' })])).toBe(false);
+	});
+});
+
+// ─── toAffectedIds ───────────────────────────────────────────────────────────
+
+describe('toAffectedIds', () => {
+	it('stringifies ids so they can be matched against preview row ids', () => {
+		const ids = toAffectedIds([book({ id: 7 }), book({ id: 12 })]);
+		expect(ids.has('7')).toBe(true);
+		expect(ids.has('12')).toBe(true);
+	});
+
+	it('returns an empty set for no books', () => {
+		expect(toAffectedIds([]).size).toBe(0);
 	});
 });
 

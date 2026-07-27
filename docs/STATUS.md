@@ -3,11 +3,11 @@
 > **This file is the single source of truth for "where the project is now."**
 > Roadmap / future scope lives in [`ROADMAP.md`](./ROADMAP.md); how to work in the repo lives in [`../CLAUDE.md`](../CLAUDE.md); product vision in [`context.md`](./context.md); design in [`design_direction.md`](./design_direction.md). Update *this* file at every version bump.
 
-## State as of 2026-07-02
+## State as of 2026-07-27
 
 - **Current version:** v0.3 — **in progress** (Phase 3; Consolidation milestone underway, revived after a multi-month pause).
 - **Direction:** *Consolidation first.* Before finishing Phase 3, pay down debt found on return (see the Consolidation milestone in `ROADMAP.md`). Theme: single source of truth, in code and docs.
-- **Latest:** `filterEngine` now has unit tests; Console overhaul Step 1 (`$derived.by` fix) done and browser-verified. Next: Step 2 (decompose the Console).
+- **Latest:** Console overhaul Step 2 done — the Console is decomposed into 4 panel components, 2 rune stores and a tested pure-logic module. `console/+page.svelte` went **978 → 244 lines**; every console file is under the ~300-line exit criterion. Behavior-preserving by design; **awaiting the browser smoke test** (script in the Console overhaul section below). Next: Step 3 (wire batch/bulk hooks + fix the scope-switch bug).
 - **Docs reconciled** this date: `STATUS.md` is now the only state tracker; `PLAN.md` became `ROADMAP.md` (no completion checkboxes); `HANDOFF.md` (a one-time Antigravity→Claude Code migration artifact) and `note_to_self.txt` (a stale, already-fixed bug note) were retired.
 
 ### Phase 3 progress
@@ -31,12 +31,41 @@
 |---|---|
 | `filterEngine` unit tests (26 characterization tests, incl. numeric-`=` regression guard) | ✅ Done |
 | Console overhaul — Step 1: fix `$derived` misuse (`$derived.by`), svelte-check 31 → 0 | ✅ Done (browser-verified) |
-| Console overhaul — Step 2: decompose into panels + `.svelte.ts` rune modules | ⬜ Next |
-| Console overhaul — Step 3: wire `batch`/`bulk` hooks + `invalidateQueries` (fold in scope-switch query-reactivity bug) | ⬜ Pending |
+| Console overhaul — Step 2: decompose into panels + `.svelte.ts` rune modules | ✅ Done (awaiting browser smoke test) |
+| Console overhaul — Step 3: wire `batch`/`bulk` hooks + `invalidateQueries` (fold in scope-switch query-reactivity bug) | ⬜ Next |
 | Types + validation via `drizzle-zod` (Tier 1) | ⬜ Pending |
 | Tier 2 (relational `/api/books`, move `filterEngine` to `lib/`, session token expiry) | ⬜ Pending |
 
 A visual test on 2026-07-02 confirmed the Step 1 reactivity fix and surfaced a set of Console bugs/polish items — logged as **"Console follow-ups"** in `ROADMAP.md`.
+
+### Console overhaul — Step 2 result (2026-07-27)
+
+`console/+page.svelte`: **978 → 244 lines**. It now owns only the queries, scope state, `activeTab`, the two commit functions and the layout.
+
+| File | Lines | Role |
+|---|---|---|
+| `src/routes/(app)/console/+page.svelte` | 244 | Orchestration: queries, scope, tabs, commit, confirm dialog |
+| `src/lib/console/types.ts` | 44 | `ScopeType`, `BulkAction`, `Condition`, `PreviewRow`, `BookfairDefaults` |
+| `src/lib/console/logic.ts` (+ `.test.ts`) | 239 | Pure logic — no runes, no `crypto`, no toasts. 49 tests |
+| `src/lib/console/staging.svelte.ts` | 33 | `createStagingStore()` |
+| `src/lib/console/bulkEdit.svelte.ts` | 78 | `createBulkEditStore(getBooks, getIsActive)` |
+| `src/lib/components/console/PreviewPanel.svelte` | 223 | Filter bar + table + commit bar |
+| `src/lib/components/console/BulkEditPanel.svelte` | 196 | Action/value selectors + condition builder |
+| `src/lib/components/console/AddBooksPanel.svelte` | 141 | Series picker, volume range, price |
+| `src/lib/components/console/ScopeBar.svelte` | 79 | Scope selector + bookfair chip |
+
+Test count 58 → **107**. svelte-check: 6 errors (all pre-existing, none in `console/`); warnings 34 → 31, with the Console's own down 5 → 2 — those two are the captured-by-value query args, i.e. the Step 3 bug markers.
+
+**Browser smoke test to run before Step 3** (this is what the automated gate cannot prove):
+
+1. `/console` → books load. Filter `location:home`, then clear the box — the list unfilters (a ~150 ms lag is *correct*, the search bar debounces its re-parse).
+2. Add tab: pick a series → the volume box auto-advances past the highest owned volume. Stage 2 volumes, then re-stage one → duplicate toast, and the range does **not** advance.
+3. Preview: green NEW badges; `X` removes one; Clear All; re-stage; **Commit All** → toast, list refreshes.
+4. Bulk Edit tab: action = location → home, condition `series = <name>` → amber EDIT badges, `→ Home` arrows, "N affected" in the bottom bar.
+5. **Switch to the Add tab → the amber badges and the "N affected" counter must disappear.** This is the `activeTab` gate — the highest-risk silent regression.
+6. **Switch back and forth between tabs → the Add form keeps its series and volume values** (bits-ui hides rather than unmounts tab content; this proves the panel wasn't remounted).
+7. Bulk Edit → Execute → confirm → applies, form resets.
+8. Deep-link `/console?scope=bookfair&id=<n>` → bookfair chip and pre-filled defaults appear. *Changing scope via the dropdown still stalls the preview — that is the known Step 3 bug and **must still be broken**.*
 
 ## Completed Phases
 
@@ -144,6 +173,15 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Tests are committed to the repo:** executable specs travel with the code (matches the already-tracked `booruParser.test.ts`); they don't ship in the build. This is distinct from the local-only `docs/`-style context.
 - **Console scope-switch bug** traced to query args captured by value (`state_referenced_locally` at `console/+page.svelte:64–65`); scheduled to be fixed with the batch/bulk hook-wiring step. See "Console follow-ups" in `ROADMAP.md`.
 
+### Consolidation Decisions (2026-07-27)
+
+- **Rune stores are factories, not module singletons.** `createStagingStore()` / `createBulkEditStore()` return objects with getters instead of exporting module-level `$state`. A module singleton would survive client-side navigation away from `/console` and back, silently resurrecting staged entries. Two-way-bound fields expose getter/setter pairs; `conditions` returns the live array so `bind:value={cond.column}` still writes through. This is the repo's first `.svelte.ts` convention — there were none before.
+- **Cross-module reactivity travels as getters.** `createBulkEditStore(() => scopedBooks, () => activeTab === 'edit')` — the same technique Step 3 needs for the query args. Passing values would freeze them, which is exactly the open scope-switch bug.
+- **Pure logic separated from rune modules.** `logic.ts` has no runes, no `crypto`, no toasts, so it is unit-testable without the Svelte compiler (vitest here has no `svelteTesting` plugin). Rule: pure logic never imports a `.svelte.ts`, and no `.test.ts` imports one.
+- **Console modules live in `$lib`, not the route folder.** `src/lib/console/` for pure + rune modules, `src/lib/components/console/` for components — matching `CLAUDE.md`'s "app components sit in `src/lib/components/`" and the Tier 2 direction of keeping pure modules out of `components/`. There is no route-folder colocation precedent in this repo.
+- **Step 2 was a pure refactor.** No logged Console follow-up was fixed, so any regression is attributable. Known quirks were preserved deliberately and pinned by tests rather than corrected: the "Maximum 50" guard that admits 51 volumes, a zero price dropping to `undefined`, blank condition values matching nothing, series-level params (`publisher:`/`status:`/`type:`) matching nothing in the preview, and the `activeTab === 'edit'` gate on `affectedBooks`.
+- **`npm run lint` is broken repo-wide, and predates this work.** `prettier` crashes on *every* `.svelte` file (`TypeError: getVisitorKeys is not a function` — a prettier/`prettier-plugin-svelte` version mismatch), so `npm run format` cannot touch components either. `npx eslint <path>` does work and was used as the unused-import net. Worth fixing as its own task; **not** folded into the refactor.
+
 ## Key Files
 | File | Purpose |
 |---|---|
@@ -159,7 +197,10 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 | `src/lib/utils/booruParser.ts` (+ `.test.ts`) | Booru-style search query parser + builder, with unit tests |
 | `src/lib/types.ts` | Shared TypeScript types (API shapes, enums, mutation payloads) |
 | `src/lib/queries/*.ts` | TanStack Query hooks (series, books, bookfairs, reading, batch, bulk, tags) |
-| `src/lib/components/filterEngine.ts` | Unified filter state types + `applyUnifiedFilter()` |
+| `src/lib/components/filterEngine.ts` (+ `.test.ts`) | Unified filter state types + `applyUnifiedFilter()`, with unit tests |
+| `src/lib/console/{types,logic}.ts` (+ `logic.test.ts`) | Console types + pure logic (staging, bulk-edit matching, preview rows/filter), unit-tested |
+| `src/lib/console/{staging,bulkEdit}.svelte.ts` | Console rune stores (factories returning getter-backed objects) |
+| `src/lib/components/console/*.svelte` | Console panels: `ScopeBar`, `PreviewPanel`, `AddBooksPanel`, `BulkEditPanel` |
 | `src/lib/components/BooruSearchBar.svelte` | Search input with autocomplete |
 | `src/lib/components/TagChipsBar.svelte` | Toggleable tag filter badges |
 | `src/lib/components/{SeriesTable,BooksTable}.svelte` | Entity tables with booru search/sort/pagination |
@@ -201,3 +242,4 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 | 2026-05-27 | Phase 3 begun — bookfairs CRUD + detail, source/event linking, unified Console (Add Books + Bulk Edit) |
 | 2026-07-01 | **Project revived after pause.** Docs consolidated (STATUS = single source of truth; PLAN → ROADMAP, no checkboxes; HANDOFF + note_to_self retired). Consolidation milestone inserted before the Phase 3 remainder. |
 | 2026-07-02 | Consolidation started — `filterEngine` unit tests added (58 tests total); Console overhaul Step 1 (`$derived.by` fix, svelte-check 31 → 0, browser-verified). Visual-test findings logged as Console follow-ups in `ROADMAP.md`. |
+| 2026-07-27 | Console overhaul Step 2 — decomposed into 4 panels + 2 rune stores + tested pure logic. `+page.svelte` 978 → 244 lines; 107 tests (was 58); Console svelte-check warnings 5 → 2. Behavior-preserving; browser smoke test pending. |

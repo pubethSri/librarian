@@ -56,6 +56,17 @@ export function matchesConditions(book: BookListItem, conditions: Condition[]): 
 	});
 }
 
+/**
+ * The ids of the affected books, as strings, for preview-row lookup.
+ *
+ * The set is rebuilt from scratch whenever the affected list changes and is
+ * never mutated in place, so a plain `Set` is correct here — reactivity comes
+ * from the surrounding `$derived`, not from the collection.
+ */
+export function toAffectedIds(books: BookListItem[]): Set<string> {
+	return new Set(books.map((b) => String(b.id)));
+}
+
 /** Build the PATCH body for /api/books/bulk from the selected action + value */
 export function toBulkUpdates(action: BulkAction, value: string): Record<string, unknown> {
 	const updates: Record<string, unknown> = {};

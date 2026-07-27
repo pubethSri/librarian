@@ -1,6 +1,6 @@
 import type { BookListItem } from '$lib/types';
 import type { BulkAction, Condition } from './types';
-import { matchesConditions } from './logic';
+import { matchesConditions, toAffectedIds } from './logic';
 
 /**
  * Bulk-edit form state for the Console: the action, its value, and the
@@ -26,9 +26,7 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 		return getBooks().filter((b) => matchesConditions(b, conditions));
 	});
 
-	const affectedBookIds = $derived.by<Set<string>>(
-		() => new Set(affectedBooks.map((b) => String(b.id)))
-	);
+	const affectedBookIds = $derived.by<Set<string>>(() => toAffectedIds(affectedBooks));
 
 	return {
 		// Two-way bound from the panel, so these need setters as well as getters
