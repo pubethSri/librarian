@@ -7,6 +7,7 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import BooruSearchBar from '$lib/components/BooruSearchBar.svelte';
+	import ScopeBar from '$lib/components/console/ScopeBar.svelte';
 	import { type UnifiedFilterState, createEmptyFilterState } from '$lib/components/filterEngine';
 	import {
 		buildPreviewRows,
@@ -30,18 +31,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import {
-		Terminal,
-		Package,
-		Plus,
-		X,
-		BookOpen,
-		Calendar,
-		MapPin,
-		Pencil,
-		ArrowRight,
-		Zap
-	} from '@lucide/svelte';
+	import { Package, Plus, X, BookOpen, Pencil, ArrowRight, Zap } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import type { SeriesListItem, BookListItem, BookLocation, BookSource } from '$lib/types';
 	import type { ScopeType } from '$lib/console/types';
@@ -273,63 +263,13 @@
 
 <div class="flex h-full flex-col gap-0">
 	<!-- Scope Bar -->
-	<div
-		class="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background px-4 py-3"
-	>
-		<Terminal class="h-4 w-4 text-muted-foreground" />
-		<div class="flex items-center gap-2">
-			<Select.Root
-				type="single"
-				value={scopeType === 'all' ? 'all' : `${scopeType}:${scopeId}`}
-				onValueChange={(val) => {
-					if (val === 'all') {
-						handleScopeChange('all');
-					} else if (typeof val === 'string' && val.startsWith('bookfair:')) {
-						handleScopeChange('bookfair', Number(val.split(':')[1]));
-					}
-				}}
-			>
-				<Select.Trigger class="w-56">
-					{#if scopeType === 'bookfair' && bookfairDetailQuery.data}
-						📍 {bookfairDetailQuery.data.name}
-					{:else}
-						All Books
-					{/if}
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="all" label="All Books" />
-					{#if bookfairsQuery.data}
-						<Select.Group>
-							<Select.GroupHeading>Bookfairs</Select.GroupHeading>
-							{#each bookfairsQuery.data as bf (bf.id)}
-								<Select.Item value={`bookfair:${bf.id}`} label={bf.name} />
-							{/each}
-						</Select.Group>
-					{/if}
-				</Select.Content>
-			</Select.Root>
-		</div>
-
-		{#if scopeType === 'bookfair' && bookfairDetailQuery.data}
-			{@const bf = bookfairDetailQuery.data}
-			<div class="flex items-center gap-3 text-xs text-muted-foreground">
-				<span class="flex items-center gap-1">
-					<Calendar class="h-3 w-3" />
-					{new Date(bf.date + 'T00:00:00').toLocaleDateString('en-US', {
-						month: 'short',
-						day: 'numeric',
-						year: 'numeric'
-					})}
-				</span>
-				{#if bf.location}
-					<span class="flex items-center gap-1">
-						<MapPin class="h-3 w-3" />
-						{bf.location}
-					</span>
-				{/if}
-			</div>
-		{/if}
-	</div>
+	<ScopeBar
+		{scopeType}
+		{scopeId}
+		bookfair={bookfairDetailQuery.data}
+		bookfairs={bookfairsQuery.data}
+		onscopechange={handleScopeChange}
+	/>
 
 	<!-- Two-Panel Layout -->
 	<div class="flex flex-1 overflow-hidden">
