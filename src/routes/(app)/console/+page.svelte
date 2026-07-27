@@ -1,23 +1,22 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { createBooksListQuery, createBooksByEventQuery } from '$lib/queries/books';
 	import { createBookfairsListQuery, createBookfairDetailQuery } from '$lib/queries/bookfairs';
-	import SeriesSearch from '$lib/components/forms/SeriesSearch.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import BooruSearchBar from '$lib/components/BooruSearchBar.svelte';
 	import ScopeBar from '$lib/components/console/ScopeBar.svelte';
 	import BulkEditPanel from '$lib/components/console/BulkEditPanel.svelte';
+	import AddBooksPanel from '$lib/components/console/AddBooksPanel.svelte';
 	import { type UnifiedFilterState, createEmptyFilterState } from '$lib/components/filterEngine';
 	import {
 		buildPreviewRows,
-		expandVolumeRange,
 		filterPreviewRows,
 		formatPrice,
 		getActionLabel,
 		isFilterActive,
-		nextVolumeFor,
 		toBatchPayload,
 		toBulkUpdates
 	} from '$lib/console/logic';
@@ -25,15 +24,13 @@
 	import { createBulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import { parseBooruQuery } from '$lib/utils/booruParser';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import { Package, Plus, X, BookOpen, Pencil, ArrowRight } from '@lucide/svelte';
+	import { Package, X, BookOpen, Pencil, ArrowRight } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import type { SeriesListItem, BookListItem, BookLocation, BookSource } from '$lib/types';
+	import type { BookListItem, BookLocation, BookSource } from '$lib/types';
 	import type { ScopeType } from '$lib/console/types';
 
 	// ─── URL Params / Scope ─────────────────────────────────────────────────────
@@ -75,13 +72,10 @@
 	const staging = createStagingStore();
 
 	// ─── Add Books Form ─────────────────────────────────────────────────────────
-	let selectedSeriesId = $state<number | null>(
-		scopeType === 'series' && scopeId ? scopeId : null
-	);
-	let selectedSeriesName = $state('');
-	let volumeFrom = $state<number>(1);
-	let volumeTo = $state<number>(1);
-	let batchPrice = $state<string>('');
+	// Seeds the panel's series picker from a `?scope=series&id=` deep link. Read
+	// once, before any scope change, so the panel keeps the original behavior of
+	// not resyncing when the scope changes later.
+	const initialSeriesId = untrack(() => (scopeType === 'series' && scopeId ? scopeId : null));
 	let activeTab = $state('add');
 
 	// Bookfair scope defaults
@@ -95,44 +89,6 @@
 			boughtAt: bf.date
 		};
 	});
-
-	function handleSeriesSelect(series: SeriesListItem) {
-		selectedSeriesId = series.id;
-		selectedSeriesName = series.shortName;
-		// Auto-set volumeFrom to next volume
-		const next = nextVolumeFor(scopedBooks, staging.entries, series.id);
-		volumeFrom = next;
-		volumeTo = next;
-	}
-
-	function addToPreview() {
-		const result = expandVolumeRange({
-			seriesId: selectedSeriesId,
-			seriesName: selectedSeriesName,
-			volumeFrom,
-			volumeTo,
-			price: batchPrice,
-			defaults: bookfairDefaults,
-			existing: scopedBooks,
-			staged: staging.entries
-		});
-
-		if (!result.ok) {
-			toast.error(result.error);
-			return;
-		}
-
-		for (const message of result.skipped) toast.error(message);
-
-		if (result.entries.length > 0) {
-			const added = result.entries.length;
-			staging.add(result.entries);
-			toast.success(`Added ${added} volume${added > 1 ? 's' : ''} to preview`);
-			// Reset volume range for next batch
-			volumeFrom = volumeTo + 1;
-			volumeTo = volumeFrom;
-		}
-	}
 
 	// ─── Commit ─────────────────────────────────────────────────────────────────
 	let isCommitting = $state(false);
@@ -448,74 +404,12 @@
 				</div>
 
 				<Tabs.Content value="add" class="flex-1 overflow-auto p-4">
-					<div class="space-y-5">
-						<!-- Bookfair context banner -->
-						{#if scopeType === 'bookfair' && bookfairDetailQuery.data}
-							<div
-								class="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
-							>
-								<p>
-									<span class="font-medium text-foreground">Bookfair mode:</span> Source, location,
-									and date are pre-filled from the event.
-								</p>
-							</div>
-						{/if}
-
-						<!-- Series picker -->
-						<div class="space-y-2">
-							<Label>Series</Label>
-							<SeriesSearch value={selectedSeriesId} onselect={handleSeriesSelect} />
-						</div>
-
-						<!-- Volume range -->
-						<div class="space-y-2">
-							<Label>Volumes</Label>
-							<div class="flex items-center gap-2">
-								<Input
-									type="number"
-									min="1"
-									step="1"
-									bind:value={volumeFrom}
-									class="h-9 w-20 tabular-nums"
-									placeholder="From"
-								/>
-								<span class="text-sm text-muted-foreground">to</span>
-								<Input
-									type="number"
-									min="1"
-									step="1"
-									bind:value={volumeTo}
-									class="h-9 w-20 tabular-nums"
-									placeholder="To"
-								/>
-								{#if volumeTo > volumeFrom}
-									<Badge variant="secondary" class="text-xs">
-										{volumeTo - volumeFrom + 1} vols
-									</Badge>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Price -->
-						<div class="space-y-2">
-							<Label for="console-price">Price (each)</Label>
-							<Input
-								id="console-price"
-								type="number"
-								step="0.01"
-								min="0"
-								placeholder="Optional — applies to all"
-								bind:value={batchPrice}
-								class="h-9"
-							/>
-						</div>
-
-						<!-- Add button -->
-						<Button class="w-full gap-1.5" onclick={addToPreview}>
-							<Plus class="h-3.5 w-3.5" />
-							Add to Preview
-						</Button>
-					</div>
+					<AddBooksPanel
+						books={scopedBooks}
+						{staging}
+						defaults={bookfairDefaults}
+						initialSeriesId={initialSeriesId}
+					/>
 				</Tabs.Content>
 
 				<Tabs.Content value="edit" class="flex-1 overflow-auto p-4">
