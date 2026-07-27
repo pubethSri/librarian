@@ -20,6 +20,7 @@
 		toBatchPayload,
 		toBulkUpdates
 	} from '$lib/console/logic';
+	import { createStagingStore } from '$lib/console/staging.svelte';
 	import { parseBooruQuery } from '$lib/utils/booruParser';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -42,13 +43,7 @@
 		Zap
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import type {
-		SeriesListItem,
-		BookListItem,
-		StagedBookEntry,
-		BookLocation,
-		BookSource
-	} from '$lib/types';
+	import type { SeriesListItem, BookListItem, BookLocation, BookSource } from '$lib/types';
 	import type { ScopeType, BulkAction, Condition } from '$lib/console/types';
 
 	// ─── URL Params / Scope ─────────────────────────────────────────────────────
@@ -87,15 +82,7 @@
 	);
 
 	// ─── Staged Entries ─────────────────────────────────────────────────────────
-	let stagedEntries = $state<StagedBookEntry[]>([]);
-
-	function removeStaged(tempId: string) {
-		stagedEntries = stagedEntries.filter((e) => e.tempId !== tempId);
-	}
-
-	function clearAllStaged() {
-		stagedEntries = [];
-	}
+	const staging = createStagingStore();
 
 	// ─── Add Books Form ─────────────────────────────────────────────────────────
 	let selectedSeriesId = $state<number | null>(
@@ -123,7 +110,7 @@
 		selectedSeriesId = series.id;
 		selectedSeriesName = series.shortName;
 		// Auto-set volumeFrom to next volume
-		const next = nextVolumeFor(scopedBooks, stagedEntries, series.id);
+		const next = nextVolumeFor(scopedBooks, staging.entries, series.id);
 		volumeFrom = next;
 		volumeTo = next;
 	}
@@ -137,7 +124,7 @@
 			price: batchPrice,
 			defaults: bookfairDefaults,
 			existing: scopedBooks,
-			staged: stagedEntries
+			staged: staging.entries
 		});
 
 		if (!result.ok) {
@@ -148,12 +135,9 @@
 		for (const message of result.skipped) toast.error(message);
 
 		if (result.entries.length > 0) {
-			const newEntries: StagedBookEntry[] = result.entries.map((e) => ({
-				...e,
-				tempId: crypto.randomUUID()
-			}));
-			stagedEntries = [...stagedEntries, ...newEntries];
-			toast.success(`Added ${newEntries.length} volume${newEntries.length > 1 ? 's' : ''} to preview`);
+			const added = result.entries.length;
+			staging.add(result.entries);
+			toast.success(`Added ${added} volume${added > 1 ? 's' : ''} to preview`);
 			// Reset volume range for next batch
 			volumeFrom = volumeTo + 1;
 			volumeTo = volumeFrom;
@@ -164,11 +148,11 @@
 	let isCommitting = $state(false);
 
 	async function commitAll() {
-		if (stagedEntries.length === 0) return;
+		if (staging.entries.length === 0) return;
 		isCommitting = true;
 
 		try {
-			const payload = toBatchPayload(stagedEntries);
+			const payload = toBatchPayload(staging.entries);
 
 			const res = await fetch('/api/books/batch', {
 				method: 'POST',
@@ -183,7 +167,7 @@
 
 			const result = await res.json();
 			toast.success(`Created ${result.created} book${result.created > 1 ? 's' : ''}`);
-			stagedEntries = [];
+			staging.clear();
 
 			// Refetch scoped data
 			if (scopeType === 'bookfair' && scopeId) {
@@ -286,7 +270,7 @@
 	}
 
 	// Combined preview list: existing + staged
-	const previewRows = $derived.by(() => buildPreviewRows(scopedBooks, stagedEntries));
+	const previewRows = $derived.by(() => buildPreviewRows(scopedBooks, staging.entries));
 
 	// ─── Preview Filter (Booru) ────────────────────────────────────────────────
 	let previewFilterState = $state<UnifiedFilterState>(createEmptyFilterState());
@@ -474,7 +458,7 @@
 										{#if row.type === 'staged'}
 											<button
 												class="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-												onclick={() => removeStaged(row.id)}
+												onclick={() => staging.remove(row.id)}
 												title="Remove"
 											>
 												<X class="h-3.5 w-3.5" />
@@ -489,15 +473,15 @@
 			</div>
 
 			<!-- Bottom bar -->
-			{#if stagedEntries.length > 0 || affectedBooks.length > 0 || isPreviewFiltered}
+			{#if staging.entries.length > 0 || affectedBooks.length > 0 || isPreviewFiltered}
 				<div
 					class="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5"
 				>
 					<div class="flex items-center gap-3 text-sm text-muted-foreground">
-						{#if stagedEntries.length > 0}
+						{#if staging.entries.length > 0}
 							<span class="flex items-center gap-1">
 								<Package class="h-3.5 w-3.5" />
-								{stagedEntries.length} new
+								{staging.entries.length} new
 							</span>
 						{/if}
 						{#if affectedBooks.length > 0}
@@ -513,12 +497,12 @@
 						{/if}
 					</div>
 					<div class="flex items-center gap-2">
-						{#if stagedEntries.length > 0}
+						{#if staging.entries.length > 0}
 							<Button
 								variant="ghost"
 								size="sm"
 								class="text-xs text-muted-foreground"
-								onclick={clearAllStaged}
+								onclick={() => staging.clear()}
 							>
 								Clear All
 							</Button>
@@ -526,7 +510,7 @@
 								{#if isCommitting}
 									Committing...
 								{:else}
-									Commit All ({stagedEntries.length})
+									Commit All ({staging.entries.length})
 								{/if}
 							</Button>
 						{/if}
