@@ -15,12 +15,12 @@
 		formatPrice,
 		getActionLabel,
 		isFilterActive,
-		matchesConditions,
 		nextVolumeFor,
 		toBatchPayload,
 		toBulkUpdates
 	} from '$lib/console/logic';
 	import { createStagingStore } from '$lib/console/staging.svelte';
+	import { createBulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import { parseBooruQuery } from '$lib/utils/booruParser';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -44,7 +44,7 @@
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import type { SeriesListItem, BookListItem, BookLocation, BookSource } from '$lib/types';
-	import type { ScopeType, BulkAction, Condition } from '$lib/console/types';
+	import type { ScopeType } from '$lib/console/types';
 
 	// ─── URL Params / Scope ─────────────────────────────────────────────────────
 	const urlScope = $page.url.searchParams.get('scope');
@@ -199,43 +199,21 @@
 	}
 
 	// ─── Bulk Edit ──────────────────────────────────────────────────────────────
-	let bulkAction = $state<BulkAction>('');
-	let bulkValue = $state<string>('');
-	let conditions = $state<Condition[]>([]);
+	const bulk = createBulkEditStore(
+		() => scopedBooks,
+		() => activeTab === 'edit'
+	);
+
 	let showBulkConfirm = $state(false);
 	let isBulkExecuting = $state(false);
 
-	function addCondition() {
-		conditions = [...conditions, { id: crypto.randomUUID(), column: 'location', op: '=', value: '' }];
-	}
-
-	function removeCondition(id: string) {
-		conditions = conditions.filter((c) => c.id !== id);
-	}
-
-	function resetBulkEdit() {
-		bulkAction = '';
-		bulkValue = '';
-		conditions = [];
-	}
-
-	// Affected books: books matching all conditions (only existing, not staged)
-	const affectedBooks = $derived.by<BookListItem[]>(() => {
-		if (activeTab !== 'edit' || !bulkAction || !bulkValue) return [];
-		return scopedBooks.filter((b) => matchesConditions(b, conditions));
-	});
-
-	const affectedBookIds = $derived.by<Set<string>>(() => {
-		return new Set(affectedBooks.map((b) => String(b.id)));
-	});
-
 	async function executeBulkEdit() {
-		const affected = affectedBooks;
+		const affected = bulk.affectedBooks;
 		if (affected.length === 0) return;
 		isBulkExecuting = true;
 
 		try {
-			const updates = toBulkUpdates(bulkAction, bulkValue);
+			const updates = toBulkUpdates(bulk.action, bulk.value);
 
 			const res = await fetch('/api/books/bulk', {
 				method: 'PATCH',
@@ -253,7 +231,7 @@
 
 			const result = await res.json();
 			toast.success(`Updated ${result.updated} book${result.updated > 1 ? 's' : ''}`);
-			resetBulkEdit();
+			bulk.reset();
 
 			// Refetch data
 			if (scopeType === 'bookfair' && scopeId) {
@@ -402,7 +380,7 @@
 						</Table.Header>
 						<Table.Body>
 							{#each filteredPreviewRows as row (row.id)}
-								{@const isAffected = row.type === 'existing' && affectedBookIds.has(row.id)}
+								{@const isAffected = row.type === 'existing' && bulk.affectedBookIds.has(row.id)}
 								<Table.Row
 									class={row.type === 'staged'
 										? 'border-l-2 border-l-green-600/60 bg-green-500/5'
@@ -444,10 +422,10 @@
 									</Table.Cell>
 									<Table.Cell class="py-2 text-sm text-muted-foreground">
 										{row.location === 'home' ? 'Home' : 'Apartment'}
-										{#if isAffected && bulkAction === 'location' && row.location !== bulkValue}
+										{#if isAffected && bulk.action === 'location' && row.location !== bulk.value}
 											<span class="ml-1 inline-flex items-center gap-0.5 text-amber-600">
 												<ArrowRight class="h-2.5 w-2.5" />
-												<span class="text-xs font-medium">{getActionLabel('location', bulkValue)}</span>
+												<span class="text-xs font-medium">{getActionLabel('location', bulk.value)}</span>
 											</span>
 										{/if}
 									</Table.Cell>
@@ -473,7 +451,7 @@
 			</div>
 
 			<!-- Bottom bar -->
-			{#if staging.entries.length > 0 || affectedBooks.length > 0 || isPreviewFiltered}
+			{#if staging.entries.length > 0 || bulk.affectedBooks.length > 0 || isPreviewFiltered}
 				<div
 					class="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5"
 				>
@@ -484,10 +462,10 @@
 								{staging.entries.length} new
 							</span>
 						{/if}
-						{#if affectedBooks.length > 0}
+						{#if bulk.affectedBooks.length > 0}
 							<span class="flex items-center gap-1 text-amber-600">
 								<Pencil class="h-3.5 w-3.5" />
-								{affectedBooks.length} affected
+								{bulk.affectedBooks.length} affected
 							</span>
 						{/if}
 						{#if isPreviewFiltered}
@@ -605,13 +583,13 @@
 						<!-- Action selector -->
 						<div class="space-y-2">
 							<Label>Action</Label>
-							<Select.Root type="single" bind:value={bulkAction} onValueChange={() => { bulkValue = ''; }}>
+							<Select.Root type="single" bind:value={bulk.action} onValueChange={() => { bulk.value = ''; }}>
 								<Select.Trigger class="w-full">
-									{#if bulkAction === 'location'}
+									{#if bulk.action === 'location'}
 										Change location to
-									{:else if bulkAction === 'source'}
+									{:else if bulk.action === 'source'}
 										Set source to
-									{:else if bulkAction === 'isDraft'}
+									{:else if bulk.action === 'isDraft'}
 										Set draft status
 									{:else}
 										Select action...
@@ -626,23 +604,23 @@
 						</div>
 
 						<!-- Value selector (contextual) -->
-						{#if bulkAction}
+						{#if bulk.action}
 							<div class="space-y-2">
 								<Label>Value</Label>
-								{#if bulkAction === 'location'}
-									<Select.Root type="single" bind:value={bulkValue}>
+								{#if bulk.action === 'location'}
+									<Select.Root type="single" bind:value={bulk.value}>
 										<Select.Trigger class="w-full">
-											{bulkValue === 'home' ? 'Home' : bulkValue === 'apartment' ? 'Apartment' : 'Select...'}
+											{bulk.value === 'home' ? 'Home' : bulk.value === 'apartment' ? 'Apartment' : 'Select...'}
 										</Select.Trigger>
 										<Select.Content>
 											<Select.Item value="home" label="Home" />
 											<Select.Item value="apartment" label="Apartment" />
 										</Select.Content>
 									</Select.Root>
-								{:else if bulkAction === 'source'}
-									<Select.Root type="single" bind:value={bulkValue}>
+								{:else if bulk.action === 'source'}
+									<Select.Root type="single" bind:value={bulk.value}>
 										<Select.Trigger class="w-full">
-											{bulkValue === 'bookstore' ? 'Bookstore' : bulkValue === 'bookfair' ? 'Bookfair' : bulkValue === 'online' ? 'Online' : 'Select...'}
+											{bulk.value === 'bookstore' ? 'Bookstore' : bulk.value === 'bookfair' ? 'Bookfair' : bulk.value === 'online' ? 'Online' : 'Select...'}
 										</Select.Trigger>
 										<Select.Content>
 											<Select.Item value="bookstore" label="Bookstore" />
@@ -650,10 +628,10 @@
 											<Select.Item value="online" label="Online" />
 										</Select.Content>
 									</Select.Root>
-								{:else if bulkAction === 'isDraft'}
-									<Select.Root type="single" bind:value={bulkValue}>
+								{:else if bulk.action === 'isDraft'}
+									<Select.Root type="single" bind:value={bulk.value}>
 										<Select.Trigger class="w-full">
-											{bulkValue === 'true' ? 'Draft' : bulkValue === 'false' ? 'Not Draft' : 'Select...'}
+											{bulk.value === 'true' ? 'Draft' : bulk.value === 'false' ? 'Not Draft' : 'Select...'}
 										</Select.Trigger>
 										<Select.Content>
 											<Select.Item value="true" label="Draft" />
@@ -668,17 +646,17 @@
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
 								<Label>Conditions</Label>
-								<Button variant="ghost" size="sm" class="h-7 gap-1 text-xs" onclick={addCondition}>
+								<Button variant="ghost" size="sm" class="h-7 gap-1 text-xs" onclick={() => bulk.addCondition()}>
 									<Plus class="h-3 w-3" />
 									Add
 								</Button>
 							</div>
 
-							{#if conditions.length === 0}
+							{#if bulk.conditions.length === 0}
 								<p class="text-xs text-muted-foreground">No conditions — all books in scope will be affected.</p>
 							{:else}
 								<div class="space-y-2">
-									{#each conditions as cond, i (cond.id)}
+									{#each bulk.conditions as cond, i (cond.id)}
 										<div class="flex items-center gap-1.5">
 											<span class="text-xs text-muted-foreground w-10 shrink-0">{i === 0 ? 'WHERE' : 'AND'}</span>
 											<Select.Root type="single" bind:value={cond.column}>
@@ -741,7 +719,7 @@
 											{/if}
 											<button
 												class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-												onclick={() => removeCondition(cond.id)}
+												onclick={() => bulk.removeCondition(cond.id)}
 											>
 												<X class="h-3 w-3" />
 											</button>
@@ -752,11 +730,11 @@
 						</div>
 
 						<!-- Affected summary + Execute -->
-						{#if bulkAction && bulkValue}
+						{#if bulk.action && bulk.value}
 							<div class="rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
 								<p class="text-sm">
-									<span class="font-medium text-amber-600">{affectedBooks.length}</span>
-									<span class="text-muted-foreground"> book{affectedBooks.length !== 1 ? 's' : ''} will be updated</span>
+									<span class="font-medium text-amber-600">{bulk.affectedBooks.length}</span>
+									<span class="text-muted-foreground"> book{bulk.affectedBooks.length !== 1 ? 's' : ''} will be updated</span>
 								</p>
 							</div>
 
@@ -764,13 +742,13 @@
 								<Button
 									variant="outline"
 									class="flex-1 text-xs"
-									onclick={resetBulkEdit}
+									onclick={() => bulk.reset()}
 								>
 									Reset
 								</Button>
 								<Button
 									class="flex-1 gap-1.5"
-									disabled={affectedBooks.length === 0}
+									disabled={bulk.affectedBooks.length === 0}
 									onclick={() => (showBulkConfirm = true)}
 								>
 									<Zap class="h-3.5 w-3.5" />
@@ -789,7 +767,7 @@
 <DeleteConfirmDialog
 	bind:open={showBulkConfirm}
 	title="Confirm Bulk Edit"
-	description={`Apply "${bulkAction === 'location' ? 'Change location' : bulkAction === 'source' ? 'Set source' : 'Set draft status'}" to ${affectedBooks.length} book${affectedBooks.length !== 1 ? 's' : ''}? This cannot be undone.`}
+	description={`Apply "${bulk.action === 'location' ? 'Change location' : bulk.action === 'source' ? 'Set source' : 'Set draft status'}" to ${bulk.affectedBooks.length} book${bulk.affectedBooks.length !== 1 ? 's' : ''}? This cannot be undone.`}
 	loading={isBulkExecuting}
 	onconfirm={executeBulkEdit}
 	oncancel={() => (showBulkConfirm = false)}
