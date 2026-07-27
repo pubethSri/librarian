@@ -7,11 +7,19 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import BooruSearchBar from '$lib/components/BooruSearchBar.svelte';
+	import { type UnifiedFilterState, createEmptyFilterState } from '$lib/components/filterEngine';
 	import {
-		type UnifiedFilterState,
-		createEmptyFilterState,
-		applyUnifiedFilter
-	} from '$lib/components/filterEngine';
+		buildPreviewRows,
+		expandVolumeRange,
+		filterPreviewRows,
+		formatPrice,
+		getActionLabel,
+		isFilterActive,
+		matchesConditions,
+		nextVolumeFor,
+		toBatchPayload,
+		toBulkUpdates
+	} from '$lib/console/logic';
 	import { parseBooruQuery } from '$lib/utils/booruParser';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -115,71 +123,35 @@
 		selectedSeriesId = series.id;
 		selectedSeriesName = series.shortName;
 		// Auto-set volumeFrom to next volume
-		const existingVols = scopedBooks.filter((b) => b.seriesId === series.id);
-		const stagedVols = stagedEntries.filter((e) => e.seriesId === series.id);
-		const allVols = [
-			...existingVols.map((b) => Number(b.volumeNumber)),
-			...stagedVols.map((e) => e.volumeNumber)
-		];
-		const maxVol = allVols.length > 0 ? Math.max(...allVols) : 0;
-		volumeFrom = maxVol + 1;
-		volumeTo = maxVol + 1;
+		const next = nextVolumeFor(scopedBooks, stagedEntries, series.id);
+		volumeFrom = next;
+		volumeTo = next;
 	}
 
 	function addToPreview() {
-		if (!selectedSeriesId) {
-			toast.error('Please select a series');
-			return;
-		}
-		if (volumeFrom <= 0 || volumeTo <= 0) {
-			toast.error('Volume numbers must be positive');
-			return;
-		}
-		if (volumeTo < volumeFrom) {
-			toast.error('End volume must be ≥ start volume');
-			return;
-		}
-		if (volumeTo - volumeFrom > 50) {
-			toast.error('Maximum 50 volumes per batch');
+		const result = expandVolumeRange({
+			seriesId: selectedSeriesId,
+			seriesName: selectedSeriesName,
+			volumeFrom,
+			volumeTo,
+			price: batchPrice,
+			defaults: bookfairDefaults,
+			existing: scopedBooks,
+			staged: stagedEntries
+		});
+
+		if (!result.ok) {
+			toast.error(result.error);
 			return;
 		}
 
-		const defaults = bookfairDefaults;
-		const newEntries: StagedBookEntry[] = [];
+		for (const message of result.skipped) toast.error(message);
 
-		for (let v = volumeFrom; v <= volumeTo; v++) {
-			// Check for duplicates against existing books
-			const existing = scopedBooks.find(
-				(b) => b.seriesId === selectedSeriesId && Number(b.volumeNumber) === v
-			);
-			if (existing) {
-				toast.error(`Volume ${v} of "${selectedSeriesName}" already exists`);
-				continue;
-			}
-			// Check for duplicates against already-staged
-			const alreadyStaged = stagedEntries.find(
-				(e) => e.seriesId === selectedSeriesId && e.volumeNumber === v
-			);
-			if (alreadyStaged) {
-				toast.error(`Volume ${v} of "${selectedSeriesName}" is already staged`);
-				continue;
-			}
-
-			newEntries.push({
-				tempId: crypto.randomUUID(),
-				seriesId: selectedSeriesId,
-				seriesShortName: selectedSeriesName,
-				volumeNumber: v,
-				location: defaults?.location ?? 'home',
-				source: defaults?.source,
-				sourceEventId: defaults?.sourceEventId,
-				boughtAt: defaults?.boughtAt,
-				price: batchPrice ? Number(batchPrice) : undefined,
-				isDraft: false
-			});
-		}
-
-		if (newEntries.length > 0) {
+		if (result.entries.length > 0) {
+			const newEntries: StagedBookEntry[] = result.entries.map((e) => ({
+				...e,
+				tempId: crypto.randomUUID()
+			}));
 			stagedEntries = [...stagedEntries, ...newEntries];
 			toast.success(`Added ${newEntries.length} volume${newEntries.length > 1 ? 's' : ''} to preview`);
 			// Reset volume range for next batch
@@ -196,16 +168,7 @@
 		isCommitting = true;
 
 		try {
-			const payload = stagedEntries.map((e) => ({
-				seriesId: e.seriesId,
-				volumeNumber: e.volumeNumber,
-				location: e.location,
-				source: e.source,
-				sourceEventId: e.sourceEventId,
-				boughtAt: e.boughtAt,
-				price: e.price,
-				isDraft: e.isDraft
-			}));
+			const payload = toBatchPayload(stagedEntries);
 
 			const res = await fetch('/api/books/batch', {
 				method: 'POST',
@@ -272,50 +235,10 @@
 		conditions = [];
 	}
 
-	// Get display label for bulk action values
-	function getActionLabel(action: BulkAction, value: string): string {
-		if (action === 'location') return value === 'home' ? 'Home' : 'Apartment';
-		if (action === 'source') {
-			if (value === 'bookstore') return 'Bookstore';
-			if (value === 'bookfair') return 'Bookfair';
-			if (value === 'online') return 'Online';
-		}
-		if (action === 'isDraft') return value === 'true' ? 'Draft' : 'Not Draft';
-		return value;
-	}
-
-	// Check if a book matches all conditions
-	function matchesConditions(book: BookListItem): boolean {
-		if (conditions.length === 0) return true;
-		return conditions.every((c) => {
-			let bookValue: string;
-			switch (c.column) {
-				case 'series':
-					bookValue = book.seriesShortName.toLowerCase();
-					break;
-				case 'location':
-					bookValue = book.location;
-					break;
-				case 'source':
-					bookValue = book.source || '';
-					break;
-				case 'isDraft':
-					bookValue = String(book.isDraft);
-					break;
-				default:
-					return true;
-			}
-			const condValue = c.column === 'series' ? c.value.toLowerCase() : c.value;
-			if (c.op === '=') return bookValue === condValue;
-			if (c.op === '!=') return bookValue !== condValue;
-			return true;
-		});
-	}
-
 	// Affected books: books matching all conditions (only existing, not staged)
 	const affectedBooks = $derived.by<BookListItem[]>(() => {
 		if (activeTab !== 'edit' || !bulkAction || !bulkValue) return [];
-		return scopedBooks.filter((b) => matchesConditions(b));
+		return scopedBooks.filter((b) => matchesConditions(b, conditions));
 	});
 
 	const affectedBookIds = $derived.by<Set<string>>(() => {
@@ -328,10 +251,7 @@
 		isBulkExecuting = true;
 
 		try {
-			const updates: Record<string, unknown> = {};
-			if (bulkAction === 'location') updates.location = bulkValue;
-			if (bulkAction === 'source') updates.source = bulkValue;
-			if (bulkAction === 'isDraft') updates.isDraft = bulkValue === 'true';
+			const updates = toBulkUpdates(bulkAction, bulkValue);
 
 			const res = await fetch('/api/books/bulk', {
 				method: 'PATCH',
@@ -365,43 +285,8 @@
 		}
 	}
 
-	// ─── Helpers ────────────────────────────────────────────────────────────────
-	function formatPrice(price: string | number | null | undefined): string {
-		if (price === null || price === undefined || price === '') return '—';
-		return `฿${Number(price).toLocaleString()}`;
-	}
-
 	// Combined preview list: existing + staged
-	const previewRows = $derived.by(() => {
-		const existing = scopedBooks.map((b) => ({
-			type: 'existing' as const,
-			id: String(b.id),
-			seriesShortName: b.seriesShortName,
-			volumeNumber: Number(b.volumeNumber),
-			location: b.location,
-			source: b.source,
-			price: b.price,
-			isDraft: b.isDraft,
-			seriesTags: b.seriesTags ?? []
-		}));
-		const staged = stagedEntries.map((e) => ({
-			type: 'staged' as const,
-			id: e.tempId,
-			seriesShortName: e.seriesShortName,
-			volumeNumber: e.volumeNumber,
-			location: e.location,
-			source: e.source ?? null,
-			price: e.price != null ? String(e.price) : null,
-			isDraft: e.isDraft,
-			seriesTags: [] as { id: number; name: string }[]
-		}));
-		// Sort: series name then volume number
-		return [...existing, ...staged].sort((a, b) => {
-			const nameCompare = a.seriesShortName.localeCompare(b.seriesShortName);
-			if (nameCompare !== 0) return nameCompare;
-			return a.volumeNumber - b.volumeNumber;
-		});
-	});
+	const previewRows = $derived.by(() => buildPreviewRows(scopedBooks, stagedEntries));
 
 	// ─── Preview Filter (Booru) ────────────────────────────────────────────────
 	let previewFilterState = $state<UnifiedFilterState>(createEmptyFilterState());
@@ -414,38 +299,9 @@
 		previewFilterState.paramFilters = parsed.params;
 	}
 
-	const filteredPreviewRows = $derived.by(() => {
-		const rows = previewRows;
-		if (!previewFilterState.booruQuery && previewFilterState.paramFilters.length === 0) {
-			return rows;
-		}
+	const filteredPreviewRows = $derived.by(() => filterPreviewRows(previewRows, previewFilterState));
 
-		// Remap param keys for Console preview context:
-		// - 'volumes' maps to 'bookCount' in filterEngine, but we have 'volumeNumber'
-		// - 'draft' needs to map to 'isDraft'
-		const remappedState: UnifiedFilterState = {
-			...previewFilterState,
-			paramFilters: previewFilterState.paramFilters.map((pf) => {
-				if (pf.key === 'volumes') return { ...pf, key: 'volumeNumber' };
-				if (pf.key === 'draft') return { ...pf, key: 'isDraft' };
-				return pf;
-			})
-		};
-
-		return rows.filter((row) =>
-			applyUnifiedFilter(row as unknown as Record<string, unknown>, remappedState, {
-				searchFields: ['seriesShortName'],
-				getTagNames: (r) => {
-					const typed = r as unknown as { seriesTags: { id: number; name: string }[] };
-					return typed.seriesTags?.map((t) => t.name) ?? [];
-				}
-			})
-		);
-	});
-
-	const isPreviewFiltered = $derived(
-		!!previewFilterState.booruQuery || previewFilterState.paramFilters.length > 0
-	);
+	const isPreviewFiltered = $derived(isFilterActive(previewFilterState));
 </script>
 
 <svelte:head>
