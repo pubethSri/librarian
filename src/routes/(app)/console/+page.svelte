@@ -3,7 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { createBooksListQuery, createBooksByEventQuery } from '$lib/queries/books';
 	import { createBookfairsListQuery, createBookfairDetailQuery } from '$lib/queries/bookfairs';
-	import { createSeriesListQuery } from '$lib/queries/series';
 	import SeriesSearch from '$lib/components/forms/SeriesSearch.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
@@ -27,7 +26,6 @@
 		Package,
 		Plus,
 		X,
-		Trash2,
 		BookOpen,
 		Calendar,
 		MapPin,
@@ -39,7 +37,6 @@
 	import type {
 		SeriesListItem,
 		BookListItem,
-		BookfairWithCount,
 		StagedBookEntry,
 		BookLocation,
 		BookSource
@@ -329,20 +326,6 @@
 	const affectedBookIds = $derived.by<Set<string>>(() => {
 		return new Set(affectedBooks.map((b) => String(b.id)));
 	});
-
-	// What's the old value for an affected book?
-	function getOldValue(book: { location: string; source?: string | null; isDraft: boolean }): string {
-		if (bulkAction === 'location') return book.location === 'home' ? 'Home' : 'Apartment';
-		if (bulkAction === 'source') {
-			if (!book.source) return '—';
-			if (book.source === 'bookstore') return 'Bookstore';
-			if (book.source === 'bookfair') return 'Bookfair';
-			if (book.source === 'online') return 'Online';
-			return book.source;
-		}
-		if (bulkAction === 'isDraft') return book.isDraft ? 'Draft' : 'Not Draft';
-		return '';
-	}
 
 	async function executeBulkEdit() {
 		const affected = affectedBooks;
