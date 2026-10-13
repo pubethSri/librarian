@@ -7,7 +7,7 @@
 
 - **Current version:** v0.3 — **in progress**, re-scoped as the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**; plan B1–B7 in `ROADMAP.md`.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** Console Step 3 + follow-ups and **B1** passed your visual pass (A–I) and were merged to `main` (local, fast-forward). **B2** (bulk reading status + price) passed your check (J). Backfill ergonomics (row selection, filter value autocomplete, series-picker condition) added on `bookfair-release`, browser-checked by Claude — awaiting your check (K). **You backfill real reading history + prices next**, then B3.
+- **Latest:** Console Step 3 + follow-ups and **B1** passed your visual pass (A–I) and were merged to `main` (local, fast-forward). **B2** (bulk reading status + price) passed your check (J). Backfill ergonomics (row selection, filter value autocomplete, series-picker condition) added on `bookfair-release`, browser-checked by Claude — passed your check (K). **You backfill real reading history + prices next**, then B3.
 - **Next:** B3/B4 Field Mode → B5 Hitlist → B6 deploy (Tailscale) → B7 trial run → tag `v0.3`. `drizzle-zod` moved after the fair.
 
 ### Bookfair release progress (v0.3)
@@ -16,7 +16,7 @@
 | --- | ------------------------------------------------------------ | -------------------------------- |
 | B1  | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13) |
 | B2  | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)     |
-| B2+ | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (awaiting your check)    |
+| B2+ | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)     |
 | B3  | Field Mode 1 — "Do I own this?"                              | ⬜ Next                          |
 | B4  | Field Mode 2 — quick add                                     | ⬜                               |
 | B5  | Bookfair Hitlist (simple)                                    | ⬜                               |
