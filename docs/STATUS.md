@@ -7,20 +7,21 @@
 
 - **Current version:** v0.3 — **in progress**, re-scoped as the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**; plan B1–B7 in `ROADMAP.md`.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** Console Step 3 + follow-ups and **B1** passed your visual pass (A–I) and were merged to `main` (local, fast-forward). **B2** (bulk reading status + price) is on branch `bookfair-release`, browser-checked by Claude on the scratch DB — awaiting your check.
+- **Latest:** Console Step 3 + follow-ups and **B1** passed your visual pass (A–I) and were merged to `main` (local, fast-forward). **B2** (bulk reading status + price) passed your check (J). Backfill ergonomics (row selection, filter value autocomplete, series-picker condition) added on `bookfair-release`, browser-checked by Claude — awaiting your check (K). **You backfill real reading history + prices next**, then B3.
 - **Next:** B3/B4 Field Mode → B5 Hitlist → B6 deploy (Tailscale) → B7 trial run → tag `v0.3`. `drizzle-zod` moved after the fair.
 
 ### Bookfair release progress (v0.3)
 
-| #   | Item                                         | Status                           |
-| --- | -------------------------------------------- | -------------------------------- |
-| B1  | Reading status per book (mark read, re-read) | ✅ Done (visual pass 2026-10-13) |
-| B2  | Bulk Set reading status + Set price          | ✅ Done (awaiting your check)    |
-| B3  | Field Mode 1 — "Do I own this?"              | ⬜ Next                          |
-| B4  | Field Mode 2 — quick add                     | ⬜                               |
-| B5  | Bookfair Hitlist (simple)                    | ⬜                               |
-| B6  | Deploy on the laptop (Tailscale)             | ⬜                               |
-| B7  | Trial run + fixes → tag `v0.3`               | ⬜                               |
+| #   | Item                                                         | Status                           |
+| --- | ------------------------------------------------------------ | -------------------------------- |
+| B1  | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13) |
+| B2  | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)     |
+| B2+ | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (awaiting your check)    |
+| B3  | Field Mode 1 — "Do I own this?"                              | ⬜ Next                          |
+| B4  | Field Mode 2 — quick add                                     | ⬜                               |
+| B5  | Bookfair Hitlist (simple)                                    | ⬜                               |
+| B6  | Deploy on the laptop (Tailscale)                             | ⬜                               |
+| B7  | Trial run + fixes → tag `v0.3`                               | ⬜                               |
 
 - **Direction reset 2026-10-13:** Activity Log dropped; old feature-brainstorm items triaged (see Direction Decisions below and `ROADMAP.md` → "Not adopted").
 
@@ -311,6 +312,9 @@ Taken in the post-migration review of the project and an old feature brainstorm 
 - **Bulk _Set price_ is in scope** (B2), so prices and reading history are backfilled in one pass.
 - **Remote access via Tailscale** (private network, `tailscale serve` HTTPS); no public exposure, no Cloudflare Tunnel.
 - **`drizzle-zod` deferred past the fair** — reverses the earlier "before new columns" ordering; the Bookfair release adds no tables.
+- **Bulk edits never start a re-read** (a Read book set to Reading in bulk is skipped) and stamp no dates. Re-reads are a deliberate per-book act.
+- **Bulk-edit target:** a preview row selection, when present, replaces the conditions. The series condition matches by series id (picked), no longer by typed name.
+- **Spreadsheet-style inline editing of the preview** (edits become staged rows) — proposed 2026-10-13, under discussion; not scheduled.
 
 ## Environment
 
@@ -371,20 +375,21 @@ Taken in the post-migration review of the project and an old feature brainstorm 
 
 ## Changelog
 
-| Date       | Change                                                                                                                                                                                                                                                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-04-20 | Phase 0 completed — scaffolding, Docker, auth, tooling                                                                                                                                                                                                                                                             |
-| 2026-04-27 | Phase 1 completed — schema, migration, CRUD API, CSV export                                                                                                                                                                                                                                                        |
-| 2026-04-28 | Phase 2 completed — navigation shell, series/books/tags pages, data entry, inline editing                                                                                                                                                                                                                          |
-| 2026-04-29 | v0.2.1 — compact grouped sidebar, advanced filter, book editing, delete confirmation                                                                                                                                                                                                                               |
-| 2026-05-06 | v0.2.2 — sidebar polish, books edit from global page, Phase 2C planned, atomic workflow adopted                                                                                                                                                                                                                    |
-| 2026-05-06 | v0.2.3 start — unified filter engine, tag chips (series + books)                                                                                                                                                                                                                                                   |
-| 2026-05-22 | v0.2.3 — booru parser + booru search bar with autocomplete                                                                                                                                                                                                                                                         |
-| 2026-05-26 | v0.2.3 done — numeric `=` fix, edit dialog re-open fix, Phase 2 complete                                                                                                                                                                                                                                           |
-| 2026-05-27 | Phase 3 begun — bookfairs CRUD + detail, source/event linking, unified Console (Add Books + Bulk Edit)                                                                                                                                                                                                             |
-| 2026-07-01 | **Project revived after pause.** Docs consolidated (STATUS = single source of truth; PLAN → ROADMAP, no checkboxes; HANDOFF + note_to_self retired). Consolidation milestone inserted before the Phase 3 remainder.                                                                                                |
-| 2026-07-02 | Consolidation started — `filterEngine` unit tests added (58 tests total); Console overhaul Step 1 (`$derived.by` fix, svelte-check 31 → 0, browser-verified). Visual-test findings logged as Console follow-ups in `ROADMAP.md`.                                                                                   |
-| 2026-07-27 | Console overhaul Step 2 — decomposed into 4 panels + 2 rune stores + tested pure logic. `+page.svelte` 978 → 244 lines; 107 tests (was 58); Console svelte-check warnings 5 → 2. Behavior-preserving; browser smoke test pending.                                                                                  |
-| 2026-10-13 | Lint green — `prettier-plugin-tailwindcss` 0.5 → 0.8 (fixes the `.svelte` crash), repo-wide format, 84 ESLint errors fixed (`resolve()` navigation, `{#each}` keys, dead imports). `.gitattributes` forces LF for the Windows move.                                                                                |
-| 2026-10-13 | Moved to Windows 11 (DB restored, baseline green). Direction review: Activity Log dropped, brainstorm features triaged, v0.4 drafted as reading data → insights.                                                                                                                                                   |
-| 2026-10-13 | Step 2 browser-verified; **Console Step 3** (hooks + scope-switch fix) and Console follow-ups (filter keys, owned-volume awareness, location selector, volume condition, Apply confirm, bounded layout); `svelte-check` 6 → 0 errors; tests 107 → 116. Branch `consolidation/console-step3`, awaiting visual pass. |
+| Date       | Change                                                                                                                                                                                                                                                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-20 | Phase 0 completed — scaffolding, Docker, auth, tooling                                                                                                                                                                                                                                                                                       |
+| 2026-04-27 | Phase 1 completed — schema, migration, CRUD API, CSV export                                                                                                                                                                                                                                                                                  |
+| 2026-04-28 | Phase 2 completed — navigation shell, series/books/tags pages, data entry, inline editing                                                                                                                                                                                                                                                    |
+| 2026-04-29 | v0.2.1 — compact grouped sidebar, advanced filter, book editing, delete confirmation                                                                                                                                                                                                                                                         |
+| 2026-05-06 | v0.2.2 — sidebar polish, books edit from global page, Phase 2C planned, atomic workflow adopted                                                                                                                                                                                                                                              |
+| 2026-05-06 | v0.2.3 start — unified filter engine, tag chips (series + books)                                                                                                                                                                                                                                                                             |
+| 2026-05-22 | v0.2.3 — booru parser + booru search bar with autocomplete                                                                                                                                                                                                                                                                                   |
+| 2026-05-26 | v0.2.3 done — numeric `=` fix, edit dialog re-open fix, Phase 2 complete                                                                                                                                                                                                                                                                     |
+| 2026-05-27 | Phase 3 begun — bookfairs CRUD + detail, source/event linking, unified Console (Add Books + Bulk Edit)                                                                                                                                                                                                                                       |
+| 2026-07-01 | **Project revived after pause.** Docs consolidated (STATUS = single source of truth; PLAN → ROADMAP, no checkboxes; HANDOFF + note_to_self retired). Consolidation milestone inserted before the Phase 3 remainder.                                                                                                                          |
+| 2026-07-02 | Consolidation started — `filterEngine` unit tests added (58 tests total); Console overhaul Step 1 (`$derived.by` fix, svelte-check 31 → 0, browser-verified). Visual-test findings logged as Console follow-ups in `ROADMAP.md`.                                                                                                             |
+| 2026-07-27 | Console overhaul Step 2 — decomposed into 4 panels + 2 rune stores + tested pure logic. `+page.svelte` 978 → 244 lines; 107 tests (was 58); Console svelte-check warnings 5 → 2. Behavior-preserving; browser smoke test pending.                                                                                                            |
+| 2026-10-13 | Lint green — `prettier-plugin-tailwindcss` 0.5 → 0.8 (fixes the `.svelte` crash), repo-wide format, 84 ESLint errors fixed (`resolve()` navigation, `{#each}` keys, dead imports). `.gitattributes` forces LF for the Windows move.                                                                                                          |
+| 2026-10-13 | Moved to Windows 11 (DB restored, baseline green). Direction review: Activity Log dropped, brainstorm features triaged, v0.4 drafted as reading data → insights.                                                                                                                                                                             |
+| 2026-10-13 | Step 2 browser-verified; **Console Step 3** (hooks + scope-switch fix) and Console follow-ups (filter keys, owned-volume awareness, location selector, volume condition, Apply confirm, bounded layout); `svelte-check` 6 → 0 errors; tests 107 → 116. Branch `consolidation/console-step3`, awaiting visual pass.                           |
+| 2026-10-13 | Bookfair release begun: visual pass A–I → merged to `main`. **B1** reading status per book (rules in `$lib/reading`); **B2** bulk Set reading status (undated) + Set price; preview row selection (click / Shift+click / select visible), filter value autocomplete (`tag:`/`publisher:`/`name:`), series-picker condition. Tests 116 → 141. |
