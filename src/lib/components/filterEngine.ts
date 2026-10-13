@@ -119,6 +119,13 @@ export function applyUnifiedFilter<T extends FilterableRow>(
 			if (pf.op === '!=' ? hasTag : !hasTag) return false;
 			continue;
 		}
+		// `reading:` compares the reading status exactly — substring matching
+		// would make `reading:read` also match `unread`
+		if (pf.key === 'reading') {
+			const isMatch = String(row.readingStatus ?? '') === pf.value.toLowerCase();
+			if (pf.op === '!=' ? isMatch : !isMatch) return false;
+			continue;
+		}
 		if (!applyParamFilter(row, pf)) return false;
 	}
 

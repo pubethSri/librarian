@@ -3,7 +3,13 @@
 // toasts — everything here is deterministic and unit-testable. State lives in
 // the `.svelte.ts` stores; side effects live in the components.
 
-import type { BookListItem, BookLocation, CreateBookPayload, StagedBookEntry } from '$lib/types';
+import {
+	READING_STATUS_LABELS,
+	type BookListItem,
+	type BookLocation,
+	type CreateBookPayload,
+	type StagedBookEntry
+} from '$lib/types';
 import { applyUnifiedFilter, type UnifiedFilterState } from '$lib/components/filterEngine';
 import type { BookfairDefaults, BulkAction, Condition, PreviewRow, SeriesMeta } from './types';
 
@@ -12,6 +18,26 @@ import type { BookfairDefaults, BulkAction, Condition, PreviewRow, SeriesMeta } 
 export function formatPrice(price: string | number | null | undefined): string {
 	if (price === null || price === undefined || price === '') return '—';
 	return `฿${Number(price).toLocaleString()}`;
+}
+
+/** Display name of each bulk action (confirm dialog) */
+export const BULK_ACTION_LABELS: Record<Exclude<BulkAction, ''>, string> = {
+	location: 'Change location',
+	source: 'Set source',
+	isDraft: 'Set draft status',
+	readingStatus: 'Set reading status',
+	price: 'Set price'
+};
+
+/**
+ * The bulk-edit confirm text, e.g. `Apply "Set price" (฿175) to 5 books?`.
+ * Reading-status edits say they are undated, since that is easy to forget.
+ */
+export function bulkConfirmText(action: BulkAction, value: string, count: number): string {
+	if (!action) return '';
+	const books = `${count} book${count !== 1 ? 's' : ''}`;
+	const undated = action === 'readingStatus' ? ' No dates will be recorded.' : '';
+	return `Apply "${BULK_ACTION_LABELS[action]}" (${getActionLabel(action, value)}) to ${books}?${undated} This cannot be undone.`;
 }
 
 /** Display label for a bulk-action value (used in the preview's old→new arrow) */
@@ -23,6 +49,10 @@ export function getActionLabel(action: BulkAction, value: string): string {
 		if (value === 'online') return 'Online';
 	}
 	if (action === 'isDraft') return value === 'true' ? 'Draft' : 'Not Draft';
+	if (action === 'readingStatus') {
+		return READING_STATUS_LABELS[value as keyof typeof READING_STATUS_LABELS] ?? value;
+	}
+	if (action === 'price') return formatPrice(value);
 	return value;
 }
 
@@ -57,6 +87,9 @@ export function matchesConditions(book: BookListItem, conditions: Condition[]): 
 		switch (c.column) {
 			case 'series':
 				bookValue = book.seriesShortName.toLowerCase();
+				break;
+			case 'reading':
+				bookValue = book.readingStatus;
 				break;
 			case 'location':
 				bookValue = book.location;
@@ -96,6 +129,9 @@ export function toBulkUpdates(action: BulkAction, value: string): Record<string,
 	if (action === 'location') updates.location = value;
 	if (action === 'source') updates.source = value;
 	if (action === 'isDraft') updates.isDraft = value === 'true';
+	// Reading status is applied server-side through the reading rules, undated
+	if (action === 'readingStatus') updates.readingStatus = value;
+	if (action === 'price') updates.price = Number(value);
 	return updates;
 }
 
@@ -244,6 +280,7 @@ export function buildPreviewRows(
 		source: b.source,
 		price: b.price,
 		isDraft: b.isDraft,
+		readingStatus: b.readingStatus,
 		seriesTags: b.seriesTags ?? [],
 		...seriesFields(b.seriesId)
 	}));
@@ -256,6 +293,7 @@ export function buildPreviewRows(
 		source: e.source ?? null,
 		price: e.price != null ? String(e.price) : null,
 		isDraft: e.isDraft,
+		readingStatus: 'unread',
 		seriesTags: seriesById.get(e.seriesId)?.tags ?? [],
 		...seriesFields(e.seriesId)
 	}));

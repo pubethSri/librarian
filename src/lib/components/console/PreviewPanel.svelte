@@ -17,7 +17,7 @@
 	} from '$lib/console/logic';
 	import type { StagingStore } from '$lib/console/staging.svelte';
 	import type { BulkEditStore } from '$lib/console/bulkEdit.svelte';
-	import type { BookListItem } from '$lib/types';
+	import { READING_STATUS_LABELS, type BookListItem } from '$lib/types';
 	import type { SeriesMeta } from '$lib/console/types';
 
 	let {
@@ -102,6 +102,7 @@
 						<Table.Head>Series</Table.Head>
 						<Table.Head class="w-16 text-center">Vol.</Table.Head>
 						<Table.Head class="w-24">Location</Table.Head>
+						<Table.Head class="w-24">Reading</Table.Head>
 						<Table.Head class="w-24 text-right">Price</Table.Head>
 						<Table.Head class="w-10"></Table.Head>
 					</Table.Row>
@@ -158,8 +159,25 @@
 									</span>
 								{/if}
 							</Table.Cell>
+							<Table.Cell class="py-2 text-sm text-muted-foreground">
+								{READING_STATUS_LABELS[row.readingStatus]}
+								{#if isAffected && bulk.action === 'readingStatus' && row.readingStatus !== bulk.value && !(row.readingStatus === 'read' && bulk.value === 'reading')}
+									<span class="ml-1 inline-flex items-center gap-0.5 text-amber-600">
+										<ArrowRight class="h-2.5 w-2.5" />
+										<span class="text-xs font-medium"
+											>{getActionLabel('readingStatus', bulk.value)}</span
+										>
+									</span>
+								{/if}
+							</Table.Cell>
 							<Table.Cell class="py-2 text-right text-sm tabular-nums">
 								{formatPrice(row.price)}
+								{#if isAffected && bulk.action === 'price' && Number(row.price) !== Number(bulk.value)}
+									<span class="ml-1 inline-flex items-center gap-0.5 text-amber-600">
+										<ArrowRight class="h-2.5 w-2.5" />
+										<span class="text-xs font-medium">{getActionLabel('price', bulk.value)}</span>
+									</span>
+								{/if}
 							</Table.Cell>
 							<Table.Cell class="py-2">
 								{#if row.type === 'staged'}

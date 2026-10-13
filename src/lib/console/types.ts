@@ -1,6 +1,7 @@
 import type {
 	BookLocation,
 	BookSource,
+	ReadingStatus,
 	SeriesListItem,
 	SeriesStatus,
 	SeriesType
@@ -22,8 +23,8 @@ export type BookfairDefaults = {
 
 // ─── Bulk Edit ──────────────────────────────────────────────────────────────
 
-export type BulkAction = 'location' | 'source' | 'isDraft' | '';
-export type ConditionColumn = 'series' | 'volume' | 'location' | 'source' | 'isDraft';
+export type BulkAction = 'location' | 'source' | 'isDraft' | 'readingStatus' | 'price' | '';
+export type ConditionColumn = 'series' | 'volume' | 'reading' | 'location' | 'source' | 'isDraft';
 /** The ordering operators apply to the numeric `volume` column only */
 export type ConditionOp = '=' | '!=' | '>' | '<' | '>=' | '<=';
 
@@ -49,6 +50,8 @@ export type PreviewRow = {
 	source: BookSource | null;
 	price: string | null;
 	isDraft: boolean;
+	/** Current reading status; staged rows are Unread */
+	readingStatus: ReadingStatus;
 	seriesTags: { id: number; name: string }[];
 	// Series-level fields, so `publisher:` / `status:` / `type:` can match.
 	// `seriesType` because `type` already means existing-vs-staged here.

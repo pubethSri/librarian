@@ -3,10 +3,15 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { books } from '$lib/server/db/schema';
 import { inArray } from 'drizzle-orm';
+import { applyReadingStatus, isReadingStatus } from '$lib/server/reading';
 
 const ALLOWED_FIELDS = ['location', 'source', 'sourceEventId', 'isDraft', 'price'] as const;
 
 // PATCH /api/books/bulk — Bulk update books
+//
+// `updates` takes book columns from ALLOWED_FIELDS, and/or `readingStatus`,
+// which goes through the reading rules in $lib/reading with no dates stamped:
+// bulk edits are for backfilling history, whose dates are unknown.
 export const PATCH: RequestHandler = async ({ request }) => {
 	const body = await request.json();
 	const { bookIds, updates } = body as { bookIds: number[]; updates: Record<string, unknown> };
@@ -27,8 +32,20 @@ export const PATCH: RequestHandler = async ({ request }) => {
 		}
 	}
 
-	if (Object.keys(allowedUpdates).length === 0) {
+	const readingStatus = updates.readingStatus;
+	if (readingStatus !== undefined && !isReadingStatus(readingStatus)) {
+		throw error(400, 'Invalid reading status');
+	}
+
+	if (Object.keys(allowedUpdates).length === 0 && readingStatus === undefined) {
 		throw error(400, 'No valid fields to update');
+	}
+
+	// Price: a non-negative number (a lower bound — see STATUS.md), or null to clear
+	if (allowedUpdates.price !== undefined && allowedUpdates.price !== null) {
+		const price = Number(allowedUpdates.price);
+		if (!Number.isFinite(price) || price < 0) throw error(400, 'Invalid price');
+		allowedUpdates.price = price.toFixed(2);
 	}
 
 	// Clear sourceEventId if source is changed away from 'bookfair'
@@ -36,11 +53,24 @@ export const PATCH: RequestHandler = async ({ request }) => {
 		allowedUpdates.sourceEventId = null;
 	}
 
-	const rows = await db
-		.update(books)
-		.set({ ...allowedUpdates, updatedAt: new Date() })
-		.where(inArray(books.id, bookIds))
-		.returning();
+	const result = await db.transaction(async (tx) => {
+		let updated = 0;
+		if (Object.keys(allowedUpdates).length > 0) {
+			const rows = await tx
+				.update(books)
+				.set({ ...allowedUpdates, updatedAt: new Date() })
+				.where(inArray(books.id, bookIds))
+				.returning({ id: books.id });
+			updated = rows.length;
+		}
+		if (readingStatus !== undefined) {
+			const changed = await applyReadingStatus(tx, bookIds, readingStatus, null, {
+				allowReread: false
+			});
+			updated = Math.max(updated, changed);
+		}
+		return { updated };
+	});
 
-	return json({ updated: rows.length });
+	return json(result);
 };

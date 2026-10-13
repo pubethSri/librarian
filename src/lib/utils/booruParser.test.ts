@@ -188,6 +188,12 @@ describe('parseBooruQuery', () => {
 		expect(result.includeTags).toEqual([]);
 	});
 
+	it('parses reading: as a param', () => {
+		expect(parseBooruQuery('reading:unread').params).toEqual([
+			{ key: 'reading', op: '=', value: 'unread' }
+		]);
+	});
+
 	it('handles key: with no value as bare word', () => {
 		const result = parseBooruQuery('status:');
 		// Empty value after colon — treated as bare word

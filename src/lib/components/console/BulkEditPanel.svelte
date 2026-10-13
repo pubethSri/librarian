@@ -6,6 +6,7 @@
 	import { Plus, X, Zap } from '@lucide/svelte';
 	import type { BulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import type { Condition } from '$lib/console/types';
+	import { READING_STATUS_LABELS, type ReadingStatus } from '$lib/types';
 
 	let {
 		bulk,
@@ -16,6 +17,7 @@
 		onexecute: () => void;
 	} = $props();
 
+	const READING_STATUSES: ReadingStatus[] = ['unread', 'reading', 'read', 'dropped'];
 	const TEXT_OPS = ['=', '!='] as const;
 	const NUMERIC_OPS = ['=', '!=', '>', '<', '>=', '<='] as const;
 
@@ -44,6 +46,10 @@
 					Set source to
 				{:else if bulk.action === 'isDraft'}
 					Set draft status
+				{:else if bulk.action === 'readingStatus'}
+					Set reading status
+				{:else if bulk.action === 'price'}
+					Set price
 				{:else}
 					Select action...
 				{/if}
@@ -52,6 +58,8 @@
 				<Select.Item value="location" label="Change location to" />
 				<Select.Item value="source" label="Set source to" />
 				<Select.Item value="isDraft" label="Set draft status" />
+				<Select.Item value="readingStatus" label="Set reading status" />
+				<Select.Item value="price" label="Set price" />
 			</Select.Content>
 		</Select.Root>
 	</div>
@@ -101,6 +109,34 @@
 						<Select.Item value="false" label="Not Draft" />
 					</Select.Content>
 				</Select.Root>
+			{:else if bulk.action === 'readingStatus'}
+				<Select.Root type="single" bind:value={bulk.value}>
+					<Select.Trigger class="w-full">
+						{READING_STATUS_LABELS[bulk.value as ReadingStatus] ?? 'Select...'}
+					</Select.Trigger>
+					<Select.Content>
+						{#each READING_STATUSES as s (s)}
+							<Select.Item value={s} label={READING_STATUS_LABELS[s]} />
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<p class="text-xs text-muted-foreground">
+					Backfill: no dates are recorded. Re-reads are never created in bulk — a Read book set to
+					Reading is skipped (use Re-read on the book).
+				</p>
+			{:else if bulk.action === 'price'}
+				<Input
+					type="number"
+					min="0"
+					step="1"
+					placeholder="Price per book, e.g. 175"
+					class="h-9 tabular-nums"
+					value={bulk.value}
+					oninput={(e) => (bulk.value = e.currentTarget.value)}
+				/>
+				<p class="text-xs text-muted-foreground">
+					The list price is fine for books bought in a set — prices count as a lower bound.
+				</p>
 			{/if}
 		</div>
 	{/if}
@@ -142,6 +178,7 @@
 							<Select.Content>
 								<Select.Item value="series" label="series" />
 								<Select.Item value="volume" label="volume" />
+								<Select.Item value="reading" label="reading" />
 								<Select.Item value="location" label="location" />
 								<Select.Item value="source" label="source" />
 								<Select.Item value="isDraft" label="isDraft" />
@@ -165,6 +202,17 @@
 								<Select.Content>
 									<Select.Item value="home" label="home" />
 									<Select.Item value="apartment" label="apartment" />
+								</Select.Content>
+							</Select.Root>
+						{:else if cond.column === 'reading'}
+							<Select.Root type="single" bind:value={cond.value}>
+								<Select.Trigger class="h-8 flex-1 text-xs">
+									{cond.value || 'value...'}
+								</Select.Trigger>
+								<Select.Content>
+									{#each READING_STATUSES as s (s)}
+										<Select.Item value={s} label={s} />
+									{/each}
 								</Select.Content>
 							</Select.Root>
 						{:else if cond.column === 'source'}

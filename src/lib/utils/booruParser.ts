@@ -43,7 +43,8 @@ const KNOWN_PARAM_KEYS = new Set([
 	'source',
 	'draft',
 	'name',
-	'tag'
+	'tag',
+	'reading'
 ]);
 
 /** Value aliases — shorthand → canonical value */

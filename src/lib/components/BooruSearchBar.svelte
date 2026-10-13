@@ -37,6 +37,7 @@
 		'volumes:': { label: 'Volumes', values: ['>=', '<=', '>', '<'] },
 		'publisher:': { label: 'Publisher', values: [] },
 		'tag:': { label: 'Tag', values: [] },
+		'reading:': { label: 'Reading', values: ['unread', 'reading', 'read', 'dropped'] },
 		'name:': { label: 'Name', values: [] }
 	};
 

@@ -318,6 +318,22 @@ describe('paramFilters — tag', () => {
 	});
 });
 
+describe('paramFilters — reading', () => {
+	const row = (readingStatus: string) => ({ ...series(), readingStatus });
+
+	it('reading:read matches exactly — never unread', () => {
+		const s = state({ paramFilters: [{ key: 'reading', op: '=', value: 'read' }] });
+		expect(applyUnifiedFilter(row('read'), s, seriesOptions)).toBe(true);
+		expect(applyUnifiedFilter(row('unread'), s, seriesOptions)).toBe(false);
+	});
+
+	it('reading:!=read excludes only read', () => {
+		const s = state({ paramFilters: [{ key: 'reading', op: '!=', value: 'read' }] });
+		expect(applyUnifiedFilter(row('read'), s, seriesOptions)).toBe(false);
+		expect(applyUnifiedFilter(row('unread'), s, seriesOptions)).toBe(true);
+	});
+});
+
 // ─── Combined ────────────────────────────────────────────────────────────────
 
 describe('combined filters (AND across all categories)', () => {

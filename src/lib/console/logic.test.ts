@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	buildPreviewRows,
+	bulkConfirmText,
 	expandVolumeRange,
 	filterPreviewRows,
 	formatPrice,
@@ -179,6 +180,41 @@ describe('matchesConditions — volume', () => {
 		expect(matchesConditions(book(), [cond({ column: 'location', op: '>', value: 'home' })])).toBe(
 			false
 		);
+	});
+});
+
+describe('bulk edit — reading status and price (B2)', () => {
+	it('builds readingStatus and numeric price updates', () => {
+		expect(toBulkUpdates('readingStatus', 'read')).toEqual({ readingStatus: 'read' });
+		expect(toBulkUpdates('price', '175')).toEqual({ price: 175 });
+		expect(toBulkUpdates('price', '0')).toEqual({ price: 0 });
+	});
+
+	it('labels reading status and price values for the preview arrow', () => {
+		expect(getActionLabel('readingStatus', 'read')).toBe('Read');
+		expect(getActionLabel('price', '175')).toBe('฿175');
+	});
+
+	it('names every action in the confirm text, and warns that reading edits are undated', () => {
+		expect(bulkConfirmText('price', '175', 5)).toBe(
+			'Apply "Set price" (฿175) to 5 books? This cannot be undone.'
+		);
+		expect(bulkConfirmText('readingStatus', 'read', 1)).toBe(
+			'Apply "Set reading status" (Read) to 1 book? No dates will be recorded. This cannot be undone.'
+		);
+		expect(bulkConfirmText('location', 'home', 2)).toContain('"Change location" (Home)');
+	});
+
+	it('matches the reading condition exactly', () => {
+		const c = cond({ column: 'reading', value: 'read' });
+		expect(matchesConditions(book({ readingStatus: 'read' }), [c])).toBe(true);
+		expect(matchesConditions(book({ readingStatus: 'unread' }), [c])).toBe(false);
+		expect(matchesConditions(book({ readingStatus: 'unread' }), [{ ...c, op: '!=' }])).toBe(true);
+	});
+
+	it('carries reading status onto preview rows; staged rows are Unread', () => {
+		const rows = buildPreviewRows([book({ readingStatus: 'read' })], [staged({ volumeNumber: 2 })]);
+		expect(rows.map((r) => r.readingStatus)).toEqual(['read', 'unread']);
 	});
 });
 

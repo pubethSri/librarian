@@ -12,7 +12,7 @@
 	import PreviewPanel from '$lib/components/console/PreviewPanel.svelte';
 	import BulkEditPanel from '$lib/components/console/BulkEditPanel.svelte';
 	import AddBooksPanel from '$lib/components/console/AddBooksPanel.svelte';
-	import { toBatchPayload, toBulkUpdates } from '$lib/console/logic';
+	import { bulkConfirmText, toBatchPayload, toBulkUpdates } from '$lib/console/logic';
 	import { createStagingStore } from '$lib/console/staging.svelte';
 	import { createBulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
@@ -206,7 +206,7 @@
 <DeleteConfirmDialog
 	bind:open={showBulkConfirm}
 	title="Confirm Bulk Edit"
-	description={`Apply "${bulk.action === 'location' ? 'Change location' : bulk.action === 'source' ? 'Set source' : 'Set draft status'}" to ${bulk.affectedBooks.length} book${bulk.affectedBooks.length !== 1 ? 's' : ''}? This cannot be undone.`}
+	description={bulkConfirmText(bulk.action, bulk.value, bulk.affectedBooks.length)}
 	confirmLabel="Apply"
 	loadingLabel="Applying..."
 	destructive={false}
