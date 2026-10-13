@@ -136,7 +136,13 @@
 			{#if source === 'bookfair' && bookfairsQuery.data && bookfairsQuery.data.length > 0}
 				<div class="space-y-2">
 					<Label>Bookfair Event</Label>
-					<Select.Root type="single" bind:value={sourceEventId}>
+					<Select.Root
+						type="single"
+						bind:value={
+							() => (sourceEventId ? String(sourceEventId) : ''),
+							(v) => (sourceEventId = v ? Number(v) : null)
+						}
+					>
 						<Select.Trigger class="w-full">
 							{#if sourceEventId}
 								{@const selected = bookfairsQuery.data.find((bf) => bf.id === sourceEventId)}
@@ -147,7 +153,7 @@
 						</Select.Trigger>
 						<Select.Content>
 							{#each bookfairsQuery.data as bf (bf.id)}
-								<Select.Item value={bf.id} label={bf.name} />
+								<Select.Item value={String(bf.id)} label={bf.name} />
 							{/each}
 						</Select.Content>
 					</Select.Root>

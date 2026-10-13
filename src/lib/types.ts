@@ -176,7 +176,10 @@ export type CreateBookPayload = {
 	isDraft?: boolean;
 };
 
-export type UpdateBookPayload = Partial<Omit<CreateBookPayload, 'seriesId'>>;
+/** `sourceEventId: null` clears the link (sent when source moves off bookfair) */
+export type UpdateBookPayload = Partial<Omit<CreateBookPayload, 'seriesId' | 'sourceEventId'>> & {
+	sourceEventId?: number | null;
+};
 
 // ─── Bookfair Payloads ──────────────────────────────────────────────────────
 
