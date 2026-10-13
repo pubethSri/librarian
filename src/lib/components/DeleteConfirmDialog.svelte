@@ -11,6 +11,11 @@
 		loading?: boolean;
 		/** If set, user must type this exact text to enable the delete button */
 		confirmText?: string;
+		/** Confirm button text, and its in-progress text — for non-delete confirms */
+		confirmLabel?: string;
+		loadingLabel?: string;
+		/** Red destructive styling for the confirm button (default true) */
+		destructive?: boolean;
 		onconfirm: () => void;
 		oncancel: () => void;
 	};
@@ -21,6 +26,9 @@
 		description,
 		loading = false,
 		confirmText,
+		confirmLabel = 'Delete',
+		loadingLabel = 'Deleting...',
+		destructive = true,
 		onconfirm,
 		oncancel
 	}: Props = $props();
@@ -59,12 +67,12 @@
 
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel onclick={oncancel} disabled={loading}>Cancel</AlertDialog.Cancel>
-			<Button variant="destructive" onclick={onconfirm} disabled={loading || !canConfirm}>
-				{#if loading}
-					Deleting...
-				{:else}
-					Delete
-				{/if}
+			<Button
+				variant={destructive ? 'destructive' : 'default'}
+				onclick={onconfirm}
+				disabled={loading || !canConfirm}
+			>
+				{loading ? loadingLabel : confirmLabel}
 			</Button>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

@@ -152,6 +152,34 @@ describe('matchesConditions', () => {
 	});
 });
 
+describe('matchesConditions — volume', () => {
+	const vol = (v: string) => book({ volumeNumber: v });
+
+	it('compares volume numerically with all six operators', () => {
+		const at = (op: Condition['op'], value: string) =>
+			['1', '4.5', '10'].filter((v) =>
+				matchesConditions(vol(v), [cond({ column: 'volume', op, value })])
+			);
+		expect(at('=', '10')).toEqual(['10']);
+		expect(at('!=', '10')).toEqual(['1', '4.5']);
+		expect(at('>', '4')).toEqual(['4.5', '10']);
+		expect(at('<', '4.5')).toEqual(['1']);
+		expect(at('>=', '4.5')).toEqual(['4.5', '10']);
+		expect(at('<=', '4.5')).toEqual(['1', '4.5']);
+	});
+
+	it('matches nothing for a blank or non-numeric volume', () => {
+		expect(matchesConditions(vol('1'), [cond({ column: 'volume', value: '' })])).toBe(false);
+		expect(matchesConditions(vol('1'), [cond({ column: 'volume', value: 'abc' })])).toBe(false);
+	});
+
+	it('matches nothing when an ordering op lands on a text column', () => {
+		expect(matchesConditions(book(), [cond({ column: 'location', op: '>', value: 'home' })])).toBe(
+			false
+		);
+	});
+});
+
 // ─── toAffectedIds ───────────────────────────────────────────────────────────
 
 describe('toAffectedIds', () => {

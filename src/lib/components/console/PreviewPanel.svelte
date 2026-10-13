@@ -179,10 +179,17 @@
 		{/if}
 	</div>
 
-	<!-- Bottom bar -->
-	{#if staging.entries.length > 0 || bulk.affectedBooks.length > 0 || isPreviewFiltered}
+	<!-- Bottom bar — always shown, so the count is visible whatever the list length -->
+	{#if !isLoading}
 		<div class="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5">
 			<div class="flex items-center gap-3 text-sm text-muted-foreground">
+				<span class="text-xs tabular-nums">
+					{#if isPreviewFiltered}
+						{filteredPreviewRows.length} / {previewRows.length} shown
+					{:else}
+						{previewRows.length} book{previewRows.length !== 1 ? 's' : ''}
+					{/if}
+				</span>
 				{#if staging.entries.length > 0}
 					<span class="flex items-center gap-1">
 						<Package class="h-3.5 w-3.5" />
@@ -193,11 +200,6 @@
 					<span class="flex items-center gap-1 text-amber-600">
 						<Pencil class="h-3.5 w-3.5" />
 						{bulk.affectedBooks.length} affected
-					</span>
-				{/if}
-				{#if isPreviewFiltered}
-					<span class="text-xs">
-						{filteredPreviewRows.length} / {previewRows.length} shown
 					</span>
 				{/if}
 			</div>

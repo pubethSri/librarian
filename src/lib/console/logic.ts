@@ -32,6 +32,27 @@ export function getActionLabel(action: BulkAction, value: string): string {
 export function matchesConditions(book: BookListItem, conditions: Condition[]): boolean {
 	if (conditions.length === 0) return true;
 	return conditions.every((c) => {
+		if (c.column === 'volume') {
+			// Blank or non-numeric matches nothing, like a blank value elsewhere
+			if (c.value.trim() === '' || Number.isNaN(Number(c.value))) return false;
+			const vol = Number(book.volumeNumber);
+			const target = Number(c.value);
+			switch (c.op) {
+				case '=':
+					return vol === target;
+				case '!=':
+					return vol !== target;
+				case '>':
+					return vol > target;
+				case '<':
+					return vol < target;
+				case '>=':
+					return vol >= target;
+				case '<=':
+					return vol <= target;
+			}
+		}
+
 		let bookValue: string;
 		switch (c.column) {
 			case 'series':
@@ -52,7 +73,9 @@ export function matchesConditions(book: BookListItem, conditions: Condition[]): 
 		const condValue = c.column === 'series' ? c.value.toLowerCase() : c.value;
 		if (c.op === '=') return bookValue === condValue;
 		if (c.op === '!=') return bookValue !== condValue;
-		return true;
+		// An ordering op on a text column is meaningless — match nothing rather
+		// than everything, so a stale op can never widen a bulk edit
+		return false;
 	});
 }
 

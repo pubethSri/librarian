@@ -5,6 +5,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Plus, X, Zap } from '@lucide/svelte';
 	import type { BulkEditStore } from '$lib/console/bulkEdit.svelte';
+	import type { Condition } from '$lib/console/types';
 
 	let {
 		bulk,
@@ -14,6 +15,15 @@
 		/** Opens the confirm dialog — the page owns the dialog and the mutation */
 		onexecute: () => void;
 	} = $props();
+
+	const TEXT_OPS = ['=', '!='] as const;
+	const NUMERIC_OPS = ['=', '!=', '>', '<', '>=', '<='] as const;
+
+	/** Switching column invalidates the old value, and the op unless it's `=`/`!=` */
+	function resetForColumn(cond: Condition) {
+		cond.value = '';
+		if (cond.column !== 'volume' && cond.op !== '=' && cond.op !== '!=') cond.op = '=';
+	}
 </script>
 
 <div class="space-y-5">
@@ -121,12 +131,17 @@
 						<span class="w-10 shrink-0 text-xs text-muted-foreground"
 							>{i === 0 ? 'WHERE' : 'AND'}</span
 						>
-						<Select.Root type="single" bind:value={cond.column}>
+						<Select.Root
+							type="single"
+							bind:value={cond.column}
+							onValueChange={() => resetForColumn(cond)}
+						>
 							<Select.Trigger class="h-8 flex-1 text-xs">
 								{cond.column}
 							</Select.Trigger>
 							<Select.Content>
 								<Select.Item value="series" label="series" />
+								<Select.Item value="volume" label="volume" />
 								<Select.Item value="location" label="location" />
 								<Select.Item value="source" label="source" />
 								<Select.Item value="isDraft" label="isDraft" />
@@ -137,8 +152,9 @@
 								{cond.op}
 							</Select.Trigger>
 							<Select.Content>
-								<Select.Item value="=" label="=" />
-								<Select.Item value="!=" label="!=" />
+								{#each cond.column === 'volume' ? NUMERIC_OPS : TEXT_OPS as op (op)}
+									<Select.Item value={op} label={op} />
+								{/each}
 							</Select.Content>
 						</Select.Root>
 						{#if cond.column === 'location'}
@@ -172,6 +188,16 @@
 									<Select.Item value="false" label="false" />
 								</Select.Content>
 							</Select.Root>
+						{:else if cond.column === 'volume'}
+							<Input
+								type="number"
+								min="0"
+								step="0.5"
+								class="h-8 min-w-16 flex-1 text-xs tabular-nums"
+								placeholder="vol..."
+								value={cond.value}
+								oninput={(e) => (cond.value = e.currentTarget.value)}
+							/>
 						{:else}
 							<Input class="h-8 flex-1 text-xs" placeholder="value..." bind:value={cond.value} />
 						{/if}

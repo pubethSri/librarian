@@ -23,8 +23,9 @@ export type BookfairDefaults = {
 // ─── Bulk Edit ──────────────────────────────────────────────────────────────
 
 export type BulkAction = 'location' | 'source' | 'isDraft' | '';
-export type ConditionColumn = 'series' | 'location' | 'source' | 'isDraft';
-export type ConditionOp = '=' | '!=';
+export type ConditionColumn = 'series' | 'volume' | 'location' | 'source' | 'isDraft';
+/** The ordering operators apply to the numeric `volume` column only */
+export type ConditionOp = '=' | '!=' | '>' | '<' | '>=' | '<=';
 
 export type Condition = {
 	id: string;

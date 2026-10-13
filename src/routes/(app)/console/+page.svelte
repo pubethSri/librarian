@@ -147,7 +147,12 @@
 	<meta name="description" content="Bulk entry and editing workbench." />
 </svelte:head>
 
-<div class="flex h-full flex-col gap-0">
+<!--
+	Bounded to the viewport (minus the 3rem header and the layout's vertical
+	padding) so the two panels scroll independently and the preview's commit
+	bar stays on screen however long the list is.
+-->
+<div class="flex h-[calc(100dvh-6rem)] flex-col gap-0 md:h-[calc(100dvh-7rem)]">
 	<!-- Scope Bar -->
 	<ScopeBar
 		{scopeType}
@@ -202,6 +207,9 @@
 	bind:open={showBulkConfirm}
 	title="Confirm Bulk Edit"
 	description={`Apply "${bulk.action === 'location' ? 'Change location' : bulk.action === 'source' ? 'Set source' : 'Set draft status'}" to ${bulk.affectedBooks.length} book${bulk.affectedBooks.length !== 1 ? 's' : ''}? This cannot be undone.`}
+	confirmLabel="Apply"
+	loadingLabel="Applying..."
+	destructive={false}
 	loading={bulkMutation.isPending}
 	onconfirm={executeBulkEdit}
 	oncancel={() => (showBulkConfirm = false)}
