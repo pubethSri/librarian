@@ -10,16 +10,24 @@
 	import { expandVolumeRange, nextVolumeFor } from '$lib/console/logic';
 	import type { StagingStore } from '$lib/console/staging.svelte';
 	import type { BookfairDefaults } from '$lib/console/types';
-	import type { BookListItem, SeriesListItem } from '$lib/types';
+	import {
+		BOOK_LOCATION_LABELS,
+		type BookListItem,
+		type BookLocation,
+		type SeriesListItem
+	} from '$lib/types';
 
 	let {
-		books,
+		ownedBooks,
 		staging,
 		defaults,
 		initialSeriesId
 	}: {
-		/** Books in the current scope — used for de-duplication and volume suggestion */
-		books: BookListItem[];
+		/**
+		 * Every owned book, regardless of scope — used for de-duplication and the
+		 * next-volume suggestion, so a series owned outside the scope still counts
+		 */
+		ownedBooks: BookListItem[];
 		staging: StagingStore;
 		/** Bookfair-scope field defaults, or null outside a bookfair scope */
 		defaults: BookfairDefaults | null;
@@ -32,13 +40,14 @@
 	let selectedSeriesName = $state('');
 	let volumeFrom = $state<number>(1);
 	let volumeTo = $state<number>(1);
-	let batchPrice = $state<string>('');
+	let batchPrice = $state<string | number | null>('');
+	let location = $state<BookLocation>('apartment');
 
 	function handleSeriesSelect(series: SeriesListItem) {
 		selectedSeriesId = series.id;
 		selectedSeriesName = series.shortName;
 		// Auto-set volumeFrom to next volume
-		const next = nextVolumeFor(books, staging.entries, series.id);
+		const next = nextVolumeFor(ownedBooks, staging.entries, series.id);
 		volumeFrom = next;
 		volumeTo = next;
 	}
@@ -50,8 +59,9 @@
 			volumeFrom,
 			volumeTo,
 			price: batchPrice,
+			location,
 			defaults,
-			existing: books,
+			existing: ownedBooks,
 			staged: staging.entries
 		});
 
@@ -80,8 +90,8 @@
 			class="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
 		>
 			<p>
-				<span class="font-medium text-foreground">Bookfair mode:</span> Source, location, and date are
-				pre-filled from the event.
+				<span class="font-medium text-foreground">Bookfair mode:</span> Source and date are pre-filled
+				from the event.
 			</p>
 		</div>
 	{/if}
@@ -118,6 +128,24 @@
 					{volumeTo - volumeFrom + 1} vols
 				</Badge>
 			{/if}
+		</div>
+	</div>
+
+	<!-- Location -->
+	<div class="space-y-2">
+		<Label>Location</Label>
+		<div class="grid grid-cols-2 gap-2">
+			{#each ['apartment', 'home'] as const as loc (loc)}
+				<Button
+					type="button"
+					variant={location === loc ? 'default' : 'outline'}
+					class="h-9"
+					aria-pressed={location === loc}
+					onclick={() => (location = loc)}
+				>
+					{BOOK_LOCATION_LABELS[loc]}
+				</Button>
+			{/each}
 		</div>
 	</div>
 

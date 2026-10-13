@@ -15,7 +15,7 @@ import {
 } from './logic';
 import type { Condition, SeriesMeta } from './types';
 import { createEmptyFilterState, type UnifiedFilterState } from '$lib/components/filterEngine';
-import type { BookListItem, StagedBookEntry } from '$lib/types';
+import type { BookListItem, BookLocation, StagedBookEntry } from '$lib/types';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 // Characterization tests: these lock in the CURRENT behavior of the Console's
@@ -68,6 +68,7 @@ const rangeInput = {
 	volumeFrom: 1,
 	volumeTo: 1,
 	price: '',
+	location: 'apartment' as BookLocation,
 	defaults: null,
 	existing: [] as BookListItem[],
 	staged: [] as StagedBookEntry[]
@@ -232,13 +233,11 @@ describe('expandVolumeRange', () => {
 		});
 	});
 
-	it('accepts 51 volumes and rejects 52, despite the "Maximum 50" message', () => {
-		// Known off-by-one: the guard is `volumeTo - volumeFrom > 50`, so the
-		// real limit is 51 volumes. Preserved verbatim from the original.
-		const ok = expandVolumeRange({ ...rangeInput, volumeFrom: 1, volumeTo: 51 });
+	it('accepts 50 volumes and rejects 51, matching the "Maximum 50" message', () => {
+		const ok = expandVolumeRange({ ...rangeInput, volumeFrom: 1, volumeTo: 50 });
 		expect(ok.ok).toBe(true);
 
-		const tooMany = expandVolumeRange({ ...rangeInput, volumeFrom: 1, volumeTo: 52 });
+		const tooMany = expandVolumeRange({ ...rangeInput, volumeFrom: 1, volumeTo: 51 });
 		expect(tooMany).toEqual({ ok: false, error: 'Maximum 50 volumes per batch' });
 	});
 
@@ -289,8 +288,8 @@ describe('expandVolumeRange', () => {
 		expect(result.skipped).toEqual(['Volume 1 of "Mushoku" is already staged']);
 	});
 
-	it('defaults location to home and leaves bookfair fields unset without defaults', () => {
-		const result = expandVolumeRange({ ...rangeInput });
+	it('uses the chosen location and leaves bookfair fields unset without defaults', () => {
+		const result = expandVolumeRange({ ...rangeInput, location: 'home' });
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
 		expect(result.entries[0]).toMatchObject({
@@ -308,7 +307,6 @@ describe('expandVolumeRange', () => {
 			defaults: {
 				source: 'bookfair',
 				sourceEventId: 3,
-				location: 'apartment',
 				boughtAt: '2026-03-01'
 			}
 		});
@@ -322,11 +320,18 @@ describe('expandVolumeRange', () => {
 		});
 	});
 
-	it('drops a zero price to undefined (known quirk of the truthiness check)', () => {
+	it('keeps a zero price, and treats a blank or null price as untracked', () => {
 		const zero = expandVolumeRange({ ...rangeInput, price: 0 });
 		expect(zero.ok).toBe(true);
 		if (!zero.ok) return;
-		expect(zero.entries[0].price).toBeUndefined();
+		expect(zero.entries[0].price).toBe(0);
+
+		for (const price of ['', null]) {
+			const blank = expandVolumeRange({ ...rangeInput, price });
+			expect(blank.ok).toBe(true);
+			if (!blank.ok) return;
+			expect(blank.entries[0].price).toBeUndefined();
+		}
 
 		const paid = expandVolumeRange({ ...rangeInput, price: '350' });
 		expect(paid.ok).toBe(true);

@@ -3,7 +3,7 @@
 // toasts — everything here is deterministic and unit-testable. State lives in
 // the `.svelte.ts` stores; side effects live in the components.
 
-import type { BookListItem, CreateBookPayload, StagedBookEntry } from '$lib/types';
+import type { BookListItem, BookLocation, CreateBookPayload, StagedBookEntry } from '$lib/types';
 import { applyUnifiedFilter, type UnifiedFilterState } from '$lib/components/filterEngine';
 import type { BookfairDefaults, BulkAction, Condition, PreviewRow, SeriesMeta } from './types';
 
@@ -80,8 +80,8 @@ export function toBulkUpdates(action: BulkAction, value: string): Record<string,
 
 /**
  * The next volume to suggest for a series: one past the highest volume already
- * owned or staged. Note the caller passes the *scoped* book list, so a series
- * owned outside the current scope still suggests 1 — a known follow-up.
+ * owned or staged. Pass *all* owned books, not the scoped list — otherwise a
+ * series owned outside a bookfair scope would suggest volume 1.
  */
 export function nextVolumeFor(
 	books: BookListItem[],
@@ -101,8 +101,10 @@ export type ExpandVolumeRangeInput = {
 	seriesName: string;
 	volumeFrom: number;
 	volumeTo: number;
-	price: string | number;
+	price: string | number | null;
+	location: BookLocation;
 	defaults: BookfairDefaults | null;
+	/** Every owned book (not just the scoped ones), for duplicate detection */
 	existing: BookListItem[];
 	staged: StagedBookEntry[];
 };
@@ -120,16 +122,27 @@ export type ExpandVolumeRangeResult =
  * volume range on a hard failure.
  */
 export function expandVolumeRange(input: ExpandVolumeRangeInput): ExpandVolumeRangeResult {
-	const { seriesId, seriesName, volumeFrom, volumeTo, price, defaults, existing, staged } = input;
+	const {
+		seriesId,
+		seriesName,
+		volumeFrom,
+		volumeTo,
+		price,
+		location,
+		defaults,
+		existing,
+		staged
+	} = input;
 
 	if (!seriesId) return { ok: false, error: 'Please select a series' };
 	if (volumeFrom <= 0 || volumeTo <= 0) {
 		return { ok: false, error: 'Volume numbers must be positive' };
 	}
 	if (volumeTo < volumeFrom) return { ok: false, error: 'End volume must be ≥ start volume' };
-	// NOTE: this is off by one against its own message — a range of 52 volumes
-	// is what actually trips it. Preserved as-is; see the Console follow-ups.
-	if (volumeTo - volumeFrom > 50) return { ok: false, error: 'Maximum 50 volumes per batch' };
+	if (volumeTo - volumeFrom + 1 > 50) return { ok: false, error: 'Maximum 50 volumes per batch' };
+
+	// A blank price means "not tracked"; zero is a real price (a free book)
+	const parsedPrice = price === '' || price === null ? undefined : Number(price);
 
 	const entries: Omit<StagedBookEntry, 'tempId'>[] = [];
 	const skipped: string[] = [];
@@ -152,11 +165,11 @@ export function expandVolumeRange(input: ExpandVolumeRangeInput): ExpandVolumeRa
 			seriesId,
 			seriesShortName: seriesName,
 			volumeNumber: v,
-			location: defaults?.location ?? 'home',
+			location,
 			source: defaults?.source,
 			sourceEventId: defaults?.sourceEventId,
 			boughtAt: defaults?.boughtAt,
-			price: price ? Number(price) : undefined,
+			price: Number.isNaN(parsedPrice) ? undefined : parsedPrice,
 			isDraft: false
 		});
 	}

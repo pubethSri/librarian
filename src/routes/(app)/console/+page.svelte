@@ -17,7 +17,7 @@
 	import { createBulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { toast } from 'svelte-sonner';
-	import type { BookListItem, BookLocation, BookSource } from '$lib/types';
+	import type { BookListItem, BookSource } from '$lib/types';
 	import type { ScopeType, SeriesMeta } from '$lib/console/types';
 
 	// ─── URL Params / Scope ─────────────────────────────────────────────────────
@@ -76,7 +76,6 @@
 		return {
 			source: 'bookfair' as BookSource,
 			sourceEventId: bf.id,
-			location: 'apartment' as BookLocation,
 			boughtAt: bf.date
 		};
 	});
@@ -183,7 +182,7 @@
 
 				<Tabs.Content value="add" class="flex-1 overflow-auto p-4">
 					<AddBooksPanel
-						books={scopedBooks}
+						ownedBooks={allBooksQuery.data ?? []}
 						{staging}
 						defaults={bookfairDefaults}
 						{initialSeriesId}

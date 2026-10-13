@@ -10,11 +10,13 @@ import type {
 
 export type ScopeType = 'all' | 'bookfair' | 'series';
 
-/** Field defaults derived from a bookfair-scoped Console session */
+/**
+ * Field defaults derived from a bookfair-scoped Console session. Location is
+ * not among them: the Add Books form owns it (defaulting to Apartment).
+ */
 export type BookfairDefaults = {
 	source: BookSource;
 	sourceEventId: number;
-	location: BookLocation;
 	boughtAt: string;
 };
 
