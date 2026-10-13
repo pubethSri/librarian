@@ -7,8 +7,21 @@
 
 - **Current version:** v0.3 — **in progress**, re-scoped as the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**; plan B1–B7 in `ROADMAP.md`.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** Console overhaul **Step 2 browser-verified**, **Step 3 done** (batch/bulk hooks + scope-switch fix), **every logged Console follow-up bug/behavior item fixed**, and `svelte-check` errors 6 → 0. All on branch `consolidation/console-step3` (not yet merged), browser-pre-checked by Claude against a scratch DB copy — **awaiting your visual pass** (checklist below).
-- **Next:** B1 reading status → B2 backfill tools → B3/B4 Field Mode → B5 Hitlist → B6 deploy (Tailscale) → B7 trial run → tag `v0.3`. Work continues stacked on the same branch; your visual pass covers it before merge. `drizzle-zod` moved after the fair.
+- **Latest:** Console Step 3 + follow-ups and **B1** passed your visual pass (A–I) and were merged to `main` (local, fast-forward). **B2** (bulk reading status + price) is on branch `bookfair-release`, browser-checked by Claude on the scratch DB — awaiting your check.
+- **Next:** B3/B4 Field Mode → B5 Hitlist → B6 deploy (Tailscale) → B7 trial run → tag `v0.3`. `drizzle-zod` moved after the fair.
+
+### Bookfair release progress (v0.3)
+
+| #   | Item                                         | Status                           |
+| --- | -------------------------------------------- | -------------------------------- |
+| B1  | Reading status per book (mark read, re-read) | ✅ Done (visual pass 2026-10-13) |
+| B2  | Bulk Set reading status + Set price          | ✅ Done (awaiting your check)    |
+| B3  | Field Mode 1 — "Do I own this?"              | ⬜ Next                          |
+| B4  | Field Mode 2 — quick add                     | ⬜                               |
+| B5  | Bookfair Hitlist (simple)                    | ⬜                               |
+| B6  | Deploy on the laptop (Tailscale)             | ⬜                               |
+| B7  | Trial run + fixes → tag `v0.3`               | ⬜                               |
+
 - **Direction reset 2026-10-13:** Activity Log dropped; old feature-brainstorm items triaged (see Direction Decisions below and `ROADMAP.md` → "Not adopted").
 
 ### Phase 3 progress
