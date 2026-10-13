@@ -111,6 +111,14 @@ export function applyUnifiedFilter<T extends FilterableRow>(
 
 	// 5. Parameter filters (from booru syntax)
 	for (const pf of state.paramFilters) {
+		// `tag:` matches against the row's tags, not a column
+		if (pf.key === 'tag') {
+			if (!getTagNames) continue;
+			const rowTags = getTagNames(row).map((t) => t.toLowerCase());
+			const hasTag = rowTags.some((rt) => rt.includes(pf.value.toLowerCase()));
+			if (pf.op === '!=' ? hasTag : !hasTag) return false;
+			continue;
+		}
 		if (!applyParamFilter(row, pf)) return false;
 	}
 

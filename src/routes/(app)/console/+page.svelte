@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { createBooksListQuery, createBooksByEventQuery } from '$lib/queries/books';
 	import { createBookfairsListQuery, createBookfairDetailQuery } from '$lib/queries/bookfairs';
+	import { createSeriesListQuery } from '$lib/queries/series';
 	import { createBatchBookMutation } from '$lib/queries/batch';
 	import { createBulkBookUpdateMutation } from '$lib/queries/bulk';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
@@ -17,7 +18,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { toast } from 'svelte-sonner';
 	import type { BookListItem, BookLocation, BookSource } from '$lib/types';
-	import type { ScopeType } from '$lib/console/types';
+	import type { ScopeType, SeriesMeta } from '$lib/console/types';
 
 	// ─── URL Params / Scope ─────────────────────────────────────────────────────
 	const urlScope = $page.url.searchParams.get('scope');
@@ -31,6 +32,12 @@
 	// ─── Queries ────────────────────────────────────────────────────────────────
 	const allBooksQuery = createBooksListQuery();
 	const bookfairsQuery = createBookfairsListQuery();
+	const seriesQuery = createSeriesListQuery();
+
+	// Series fields for the preview filter (publisher/status/type, staged-row tags)
+	const seriesById = $derived(
+		new Map<number, SeriesMeta>((seriesQuery.data ?? []).map((s) => [s.id, s]))
+	);
 
 	// Bookfair detail query for scope info
 	const bookfairDetailId = $derived(scopeType === 'bookfair' && scopeId ? scopeId : 0);
@@ -156,6 +163,7 @@
 		<!-- Preview Panel (left) -->
 		<PreviewPanel
 			books={scopedBooks}
+			{seriesById}
 			{isLoading}
 			{staging}
 			{bulk}

@@ -179,6 +179,15 @@ describe('parseBooruQuery', () => {
 		expect(result.params).toEqual([{ key: 'status', op: '=', value: 'ended' }]);
 	});
 
+	it('parses tag: as a param rather than a bare word', () => {
+		const result = parseBooruQuery('tag:isekai tag:!=harem');
+		expect(result.params).toEqual([
+			{ key: 'tag', op: '=', value: 'isekai' },
+			{ key: 'tag', op: '!=', value: 'harem' }
+		]);
+		expect(result.includeTags).toEqual([]);
+	});
+
 	it('handles key: with no value as bare word', () => {
 		const result = parseBooruQuery('status:');
 		// Empty value after colon — treated as bare word

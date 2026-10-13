@@ -5,7 +5,7 @@
 
 import type { BookListItem, CreateBookPayload, StagedBookEntry } from '$lib/types';
 import { applyUnifiedFilter, type UnifiedFilterState } from '$lib/components/filterEngine';
-import type { BookfairDefaults, BulkAction, Condition, PreviewRow } from './types';
+import type { BookfairDefaults, BulkAction, Condition, PreviewRow, SeriesMeta } from './types';
 
 // ─── Display helpers ────────────────────────────────────────────────────────
 
@@ -180,8 +180,25 @@ export function toBatchPayload(entries: StagedBookEntry[]): CreateBookPayload[] 
 
 // ─── Preview ────────────────────────────────────────────────────────────────
 
-/** Merge existing + staged books into one list, sorted by series then volume */
-export function buildPreviewRows(books: BookListItem[], staged: StagedBookEntry[]): PreviewRow[] {
+/**
+ * Merge existing + staged books into one list, sorted by series then volume.
+ *
+ * `seriesById` supplies the series-level fields (publisher/status/type, and
+ * tags for staged rows). A series missing from it yields nulls and no tags.
+ */
+export function buildPreviewRows(
+	books: BookListItem[],
+	staged: StagedBookEntry[],
+	seriesById: Map<number, SeriesMeta> = new Map()
+): PreviewRow[] {
+	const seriesFields = (seriesId: number) => {
+		const s = seriesById.get(seriesId);
+		return {
+			publisher: s?.publisher ?? null,
+			status: s?.status ?? null,
+			seriesType: s?.type ?? null
+		};
+	};
 	const existing: PreviewRow[] = books.map((b) => ({
 		type: 'existing',
 		id: String(b.id),
@@ -191,7 +208,8 @@ export function buildPreviewRows(books: BookListItem[], staged: StagedBookEntry[
 		source: b.source,
 		price: b.price,
 		isDraft: b.isDraft,
-		seriesTags: b.seriesTags ?? []
+		seriesTags: b.seriesTags ?? [],
+		...seriesFields(b.seriesId)
 	}));
 	const stagedRows: PreviewRow[] = staged.map((e) => ({
 		type: 'staged',
@@ -202,7 +220,8 @@ export function buildPreviewRows(books: BookListItem[], staged: StagedBookEntry[
 		source: e.source ?? null,
 		price: e.price != null ? String(e.price) : null,
 		isDraft: e.isDraft,
-		seriesTags: []
+		seriesTags: seriesById.get(e.seriesId)?.tags ?? [],
+		...seriesFields(e.seriesId)
 	}));
 	return [...existing, ...stagedRows].sort((a, b) => {
 		const nameCompare = a.seriesShortName.localeCompare(b.seriesShortName);
@@ -221,6 +240,7 @@ export function isFilterActive(state: UnifiedFilterState): boolean {
  * - `volumes` maps to `bookCount` in filterEngine, but preview rows carry
  *   `volumeNumber`
  * - `draft` needs to map to `isDraft`
+ * - `type` maps to `seriesType`, since a row's own `type` is existing/staged
  */
 export function remapPreviewFilterState(state: UnifiedFilterState): UnifiedFilterState {
 	return {
@@ -228,6 +248,7 @@ export function remapPreviewFilterState(state: UnifiedFilterState): UnifiedFilte
 		paramFilters: state.paramFilters.map((pf) => {
 			if (pf.key === 'volumes') return { ...pf, key: 'volumeNumber' };
 			if (pf.key === 'draft') return { ...pf, key: 'isDraft' };
+			if (pf.key === 'type') return { ...pf, key: 'seriesType' };
 			return pf;
 		})
 	};

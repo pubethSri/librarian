@@ -18,9 +18,11 @@
 	import type { StagingStore } from '$lib/console/staging.svelte';
 	import type { BulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import type { BookListItem } from '$lib/types';
+	import type { SeriesMeta } from '$lib/console/types';
 
 	let {
 		books,
+		seriesById,
 		isLoading,
 		staging,
 		bulk,
@@ -29,6 +31,7 @@
 	}: {
 		/** Books in the current scope */
 		books: BookListItem[];
+		seriesById: Map<number, SeriesMeta>;
 		isLoading: boolean;
 		staging: StagingStore;
 		bulk: BulkEditStore;
@@ -37,7 +40,7 @@
 	} = $props();
 
 	// Combined preview list: existing + staged
-	const previewRows = $derived.by(() => buildPreviewRows(books, staging.entries));
+	const previewRows = $derived.by(() => buildPreviewRows(books, staging.entries, seriesById));
 
 	// ─── Preview Filter (Booru) ────────────────────────────────────────────────
 	// NOTE: `booruQuery` has two write paths — BooruSearchBar's bind:value fires

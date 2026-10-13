@@ -1,4 +1,10 @@
-import type { BookLocation, BookSource } from '$lib/types';
+import type {
+	BookLocation,
+	BookSource,
+	SeriesListItem,
+	SeriesStatus,
+	SeriesType
+} from '$lib/types';
 
 // ─── Scope ──────────────────────────────────────────────────────────────────
 
@@ -41,4 +47,12 @@ export type PreviewRow = {
 	price: string | null;
 	isDraft: boolean;
 	seriesTags: { id: number; name: string }[];
+	// Series-level fields, so `publisher:` / `status:` / `type:` can match.
+	// `seriesType` because `type` already means existing-vs-staged here.
+	publisher: string | null;
+	status: SeriesStatus | null;
+	seriesType: SeriesType | null;
 };
+
+/** The series fields the preview borrows, looked up by series id */
+export type SeriesMeta = Pick<SeriesListItem, 'publisher' | 'status' | 'type' | 'tags'>;

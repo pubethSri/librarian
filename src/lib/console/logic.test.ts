@@ -13,7 +13,7 @@ import {
 	toBatchPayload,
 	toBulkUpdates
 } from './logic';
-import type { Condition } from './types';
+import type { Condition, SeriesMeta } from './types';
 import { createEmptyFilterState, type UnifiedFilterState } from '$lib/components/filterEngine';
 import type { BookListItem, StagedBookEntry } from '$lib/types';
 
@@ -395,9 +395,38 @@ describe('buildPreviewRows', () => {
 		expect(row.source).toBeNull();
 	});
 
-	it('gives staged rows no tags, so tag filters never match them', () => {
+	it('gives staged rows no tags and null series fields when the series is unknown', () => {
 		const [row] = buildPreviewRows([], [staged()]);
 		expect(row.seriesTags).toEqual([]);
+		expect(row).toMatchObject({ publisher: null, status: null, seriesType: null });
+	});
+
+	it('borrows series fields for both kinds of row, and tags for staged rows', () => {
+		const seriesById = new Map<number, SeriesMeta>([
+			[
+				10,
+				{
+					publisher: 'Kadokawa',
+					status: 'ongoing',
+					type: 'light_novel',
+					tags: [{ id: 5, name: 'isekai' }]
+				}
+			]
+		]);
+		const rows = buildPreviewRows(
+			[book({ id: 1, volumeNumber: '1' })],
+			[staged({ volumeNumber: 2 })],
+			seriesById
+		);
+		for (const row of rows) {
+			expect(row).toMatchObject({
+				publisher: 'Kadokawa',
+				status: 'ongoing',
+				seriesType: 'light_novel'
+			});
+		}
+		expect(rows.map((r) => r.type)).toEqual(['existing', 'staged']);
+		expect(rows[1].seriesTags).toEqual([{ id: 5, name: 'isekai' }]);
 	});
 });
 
@@ -450,12 +479,24 @@ describe('remapPreviewFilterState', () => {
 });
 
 describe('filterPreviewRows', () => {
+	const seriesById = new Map<number, SeriesMeta>([
+		[10, { publisher: 'Kadokawa', status: 'ongoing', type: 'light_novel', tags: [] }],
+		[20, { publisher: 'Yen Press', status: 'ended', type: 'manga', tags: [] }]
+	]);
 	const rows = buildPreviewRows(
 		[
 			book({ id: 1, seriesShortName: 'Mushoku', volumeNumber: '1', location: 'home' }),
-			book({ id: 2, seriesShortName: 'Spice', volumeNumber: '3', location: 'apartment' })
+			book({
+				id: 2,
+				seriesId: 20,
+				seriesShortName: 'Spice',
+				volumeNumber: '3',
+				location: 'apartment',
+				seriesTags: [{ id: 2, name: 'romance' }]
+			})
 		],
-		[]
+		[],
+		seriesById
 	);
 
 	it('returns the list untouched when no filter is active', () => {
@@ -486,16 +527,25 @@ describe('filterPreviewRows', () => {
 		expect(result.map((r) => r.seriesShortName)).toEqual(['Spice']);
 	});
 
-	it('ignores series-level params like publisher, which preview rows do not carry', () => {
-		// Known follow-up: preview rows only hold book fields, so publisher:,
-		// status: and type: silently match nothing.
+	it('filters by series-level params: publisher, status and type', () => {
+		const by = (key: string, value: string) =>
+			filterPreviewRows(
+				rows,
+				state({ booruQuery: `${key}:${value}`, paramFilters: [{ key, op: '=', value }] })
+			).map((r) => r.seriesShortName);
+		expect(by('publisher', 'kadokawa')).toEqual(['Mushoku']);
+		expect(by('status', 'ended')).toEqual(['Spice']);
+		expect(by('type', 'light_novel')).toEqual(['Mushoku']);
+	});
+
+	it('filters by tag:', () => {
 		const result = filterPreviewRows(
 			rows,
 			state({
-				booruQuery: 'publisher:kadokawa',
-				paramFilters: [{ key: 'publisher', op: '=', value: 'kadokawa' }]
+				booruQuery: 'tag:isekai',
+				paramFilters: [{ key: 'tag', op: '=', value: 'isekai' }]
 			})
 		);
-		expect(result).toEqual([]);
+		expect(result.map((r) => r.seriesShortName)).toEqual(['Mushoku']);
 	});
 });

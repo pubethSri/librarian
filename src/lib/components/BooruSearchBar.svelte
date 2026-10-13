@@ -36,6 +36,7 @@
 		'draft:': { label: 'Draft', values: ['yes', 'no'] },
 		'volumes:': { label: 'Volumes', values: ['>=', '<=', '>', '<'] },
 		'publisher:': { label: 'Publisher', values: [] },
+		'tag:': { label: 'Tag', values: [] },
 		'name:': { label: 'Name', values: [] }
 	};
 

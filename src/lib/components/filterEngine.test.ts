@@ -297,6 +297,27 @@ describe('paramFilters — boolean and text equality', () => {
 	});
 });
 
+// ─── tag: param ──────────────────────────────────────────────────────────────
+
+describe('paramFilters — tag', () => {
+	it('tag:= keeps rows carrying a matching tag (substring, case-insensitive)', () => {
+		const s = state({ paramFilters: [{ key: 'tag', op: '=', value: 'ISEK' }] });
+		expect(pass(series(), s)).toBe(true);
+		expect(pass(series({ tags: [{ id: 3, name: 'romance' }] }), s)).toBe(false);
+	});
+
+	it('tag:!= drops rows carrying a matching tag', () => {
+		const s = state({ paramFilters: [{ key: 'tag', op: '!=', value: 'isekai' }] });
+		expect(pass(series(), s)).toBe(false);
+		expect(pass(series({ tags: [] }), s)).toBe(true);
+	});
+
+	it('is ignored when the caller supplies no getTagNames', () => {
+		const s = state({ paramFilters: [{ key: 'tag', op: '=', value: 'isekai' }] });
+		expect(applyUnifiedFilter(series({ tags: [] }), s)).toBe(true);
+	});
+});
+
 // ─── Combined ────────────────────────────────────────────────────────────────
 
 describe('combined filters (AND across all categories)', () => {

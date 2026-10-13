@@ -42,7 +42,8 @@ const KNOWN_PARAM_KEYS = new Set([
 	'location',
 	'source',
 	'draft',
-	'name'
+	'name',
+	'tag'
 ]);
 
 /** Value aliases — shorthand → canonical value */
