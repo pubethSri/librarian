@@ -53,9 +53,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight text-foreground">Books</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				Browse your full book collection.
-			</p>
+			<p class="mt-1 text-sm text-muted-foreground">Browse your full book collection.</p>
 		</div>
 		<Button onclick={() => (showAddVolume = true)} class="gap-2">
 			<Plus class="h-4 w-4" />
@@ -77,7 +75,12 @@
 			</Button>
 		</div>
 	{:else if booksQuery.data}
-		<BooksTable data={booksQuery.data} allTags={tagsQuery.data ?? []} onDelete={handleDelete} onEdit={handleEdit} />
+		<BooksTable
+			data={booksQuery.data}
+			allTags={tagsQuery.data ?? []}
+			onDelete={handleDelete}
+			onEdit={handleEdit}
+		/>
 	{/if}
 </div>
 
@@ -96,6 +99,9 @@
 	<EditBookDialog
 		open={showEditBookDialog}
 		book={editingBook}
-		onclose={() => { showEditBookDialog = false; editingBook = null; }}
+		onclose={() => {
+			showEditBookDialog = false;
+			editingBook = null;
+		}}
 	/>
 {/if}

@@ -1,8 +1,5 @@
 <script lang="ts">
-	import {
-		createBookfairsListQuery,
-		createBookfairDeleteMutation
-	} from '$lib/queries/bookfairs';
+	import { createBookfairsListQuery, createBookfairDeleteMutation } from '$lib/queries/bookfairs';
 	import CreateBookfairDialog from '$lib/components/forms/CreateBookfairDialog.svelte';
 	import EditBookfairDialog from '$lib/components/forms/EditBookfairDialog.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
@@ -84,9 +81,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight text-foreground">Bookfairs</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				Manage bookfair events and track your hauls.
-			</p>
+			<p class="mt-1 text-sm text-muted-foreground">Manage bookfair events and track your hauls.</p>
 		</div>
 		<Button size="sm" class="gap-1.5" onclick={() => (showCreateDialog = true)}>
 			<Plus class="h-3.5 w-3.5" />
@@ -104,12 +99,7 @@
 	{:else if bookfairsQuery.isError}
 		<div class="rounded-md border border-destructive/20 bg-destructive/5 p-6 text-center">
 			<p class="text-sm text-destructive">Failed to load bookfairs.</p>
-			<Button
-				variant="outline"
-				size="sm"
-				class="mt-3"
-				onclick={() => bookfairsQuery.refetch()}
-			>
+			<Button variant="outline" size="sm" class="mt-3" onclick={() => bookfairsQuery.refetch()}>
 				Retry
 			</Button>
 		</div>
@@ -129,13 +119,13 @@
 					onclick={() => handleCardClick(bookfair.id)}
 				>
 					<!-- Kebab menu -->
-					<div class="absolute right-3 top-3">
+					<div class="absolute top-3 right-3">
 						<DropdownMenu.Root>
 							<DropdownMenu.Trigger>
 								{#snippet child({ props })}
 									<button
 										{...props}
-										class="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+										class="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-accent hover:text-foreground"
 										onclick={(e) => e.stopPropagation()}
 									>
 										<MoreVertical class="h-4 w-4" />
@@ -169,7 +159,7 @@
 
 					<!-- Card content -->
 					<div class="space-y-3 pr-8">
-						<h3 class="text-base font-semibold text-foreground leading-tight">
+						<h3 class="text-base leading-tight font-semibold text-foreground">
 							{bookfair.name}
 						</h3>
 
@@ -189,7 +179,8 @@
 						<div class="pt-1">
 							<Badge variant="secondary" class="gap-1 text-xs">
 								<BookOpen class="h-3 w-3" />
-								{bookfair.bookCount} {bookfair.bookCount === 1 ? 'book' : 'books'}
+								{bookfair.bookCount}
+								{bookfair.bookCount === 1 ? 'book' : 'books'}
 							</Badge>
 						</div>
 					</div>

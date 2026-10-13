@@ -11,13 +11,15 @@
 </script>
 
 <div class="flex items-center gap-2 text-sm">
-	<span class="font-mono tabular-nums text-foreground">
+	<span class="font-mono text-foreground tabular-nums">
 		{owned}{#if total !== null}<span class="text-muted-foreground">/{total}</span>{/if}
 	</span>
 	{#if total !== null && total > 0}
-		<div class="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+		<div class="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
 			<div
-				class="h-full rounded-full transition-all duration-300 {isComplete ? 'bg-foreground' : 'bg-foreground/50'}"
+				class="h-full rounded-full transition-all duration-300 {isComplete
+					? 'bg-foreground'
+					: 'bg-foreground/50'}"
 				style="width: {percentage}%"
 			></div>
 		</div>

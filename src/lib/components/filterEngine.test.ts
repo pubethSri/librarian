@@ -61,8 +61,12 @@ describe('applyUnifiedFilter — empty state', () => {
 
 describe('quickFilters', () => {
 	it('matches on exact string equality', () => {
-		expect(pass(series({ type: 'light_novel' }), state({ quickFilters: { type: 'light_novel' } }))).toBe(true);
-		expect(pass(series({ type: 'light_novel' }), state({ quickFilters: { type: 'manga' } }))).toBe(false);
+		expect(
+			pass(series({ type: 'light_novel' }), state({ quickFilters: { type: 'light_novel' } }))
+		).toBe(true);
+		expect(pass(series({ type: 'light_novel' }), state({ quickFilters: { type: 'manga' } }))).toBe(
+			false
+		);
 	});
 
 	it('treats "all" and "" as no-ops', () => {
@@ -77,12 +81,18 @@ describe('quickFilters', () => {
 	});
 
 	it('coerces booleans via String() (watchlist:"true")', () => {
-		expect(pass(series({ watchlist: true }), state({ quickFilters: { watchlist: 'true' } }))).toBe(true);
-		expect(pass(series({ watchlist: false }), state({ quickFilters: { watchlist: 'true' } }))).toBe(false);
+		expect(pass(series({ watchlist: true }), state({ quickFilters: { watchlist: 'true' } }))).toBe(
+			true
+		);
+		expect(pass(series({ watchlist: false }), state({ quickFilters: { watchlist: 'true' } }))).toBe(
+			false
+		);
 	});
 
 	it('fails when the row value is null/undefined for an active filter', () => {
-		expect(pass(series({ publisher: null }), state({ quickFilters: { publisher: 'Kadokawa' } }))).toBe(false);
+		expect(
+			pass(series({ publisher: null }), state({ quickFilters: { publisher: 'Kadokawa' } }))
+		).toBe(false);
 		expect(pass(series(), state({ quickFilters: { doesNotExist: 'x' } }))).toBe(false);
 	});
 });
@@ -145,8 +155,12 @@ describe('searchTerms', () => {
 
 describe('paramFilters — name', () => {
 	it('searches across the name fields (substring, case-insensitive)', () => {
-		expect(pass(series(), state({ paramFilters: [{ key: 'name', op: '=', value: 'mushoku' }] }))).toBe(true);
-		expect(pass(series(), state({ paramFilters: [{ key: 'name', op: '=', value: 'zzz' }] }))).toBe(false);
+		expect(
+			pass(series(), state({ paramFilters: [{ key: 'name', op: '=', value: 'mushoku' }] }))
+		).toBe(true);
+		expect(pass(series(), state({ paramFilters: [{ key: 'name', op: '=', value: 'zzz' }] }))).toBe(
+			false
+		);
 	});
 
 	it('matches seriesShortName / seriesFullName on book-shaped rows', () => {
@@ -161,23 +175,58 @@ describe('paramFilters — name', () => {
 describe('paramFilters — numeric via volumes→bookCount', () => {
 	it('= uses exact numeric equality, NOT substring (regression guard)', () => {
 		// volumes:1 must NOT match bookCount 10/15 — this exact case regressed once.
-		expect(pass(series({ bookCount: 10 }), state({ paramFilters: [{ key: 'volumes', op: '=', value: '1' }] }))).toBe(false);
-		expect(pass(series({ bookCount: 15 }), state({ paramFilters: [{ key: 'volumes', op: '=', value: '1' }] }))).toBe(false);
-		expect(pass(series({ bookCount: 1 }), state({ paramFilters: [{ key: 'volumes', op: '=', value: '1' }] }))).toBe(true);
+		expect(
+			pass(
+				series({ bookCount: 10 }),
+				state({ paramFilters: [{ key: 'volumes', op: '=', value: '1' }] })
+			)
+		).toBe(false);
+		expect(
+			pass(
+				series({ bookCount: 15 }),
+				state({ paramFilters: [{ key: 'volumes', op: '=', value: '1' }] })
+			)
+		).toBe(false);
+		expect(
+			pass(
+				series({ bookCount: 1 }),
+				state({ paramFilters: [{ key: 'volumes', op: '=', value: '1' }] })
+			)
+		).toBe(true);
 	});
 
 	it('supports >=, <=, >, <', () => {
 		const row = series({ bookCount: 10 });
-		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '>=', value: '4' }] }))).toBe(true);
-		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '>=', value: '20' }] }))).toBe(false);
-		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '<=', value: '10' }] }))).toBe(true);
-		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '>', value: '10' }] }))).toBe(false);
-		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '<', value: '11' }] }))).toBe(true);
+		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '>=', value: '4' }] }))).toBe(
+			true
+		);
+		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '>=', value: '20' }] }))).toBe(
+			false
+		);
+		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '<=', value: '10' }] }))).toBe(
+			true
+		);
+		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '>', value: '10' }] }))).toBe(
+			false
+		);
+		expect(pass(row, state({ paramFilters: [{ key: 'volumes', op: '<', value: '11' }] }))).toBe(
+			true
+		);
 	});
 
 	it('!= uses numeric inequality when both sides are numeric', () => {
-		expect(pass(series({ bookCount: 10 }), state({ paramFilters: [{ key: 'volumes', op: '!=', value: '10' }] }))).toBe(false);
-		expect(pass(series({ bookCount: 10 }), state({ paramFilters: [{ key: 'volumes', op: '!=', value: '5' }] }))).toBe(true);
+		expect(
+			pass(
+				series({ bookCount: 10 }),
+				state({ paramFilters: [{ key: 'volumes', op: '!=', value: '10' }] })
+			)
+		).toBe(false);
+		expect(
+			pass(
+				series({ bookCount: 10 }),
+				state({ paramFilters: [{ key: 'volumes', op: '!=', value: '5' }] })
+			)
+		).toBe(true);
 	});
 });
 
@@ -185,24 +234,66 @@ describe('paramFilters — numeric via volumes→bookCount', () => {
 
 describe('paramFilters — boolean and text equality', () => {
 	it('= coerces booleans when the value is "true"/"false"', () => {
-		expect(pass(series({ watchlist: true }), state({ paramFilters: [{ key: 'watchlist', op: '=', value: 'true' }] }))).toBe(true);
-		expect(pass(series({ watchlist: false }), state({ paramFilters: [{ key: 'watchlist', op: '=', value: 'true' }] }))).toBe(false);
-		expect(pass(series({ watchlist: false }), state({ paramFilters: [{ key: 'watchlist', op: '=', value: 'false' }] }))).toBe(true);
+		expect(
+			pass(
+				series({ watchlist: true }),
+				state({ paramFilters: [{ key: 'watchlist', op: '=', value: 'true' }] })
+			)
+		).toBe(true);
+		expect(
+			pass(
+				series({ watchlist: false }),
+				state({ paramFilters: [{ key: 'watchlist', op: '=', value: 'true' }] })
+			)
+		).toBe(false);
+		expect(
+			pass(
+				series({ watchlist: false }),
+				state({ paramFilters: [{ key: 'watchlist', op: '=', value: 'false' }] })
+			)
+		).toBe(true);
 	});
 
 	it('= on text uses forgiving substring matching', () => {
-		expect(pass(series({ publisher: 'Kadokawa' }), state({ paramFilters: [{ key: 'publisher', op: '=', value: 'kado' }] }))).toBe(true);
-		expect(pass(series({ status: 'ongoing' }), state({ paramFilters: [{ key: 'status', op: '=', value: 'ended' }] }))).toBe(false);
-		expect(pass(series({ status: 'ended' }), state({ paramFilters: [{ key: 'status', op: '=', value: 'ended' }] }))).toBe(true);
+		expect(
+			pass(
+				series({ publisher: 'Kadokawa' }),
+				state({ paramFilters: [{ key: 'publisher', op: '=', value: 'kado' }] })
+			)
+		).toBe(true);
+		expect(
+			pass(
+				series({ status: 'ongoing' }),
+				state({ paramFilters: [{ key: 'status', op: '=', value: 'ended' }] })
+			)
+		).toBe(false);
+		expect(
+			pass(
+				series({ status: 'ended' }),
+				state({ paramFilters: [{ key: 'status', op: '=', value: 'ended' }] })
+			)
+		).toBe(true);
 	});
 
 	it('!= on text excludes exact and substring matches', () => {
-		expect(pass(series({ status: 'ongoing' }), state({ paramFilters: [{ key: 'status', op: '!=', value: 'ended' }] }))).toBe(true);
-		expect(pass(series({ status: 'ended' }), state({ paramFilters: [{ key: 'status', op: '!=', value: 'ended' }] }))).toBe(false);
+		expect(
+			pass(
+				series({ status: 'ongoing' }),
+				state({ paramFilters: [{ key: 'status', op: '!=', value: 'ended' }] })
+			)
+		).toBe(true);
+		expect(
+			pass(
+				series({ status: 'ended' }),
+				state({ paramFilters: [{ key: 'status', op: '!=', value: 'ended' }] })
+			)
+		).toBe(false);
 	});
 
 	it('returns true for an unrecognized operator (quirk: no-op)', () => {
-		expect(pass(series(), state({ paramFilters: [{ key: 'status', op: '~', value: 'anything' }] }))).toBe(true);
+		expect(
+			pass(series(), state({ paramFilters: [{ key: 'status', op: '~', value: 'anything' }] }))
+		).toBe(true);
 	});
 });
 

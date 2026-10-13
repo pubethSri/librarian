@@ -2,7 +2,8 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from '../src/lib/server/db/schema';
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://root:mysecretpassword@localhost:5432/local';
+const DATABASE_URL =
+	process.env.DATABASE_URL || 'postgres://root:mysecretpassword@localhost:5432/local';
 
 async function seed() {
 	const client = postgres(DATABASE_URL);

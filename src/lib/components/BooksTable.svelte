@@ -175,19 +175,25 @@
 </script>
 
 <!-- Toolbar -->
-<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 	<div class="w-full sm:max-w-sm">
 		<BooruSearchBar
-			allTags={allTags}
+			{allTags}
 			bind:value={filterState.booruQuery}
 			placeholder="Search... e.g. isekai source:bookfair location:home"
 			onchange={handleBooruChange}
 		/>
 	</div>
 	<div class="flex flex-wrap items-center gap-2">
-		<Select.Root type="single" value={locationFilter} onValueChange={(v: string | undefined) => setQuickFilter('location', v || 'all')}>
+		<Select.Root
+			type="single"
+			value={locationFilter}
+			onValueChange={(v: string | undefined) => setQuickFilter('location', v || 'all')}
+		>
 			<Select.Trigger class="h-9 w-32 text-xs">
-				{locationFilter === 'all' ? 'All Locations' : BOOK_LOCATION_LABELS[locationFilter as keyof typeof BOOK_LOCATION_LABELS]}
+				{locationFilter === 'all'
+					? 'All Locations'
+					: BOOK_LOCATION_LABELS[locationFilter as keyof typeof BOOK_LOCATION_LABELS]}
 			</Select.Trigger>
 			<Select.Content>
 				<Select.Item value="all" label="All Locations" />
@@ -195,9 +201,15 @@
 				<Select.Item value="apartment" label="Apartment" />
 			</Select.Content>
 		</Select.Root>
-		<Select.Root type="single" value={sourceFilter} onValueChange={(v: string | undefined) => setQuickFilter('source', v || 'all')}>
+		<Select.Root
+			type="single"
+			value={sourceFilter}
+			onValueChange={(v: string | undefined) => setQuickFilter('source', v || 'all')}
+		>
 			<Select.Trigger class="h-9 w-32 text-xs">
-				{sourceFilter === 'all' ? 'All Sources' : BOOK_SOURCE_LABELS[sourceFilter as keyof typeof BOOK_SOURCE_LABELS]}
+				{sourceFilter === 'all'
+					? 'All Sources'
+					: BOOK_SOURCE_LABELS[sourceFilter as keyof typeof BOOK_SOURCE_LABELS]}
 			</Select.Trigger>
 			<Select.Content>
 				<Select.Item value="all" label="All Sources" />
@@ -206,7 +218,11 @@
 				<Select.Item value="online" label="Online" />
 			</Select.Content>
 		</Select.Root>
-		<Select.Root type="single" value={draftFilter} onValueChange={(v: string | undefined) => setQuickFilter('isDraft', v || 'all')}>
+		<Select.Root
+			type="single"
+			value={draftFilter}
+			onValueChange={(v: string | undefined) => setQuickFilter('isDraft', v || 'all')}
+		>
 			<Select.Trigger class="h-9 w-32 text-xs">
 				{draftFilter === 'all' ? 'All Books' : 'Drafts Only'}
 			</Select.Trigger>
@@ -237,7 +253,9 @@
 			<Table.Row>
 				{#each columns as col}
 					<Table.Head
-						class={col.sortable ? 'cursor-pointer select-none whitespace-nowrap' : 'whitespace-nowrap'}
+						class={col.sortable
+							? 'cursor-pointer whitespace-nowrap select-none'
+							: 'whitespace-nowrap'}
 						onclick={() => col.sortable && toggleSort(col.key)}
 					>
 						<div class="flex items-center gap-1">
@@ -279,9 +297,7 @@
 					</Table.Cell>
 					<Table.Cell>
 						{#if row.isDraft}
-							<Badge variant="outline" class="text-xs text-amber-600 border-amber-300">
-								Draft
-							</Badge>
+							<Badge variant="outline" class="border-amber-300 text-xs text-amber-600">Draft</Badge>
 						{:else}
 							<span class="text-xs text-muted-foreground/50">—</span>
 						{/if}
@@ -351,7 +367,7 @@
 			>
 				Previous
 			</Button>
-			<span class="text-sm text-muted-foreground px-2">
+			<span class="px-2 text-sm text-muted-foreground">
 				{pageIndex + 1} / {pageCount()}
 			</span>
 			<Button

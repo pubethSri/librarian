@@ -34,16 +34,18 @@
 
 {#if tags.length > 0}
 	<div class="flex flex-wrap items-center gap-1.5">
-		<span class="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mr-1">
+		<span class="mr-1 text-[10px] font-semibold tracking-widest text-muted-foreground/50 uppercase">
 			Tags
 		</span>
 		{#each sortedTags() as tag (tag.id)}
 			<button onclick={() => ontoggle(tag.name)}>
 				<Badge
 					variant={isActive(tag.name) ? 'default' : 'outline'}
-					class="cursor-pointer text-[11px] px-2 py-0.5 transition-all hover:scale-105 {isActive(tag.name)
+					class="cursor-pointer px-2 py-0.5 text-[11px] transition-all hover:scale-105 {isActive(
+						tag.name
+					)
 						? 'bg-primary text-primary-foreground shadow-sm'
-						: 'text-muted-foreground hover:text-foreground hover:border-foreground/30'}"
+						: 'text-muted-foreground hover:border-foreground/30 hover:text-foreground'}"
 				>
 					{tag.name}
 					<span class="ml-1 opacity-50">{tag.seriesCount}</span>
@@ -53,7 +55,7 @@
 		{#if activeTags.length > 0}
 			<button
 				onclick={onclear}
-				class="ml-1 flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+				class="ml-1 flex items-center gap-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<X class="h-3 w-3" />
 				Clear

@@ -27,9 +27,7 @@
 
 	let typedConfirmation = $state('');
 
-	const canConfirm = $derived(
-		confirmText ? typedConfirmation === confirmText : true
-	);
+	const canConfirm = $derived(confirmText ? typedConfirmation === confirmText : true);
 
 	// Reset typed confirmation when dialog opens/closes
 	$effect(() => {

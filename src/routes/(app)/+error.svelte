@@ -8,7 +8,7 @@
 	<div class="mb-6 rounded-full bg-muted p-4">
 		<AlertTriangle class="h-10 w-10 text-muted-foreground" />
 	</div>
-	<h1 class="text-4xl font-bold tabular-nums text-foreground">{$page.status}</h1>
+	<h1 class="text-4xl font-bold text-foreground tabular-nums">{$page.status}</h1>
 	<p class="mt-2 text-lg text-muted-foreground">
 		{$page.error?.message || 'Something went wrong.'}
 	</p>

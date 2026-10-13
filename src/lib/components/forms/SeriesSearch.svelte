@@ -56,9 +56,7 @@
 								open = false;
 							}}
 						>
-							<Check
-								class="mr-2 h-4 w-4 {value === series.id ? 'opacity-100' : 'opacity-0'}"
-							/>
+							<Check class="mr-2 h-4 w-4 {value === series.id ? 'opacity-100' : 'opacity-0'}" />
 							<div class="flex flex-col">
 								<span class="text-sm font-medium">{series.shortName}</span>
 								<span class="text-xs text-muted-foreground">{series.fullName}</span>

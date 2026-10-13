@@ -84,25 +84,22 @@
 	}
 </script>
 
-<Dialog.Root bind:open onOpenChange={(isOpen) => { if (!isOpen) onclose?.(); }}>
+<Dialog.Root
+	bind:open
+	onOpenChange={(isOpen) => {
+		if (!isOpen) onclose?.();
+	}}
+>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Edit Volume {book.volumeNumber}</Dialog.Title>
-			<Dialog.Description>
-				Update this volume's details.
-			</Dialog.Description>
+			<Dialog.Description>Update this volume's details.</Dialog.Description>
 		</Dialog.Header>
 
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
 				<Label for="edit-vol-num">Volume Number *</Label>
-				<Input
-					id="edit-vol-num"
-					type="number"
-					step="0.5"
-					min="0"
-					bind:value={volumeNumber}
-				/>
+				<Input id="edit-vol-num" type="number" step="0.5" min="0" bind:value={volumeNumber} />
 			</div>
 
 			<div class="space-y-2">
@@ -121,7 +118,13 @@
 
 			<div class="space-y-2">
 				<Label>Source</Label>
-				<Select.Root type="single" bind:value={source} onValueChange={() => { sourceEventId = null; }}>
+				<Select.Root
+					type="single"
+					bind:value={source}
+					onValueChange={() => {
+						sourceEventId = null;
+					}}
+				>
 					<Select.Trigger class="w-full">
 						{source ? source.charAt(0).toUpperCase() + source.slice(1) : 'Select source...'}
 					</Select.Trigger>
@@ -172,7 +175,7 @@
 			</div>
 
 			<div class="flex items-center justify-between">
-				<Label for="edit-draft-toggle" class="font-normal text-sm">Draft</Label>
+				<Label for="edit-draft-toggle" class="text-sm font-normal">Draft</Label>
 				<Switch id="edit-draft-toggle" bind:checked={isDraft} />
 			</div>
 		</div>

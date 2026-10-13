@@ -91,7 +91,10 @@
 
 	function getLatestReadingStatus(readings: { status: string }[]): string {
 		if (!readings.length) return 'Unread';
-		return READING_STATUS_LABELS[readings[0].status as keyof typeof READING_STATUS_LABELS] || readings[0].status;
+		return (
+			READING_STATUS_LABELS[readings[0].status as keyof typeof READING_STATUS_LABELS] ||
+			readings[0].status
+		);
 	}
 </script>
 
@@ -163,11 +166,11 @@
 		<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Volumes Owned</p>
-				<p class="mt-1 text-2xl font-bold tabular-nums text-foreground">{s.books.length}</p>
+				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">{s.books.length}</p>
 			</div>
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Total Volumes</p>
-				<p class="mt-1 text-2xl font-bold tabular-nums text-foreground">
+				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
 					{s.totalVolumes ?? '?'}
 				</p>
 			</div>
@@ -179,7 +182,7 @@
 			</div>
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Unread</p>
-				<p class="mt-1 text-2xl font-bold tabular-nums text-foreground">
+				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
 					{s.books.filter((b) => !b.readings.length || b.readings[0].status === 'unread').length}
 				</p>
 			</div>
@@ -192,9 +195,7 @@
 					<Tag class="h-4 w-4" />
 					Tags
 				</h2>
-				<Button variant="ghost" size="sm" onclick={() => (showTagsEditor = true)}>
-					Edit Tags
-				</Button>
+				<Button variant="ghost" size="sm" onclick={() => (showTagsEditor = true)}>Edit Tags</Button>
 			</div>
 			<div class="flex flex-wrap gap-2">
 				{#if s.tags.length === 0}
@@ -221,10 +222,7 @@
 			</div>
 
 			{#if s.books.length === 0}
-				<EmptyState
-					title="No volumes yet"
-					description="Add the first volume to start tracking."
-				/>
+				<EmptyState title="No volumes yet" description="Add the first volume to start tracking." />
 			{:else}
 				<div class="rounded-md border border-border">
 					<Table.Root>
@@ -245,7 +243,7 @@
 									<Table.Cell class="font-mono font-medium tabular-nums">
 										{book.volumeNumber}
 										{#if book.isDraft}
-											<Badge variant="outline" class="ml-2 text-xs text-amber-600 border-amber-300">
+											<Badge variant="outline" class="ml-2 border-amber-300 text-xs text-amber-600">
 												Draft
 											</Badge>
 										{/if}
@@ -259,7 +257,7 @@
 									<Table.Cell class="text-sm text-muted-foreground">
 										{formatDate(book.boughtAt)}
 									</Table.Cell>
-									<Table.Cell class="text-sm text-muted-foreground font-mono tabular-nums">
+									<Table.Cell class="font-mono text-sm text-muted-foreground tabular-nums">
 										{book.price ? `฿${Number(book.price).toFixed(2)}` : '—'}
 									</Table.Cell>
 									<Table.Cell>
@@ -273,7 +271,10 @@
 												variant="ghost"
 												size="icon"
 												class="h-7 w-7 text-muted-foreground hover:text-foreground"
-												onclick={() => { editingBook = book; showEditBookDialog = true; }}
+												onclick={() => {
+													editingBook = book;
+													showEditBookDialog = true;
+												}}
 											>
 												<Pencil class="h-3.5 w-3.5" />
 											</Button>
@@ -306,7 +307,11 @@
 	<DeleteConfirmDialog
 		bind:open={showDeleteConfirm}
 		title="Delete Series"
-		description={'This will permanently delete "' + s.shortName + '" and all ' + s.books.length + ' volumes. This action cannot be undone.'}
+		description={'This will permanently delete "' +
+			s.shortName +
+			'" and all ' +
+			s.books.length +
+			' volumes. This action cannot be undone.'}
 		confirmText="I want to delete"
 		loading={deleteMutation.isPending}
 		onconfirm={handleDeleteSeries}
@@ -327,7 +332,10 @@
 		<EditBookDialog
 			open={showEditBookDialog}
 			book={editingBook}
-			onclose={() => { showEditBookDialog = false; editingBook = null; }}
+			onclose={() => {
+				showEditBookDialog = false;
+				editingBook = null;
+			}}
 		/>
 	{/if}
 {/if}

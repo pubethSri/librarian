@@ -5,7 +5,8 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from '../src/lib/server/db/schema';
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://root:mysecretpassword@localhost:5432/local';
+const DATABASE_URL =
+	process.env.DATABASE_URL || 'postgres://root:mysecretpassword@localhost:5432/local';
 const DRY_RUN = process.argv.includes('--dry-run');
 
 // ─── Column Mappings ─────────────────────────────────────────────────────────
@@ -107,7 +108,9 @@ async function migrate() {
 		const type = TYPE_MAP[row.Type];
 
 		if (!status) {
-			warnings.push(`Unknown status "${row.Status}" for series "${row.Name}", defaulting to "ongoing"`);
+			warnings.push(
+				`Unknown status "${row.Status}" for series "${row.Name}", defaulting to "ongoing"`
+			);
 		}
 		if (!type) {
 			warnings.push(`Unknown type "${row.Type}" for series "${row.Name}", skipping`);
@@ -214,7 +217,9 @@ function dryRun(dictionaryRows: DictionaryRow[], booksRows: BooksRow[]) {
 		const status = STATUS_MAP[row.Status] || '???';
 		const type = TYPE_MAP[row.Type] || '???';
 		const watchlist = !row.Volumes || row.LastestVol === 'No Volumes';
-		console.log(`  ${row.Name} → ${row.Fullname} [${type}, ${status}${watchlist ? ', WATCHLIST' : ''}]`);
+		console.log(
+			`  ${row.Name} → ${row.Fullname} [${type}, ${status}${watchlist ? ', WATCHLIST' : ''}]`
+		);
 	}
 
 	console.log('\n── Books to import (first 20) ────────────────────────────────');

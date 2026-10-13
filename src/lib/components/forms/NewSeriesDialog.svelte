@@ -91,9 +91,7 @@
 			}
 
 			toast.success(
-				addFirstVolume
-					? `Created "${shortName}" with Volume 1`
-					: `Created "${shortName}"`
+				addFirstVolume ? `Created "${shortName}" with Volume 1` : `Created "${shortName}"`
 			);
 			resetForm();
 			open = false;
@@ -105,7 +103,12 @@
 	}
 </script>
 
-<Dialog.Root bind:open onOpenChange={(isOpen) => { if (!isOpen) resetForm(); }}>
+<Dialog.Root
+	bind:open
+	onOpenChange={(isOpen) => {
+		if (!isOpen) resetForm();
+	}}
+>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>
@@ -169,7 +172,7 @@
 					/>
 				</div>
 				<div class="flex items-center justify-between">
-					<Label for="watchlist-toggle" class="font-normal text-sm">Add to Watchlist</Label>
+					<Label for="watchlist-toggle" class="text-sm font-normal">Add to Watchlist</Label>
 					<Switch id="watchlist-toggle" bind:checked={watchlist} />
 				</div>
 			</div>
@@ -181,9 +184,7 @@
 		{:else}
 			<div class="space-y-4 py-4">
 				<div class="flex items-center justify-between">
-					<Label for="add-vol-toggle" class="font-normal text-sm">
-						Add first volume now
-					</Label>
+					<Label for="add-vol-toggle" class="text-sm font-normal">Add first volume now</Label>
 					<Switch id="add-vol-toggle" bind:checked={addFirstVolume} />
 				</div>
 
@@ -242,7 +243,11 @@
 			<Dialog.Footer>
 				<Button variant="outline" onclick={() => (step = 1)}>Back</Button>
 				<Button onclick={handleSubmit} disabled={isSubmitting}>
-					{isSubmitting ? 'Creating...' : addFirstVolume ? 'Create Series + Volume' : 'Create Series'}
+					{isSubmitting
+						? 'Creating...'
+						: addFirstVolume
+							? 'Create Series + Volume'
+							: 'Create Series'}
 				</Button>
 			</Dialog.Footer>
 		{/if}

@@ -14,6 +14,6 @@
 	};
 </script>
 
-<Badge variant="outline" class="text-xs font-mono {typeConfig[type].class}">
+<Badge variant="outline" class="font-mono text-xs {typeConfig[type].class}">
 	{typeConfig[type].label}
 </Badge>

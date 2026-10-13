@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { createTagsListQuery, createTagMutation, createTagDeleteMutation } from '$lib/queries/tags';
+	import {
+		createTagsListQuery,
+		createTagMutation,
+		createTagDeleteMutation
+	} from '$lib/queries/tags';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -74,11 +78,7 @@
 		}}
 		class="flex items-center gap-2"
 	>
-		<Input
-			bind:value={newTagName}
-			placeholder="New tag name..."
-			class="h-9 max-w-xs"
-		/>
+		<Input bind:value={newTagName} placeholder="New tag name..." class="h-9 max-w-xs" />
 		<Button type="submit" size="sm" disabled={createTagMut.isPending} class="gap-1.5">
 			<Plus class="h-3.5 w-3.5" />
 			{createTagMut.isPending ? 'Adding...' : 'Add Tag'}

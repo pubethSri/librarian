@@ -76,10 +76,12 @@
 <div class="space-y-5">
 	<!-- Bookfair context banner -->
 	{#if defaults}
-		<div class="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+		<div
+			class="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+		>
 			<p>
-				<span class="font-medium text-foreground">Bookfair mode:</span> Source, location, and date
-				are pre-filled from the event.
+				<span class="font-medium text-foreground">Bookfair mode:</span> Source, location, and date are
+				pre-filled from the event.
 			</p>
 		</div>
 	{/if}

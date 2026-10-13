@@ -1,9 +1,5 @@
 <script lang="ts">
-	import {
-		LogOut,
-		PanelLeftClose,
-		PanelLeft
-	} from '@lucide/svelte';
+	import { LogOut, PanelLeftClose, PanelLeft } from '@lucide/svelte';
 	import { page } from '$app/stores';
 	import { sidebarCollapsed } from '$lib/stores/sidebar';
 	import * as Sheet from '$lib/components/ui/sheet';
@@ -56,18 +52,20 @@
 
 <!-- Desktop sidebar -->
 <aside
-	class="hidden md:flex fixed top-0 left-0 h-screen flex-col border-r border-border bg-sidebar transition-all duration-200 z-40"
+	class="fixed top-0 left-0 z-40 hidden h-screen flex-col border-r border-border bg-sidebar transition-all duration-200 md:flex"
 	class:w-44={!collapsed}
 	class:w-12={collapsed}
 >
 	<!-- Nav sections — vertically centered -->
-	<nav class="flex-1 flex flex-col justify-center overflow-y-auto {collapsed ? 'px-1' : 'px-3'}">
+	<nav class="flex flex-1 flex-col justify-center overflow-y-auto {collapsed ? 'px-1' : 'px-3'}">
 		{#if !collapsed}
 			{#each sections as section, i}
 				{#if i > 0}
 					<div class="my-2"></div>
 				{/if}
-				<p class="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+				<p
+					class="mb-1 px-2 text-[10px] font-semibold tracking-widest text-sidebar-foreground/40 uppercase"
+				>
 					{section.label}
 				</p>
 				{#each section.items as item}
@@ -89,7 +87,9 @@
 	<div class="border-t border-sidebar-border py-2 {collapsed ? 'px-1' : 'px-3'} space-y-0.5">
 		<button
 			onclick={() => (collapsed = !collapsed)}
-			class="flex h-8 w-full items-center rounded text-[13px] font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground {collapsed ? 'justify-center px-0' : 'gap-2 px-2'}"
+			class="flex h-8 w-full items-center rounded text-[13px] font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground {collapsed
+				? 'justify-center px-0'
+				: 'gap-2 px-2'}"
 			title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
 		>
 			{#if collapsed}
@@ -101,7 +101,9 @@
 		</button>
 		<button
 			onclick={handleLogout}
-			class="flex h-8 w-full items-center rounded text-[13px] font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground {collapsed ? 'justify-center px-0' : 'gap-2 px-2'}"
+			class="flex h-8 w-full items-center rounded text-[13px] font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground {collapsed
+				? 'justify-center px-0'
+				: 'gap-2 px-2'}"
 		>
 			<LogOut class="h-3.5 w-3.5 shrink-0" />
 			{#if !collapsed}
@@ -112,7 +114,7 @@
 </aside>
 
 <!-- Mobile hamburger -->
-<div class="md:hidden fixed top-3 left-3 z-50">
+<div class="fixed top-3 left-3 z-50 md:hidden">
 	<Sheet.Root bind:open={mobileOpen}>
 		<Sheet.Trigger>
 			<Button variant="outline" size="icon" class="h-8 w-8">
@@ -124,12 +126,14 @@
 				<Sheet.Title class="text-sm font-bold tracking-tight">Librarian</Sheet.Title>
 			</Sheet.Header>
 
-			<nav class="flex-1 flex flex-col justify-center px-3 py-3">
+			<nav class="flex flex-1 flex-col justify-center px-3 py-3">
 				{#each sections as section, i}
 					{#if i > 0}
 						<div class="my-2"></div>
 					{/if}
-					<p class="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-foreground/40">
+					<p
+						class="mb-1 px-2 text-[10px] font-semibold tracking-widest text-foreground/40 uppercase"
+					>
 						{section.label}
 					</p>
 					{#each section.items as item}

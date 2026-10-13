@@ -8,34 +8,36 @@
 
 `v0.0` = init; each phase completion bumps `v0.x`. A Git tag is created per milestone.
 
-| Version | Milestone |
-|---|---|
-| v0.0 | Scaffolding |
-| v0.1 | Database & CSV fallback |
-| v0.2 | Desktop core (tables, CRUD, data entry) |
-| v0.2.x | Unified search & filter |
-| v0.3 | Bookfair & bulk workflows |
+| Version    | Milestone                                        |
+| ---------- | ------------------------------------------------ |
+| v0.0       | Scaffolding                                      |
+| v0.1       | Database & CSV fallback                          |
+| v0.2       | Desktop core (tables, CRUD, data entry)          |
+| v0.2.x     | Unified search & filter                          |
+| v0.3       | Bookfair & bulk workflows                        |
 | **v0.3.x** | **Consolidation / debt paydown — current focus** |
-| v0.4 | Analytics & insights |
-| v0.5 | Mobile Field Mode (PWA) |
-| v0.6 | Social & playful features |
-| v0.7 | Polish, decorative design, production hardening |
+| v0.4       | Analytics & insights                             |
+| v0.5       | Mobile Field Mode (PWA)                          |
+| v0.6       | Social & playful features                        |
+| v0.7       | Polish, decorative design, production hardening  |
 
 ## Delivered
 
-Phases 0–2, unified search/filter (2C), and most of Phase 3 (bookfairs CRUD + detail, source/event linking, Console *Add Books* + *Bulk Edit*) are shipped. `STATUS.md` has the authoritative breakdown and the decisions log.
+Phases 0–2, unified search/filter (2C), and most of Phase 3 (bookfairs CRUD + detail, source/event linking, Console _Add Books_ + _Bulk Edit_) are shipped. `STATUS.md` has the authoritative breakdown and the decisions log.
 
 ## Now — Consolidation (v0.3.x)
 
 The project was paused and is being revived. Before adding new features, pay down the debt surfaced on return so the codebase moves forward cleanly. Guiding theme — the same one driving this doc cleanup: **one fact, one home** (single source of truth), applied to both code and docs.
 
 **Tier 1 — worth doing**
+
 - **Decompose `console/+page.svelte`** (~1,000 lines) into panels (`AddBooksPanel`, `BulkEditPanel`, `PreviewTable`, `ScopeBar`) and extract logic into `.svelte.ts` rune modules (e.g. `stagingStore`, `bulkEdit`). Do this **before** Activity Log lands on the same page.
 - **Wire the orphaned `queries/batch.ts` / `queries/bulk.ts` hooks.** The Console currently commits via raw `fetch` + manual `refetch()`; switch it to the hooks + `invalidateQueries`, matching the rest of the app.
 - **Add unit tests for `filterEngine.ts`.** Its numeric-`=` edge case (`volumes:1` wrongly matching `10`) regressed once and has zero coverage today.
 - **Single source of truth for types + validation via `drizzle-zod`.** Derive a base type from the schema, then layer the response transforms (dates/`numeric` → string, computed `bookCount`/`tags`). Replaces the hand-maintained `types.ts` mirroring and the manual per-route validation.
 
 **Tier 2 — opportunistic, low-risk**
+
 - Replace the manual `innerJoin` + `tagMap` building in `/api/books` with Drizzle relational queries (`with:`); relations are already defined.
 - Move `filterEngine.ts` out of `components/` into `lib/` — it's a pure module.
 - Reject session tokens older than the cookie `maxAge` in `verifySessionToken` (currently signature-only: a copied cookie stays valid until `AUTH_SECRET` rotates).
@@ -47,13 +49,16 @@ The project was paused and is being revived. Before adding new features, pay dow
 Surfaced while verifying the `$derived.by` reactivity fix. Fold into the decompose/wire work rather than one-off patches where possible.
 
 **Bugs**
-- **Scope switch stalls the preview.** Opening the Console pre-scoped to a bookfair works, but *changing* scope via the dropdown leaves the preview stuck loading (no books shown). Root cause: `bookfairDetailId` is passed to `createBookfairDetailQuery`/`createBooksByEventQuery` by value, capturing only the initial value (svelte-check `state_referenced_locally` warnings at `console/+page.svelte:64–65`) — the queries never react to scope changes. Fix belongs with the **batch/bulk hook-wiring** item (pass a reactive getter / reconfigure the query on scope change).
+
+- **Scope switch stalls the preview.** Opening the Console pre-scoped to a bookfair works, but _changing_ scope via the dropdown leaves the preview stuck loading (no books shown). Root cause: `bookfairDetailId` is passed to `createBookfairDetailQuery`/`createBooksByEventQuery` by value, capturing only the initial value (svelte-check `state_referenced_locally` warnings at `console/+page.svelte:64–65`) — the queries never react to scope changes. Fix belongs with the **batch/bulk hook-wiring** item (pass a reactive getter / reconfigure the query on scope change).
 - **Preview filter ignores series-level keys.** `location:` and `volumes:` work, but `publisher:`, `status:`, `type:`, `tag:` do nothing. Preview rows only carry `seriesShortName/volumeNumber/location/source/price/isDraft/seriesTags`, so the other fields aren't present to match, and `tag:` isn't a handled param (tags flow through include/exclude). Fix: enrich preview rows with the series fields (`publisher/status/type`) and map `tag:` in the Console remapping.
 
 **Behavior**
-- **Next-volume suggestion ignores out-of-scope ownership.** In a bookfair scope, selecting a series *not* in that event suggests volume 1 instead of the next unowned volume, because it reads `scopedBooks`. Compute next-unowned from *all* owned books, not just the in-scope set.
+
+- **Next-volume suggestion ignores out-of-scope ownership.** In a bookfair scope, selecting a series _not_ in that event suggests volume 1 instead of the next unowned volume, because it reads `scopedBooks`. Compute next-unowned from _all_ owned books, not just the in-scope set.
 
 **Enhancements / polish**
+
 - Add a **Location selector** to the Add Books form, defaulting to **Apartment**.
 - **Bulk-edit confirm dialog** reuses `DeleteConfirmDialog`, so its button reads "Delete"/"Cancel" — misleading for an edit. Use an apply-styled confirm ("Apply"/"Confirm").
 - Add **`volumes` (volumeNumber)** as a bulk-edit condition column.
@@ -95,11 +100,11 @@ Phases 3, 4, and 5 are independent after Phase 2. Phase 6 depends on 3 + 4 (Anal
 
 ## Verification per phase
 
-| Phase | Verification |
-|---|---|
+| Phase         | Verification                                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
 | Consolidation | Console split; batch/bulk via hooks; `filterEngine` tests pass; types derive from schema; build + tests green |
-| v0.3 | Activity log records Console operations; hitlist generates from watchlist |
-| v0.4 | Charts render with real data; spending toggle works; calculations verified |
-| v0.5 | PWA installs on mobile; offline mutations queue and retry; forms are fast |
-| v0.6 | Receipt image generates and downloads; milestones trigger |
-| v0.7 | Lighthouse PWA ≥ 90; accessibility audit passes; production Docker works |
+| v0.3          | Activity log records Console operations; hitlist generates from watchlist                                     |
+| v0.4          | Charts render with real data; spending toggle works; calculations verified                                    |
+| v0.5          | PWA installs on mobile; offline mutations queue and retry; forms are fast                                     |
+| v0.6          | Receipt image generates and downloads; milestones trigger                                                     |
+| v0.7          | Lighthouse PWA ≥ 90; accessibility audit passes; production Docker works                                      |

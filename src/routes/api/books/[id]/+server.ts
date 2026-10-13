@@ -37,9 +37,11 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 
 	// Build update fields
 	const updateFields: Record<string, unknown> = {};
-	if (body.volumeNumber !== undefined) updateFields.volumeNumber = Number(body.volumeNumber).toFixed(1);
+	if (body.volumeNumber !== undefined)
+		updateFields.volumeNumber = Number(body.volumeNumber).toFixed(1);
 	if (body.location !== undefined) updateFields.location = body.location;
-	if (body.boughtAt !== undefined) updateFields.boughtAt = body.boughtAt ? new Date(body.boughtAt) : null;
+	if (body.boughtAt !== undefined)
+		updateFields.boughtAt = body.boughtAt ? new Date(body.boughtAt) : null;
 	if (body.price !== undefined) updateFields.price = body.price;
 	if (body.source !== undefined) updateFields.source = body.source;
 	if (body.sourceEventId !== undefined) updateFields.sourceEventId = body.sourceEventId;
@@ -52,11 +54,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 
 	updateFields.updatedAt = new Date();
 
-	const [updated] = await db
-		.update(books)
-		.set(updateFields)
-		.where(eq(books.id, id))
-		.returning();
+	const [updated] = await db.update(books).set(updateFields).where(eq(books.id, id)).returning();
 
 	return json(updated);
 };

@@ -30,10 +30,7 @@
 
 {#if crumbs.length > 0}
 	<nav aria-label="Breadcrumb" class="flex items-center gap-1.5 text-sm text-muted-foreground">
-		<a
-			href="/"
-			class="flex items-center gap-1 transition-colors hover:text-foreground"
-		>
+		<a href="/" class="flex items-center gap-1 transition-colors hover:text-foreground">
 			<Home class="h-3.5 w-3.5" />
 		</a>
 
@@ -42,10 +39,7 @@
 			{#if i === crumbs.length - 1}
 				<span class="font-medium text-foreground">{crumb.label}</span>
 			{:else}
-				<a
-					href={crumb.href}
-					class="transition-colors hover:text-foreground"
-				>
+				<a href={crumb.href} class="transition-colors hover:text-foreground">
 					{crumb.label}
 				</a>
 			{/if}

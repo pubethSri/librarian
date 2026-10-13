@@ -27,7 +27,11 @@
 
 {#if editable}
 	<Select.Root type="single" value={status} onValueChange={handleChange}>
-		<Select.Trigger class="h-7 w-auto gap-1 border-0 px-2 text-xs font-medium {statusVariants[status]} hover:opacity-80 transition-opacity">
+		<Select.Trigger
+			class="h-7 w-auto gap-1 border-0 px-2 text-xs font-medium {statusVariants[
+				status
+			]} transition-opacity hover:opacity-80"
+		>
 			{SERIES_STATUS_LABELS[status]}
 		</Select.Trigger>
 		<Select.Content>

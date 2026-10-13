@@ -1,40 +1,40 @@
 # Librarian — Development Status
 
 > **This file is the single source of truth for "where the project is now."**
-> Roadmap / future scope lives in [`ROADMAP.md`](./ROADMAP.md); how to work in the repo lives in [`../CLAUDE.md`](../CLAUDE.md); product vision in [`context.md`](./context.md); design in [`design_direction.md`](./design_direction.md). Update *this* file at every version bump.
+> Roadmap / future scope lives in [`ROADMAP.md`](./ROADMAP.md); how to work in the repo lives in [`../CLAUDE.md`](../CLAUDE.md); product vision in [`context.md`](./context.md); design in [`design_direction.md`](./design_direction.md). Update _this_ file at every version bump.
 
 ## State as of 2026-07-27
 
 - **Current version:** v0.3 — **in progress** (Phase 3; Consolidation milestone underway, revived after a multi-month pause).
-- **Direction:** *Consolidation first.* Before finishing Phase 3, pay down debt found on return (see the Consolidation milestone in `ROADMAP.md`). Theme: single source of truth, in code and docs.
+- **Direction:** _Consolidation first._ Before finishing Phase 3, pay down debt found on return (see the Consolidation milestone in `ROADMAP.md`). Theme: single source of truth, in code and docs.
 - **Latest:** Console overhaul Step 2 done — the Console is decomposed into 4 panel components, 2 rune stores and a tested pure-logic module. `console/+page.svelte` went **978 → 244 lines**; every console file is under the ~300-line exit criterion. Behavior-preserving by design; **awaiting the browser smoke test** (script in the Console overhaul section below). Next: Step 3 (wire batch/bulk hooks + fix the scope-switch bug).
 - **Docs reconciled** this date: `STATUS.md` is now the only state tracker; `PLAN.md` became `ROADMAP.md` (no completion checkboxes); `HANDOFF.md` (a one-time Antigravity→Claude Code migration artifact) and `note_to_self.txt` (a stale, already-fixed bug note) were retired.
 
 ### Phase 3 progress
 
-| # | Sub-feature | Status |
-|---|---|---|
-| 1 | TanStack Query hooks for bookfairs + types | ✅ Done |
-| 2 | Bookfairs management page (card grid + CRUD dialogs) | ✅ Done |
-| 3 | Bookfair detail page (header, stats, books table) | ✅ Done |
-| 4 | Source tracking with event linking | ✅ Done |
-| 5 | Console — Preview Panel + Add Books tab | ✅ Done |
-| 6 | Console — Bulk Edit tab | ✅ Done |
-| — | **Consolidation milestone** (debt paydown) | 🔵 **In progress** (see below) |
-| 7 | Activity Log | ⬜ Pending |
-| 8 | Bookfair Hitlist | ⬜ Pending |
-| 9 | Polish, sidebar links, build verification → tag `v0.3` | ⬜ Pending |
+| #   | Sub-feature                                            | Status                         |
+| --- | ------------------------------------------------------ | ------------------------------ |
+| 1   | TanStack Query hooks for bookfairs + types             | ✅ Done                        |
+| 2   | Bookfairs management page (card grid + CRUD dialogs)   | ✅ Done                        |
+| 3   | Bookfair detail page (header, stats, books table)      | ✅ Done                        |
+| 4   | Source tracking with event linking                     | ✅ Done                        |
+| 5   | Console — Preview Panel + Add Books tab                | ✅ Done                        |
+| 6   | Console — Bulk Edit tab                                | ✅ Done                        |
+| —   | **Consolidation milestone** (debt paydown)             | 🔵 **In progress** (see below) |
+| 7   | Activity Log                                           | ⬜ Pending                     |
+| 8   | Bookfair Hitlist                                       | ⬜ Pending                     |
+| 9   | Polish, sidebar links, build verification → tag `v0.3` | ⬜ Pending                     |
 
 ### Consolidation progress (v0.3.x)
 
-| Item | Status |
-|---|---|
-| `filterEngine` unit tests (26 characterization tests, incl. numeric-`=` regression guard) | ✅ Done |
-| Console overhaul — Step 1: fix `$derived` misuse (`$derived.by`), svelte-check 31 → 0 | ✅ Done (browser-verified) |
-| Console overhaul — Step 2: decompose into panels + `.svelte.ts` rune modules | ✅ Done (awaiting browser smoke test) |
-| Console overhaul — Step 3: wire `batch`/`bulk` hooks + `invalidateQueries` (fold in scope-switch query-reactivity bug) | ⬜ Next |
-| Types + validation via `drizzle-zod` (Tier 1) | ⬜ Pending |
-| Tier 2 (relational `/api/books`, move `filterEngine` to `lib/`, session token expiry) | ⬜ Pending |
+| Item                                                                                                                   | Status                                |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `filterEngine` unit tests (26 characterization tests, incl. numeric-`=` regression guard)                              | ✅ Done                               |
+| Console overhaul — Step 1: fix `$derived` misuse (`$derived.by`), svelte-check 31 → 0                                  | ✅ Done (browser-verified)            |
+| Console overhaul — Step 2: decompose into panels + `.svelte.ts` rune modules                                           | ✅ Done (awaiting browser smoke test) |
+| Console overhaul — Step 3: wire `batch`/`bulk` hooks + `invalidateQueries` (fold in scope-switch query-reactivity bug) | ⬜ Next                               |
+| Types + validation via `drizzle-zod` (Tier 1)                                                                          | ⬜ Pending                            |
+| Tier 2 (relational `/api/books`, move `filterEngine` to `lib/`, session token expiry)                                  | ⬜ Pending                            |
 
 A visual test on 2026-07-02 confirmed the Step 1 reactivity fix and surfaced a set of Console bugs/polish items — logged as **"Console follow-ups"** in `ROADMAP.md`.
 
@@ -42,49 +42,50 @@ A visual test on 2026-07-02 confirmed the Step 1 reactivity fix and surfaced a s
 
 `console/+page.svelte`: **978 → 244 lines**. It now owns only the queries, scope state, `activeTab`, the two commit functions and the layout.
 
-| File | Lines | Role |
-|---|---|---|
-| `src/routes/(app)/console/+page.svelte` | 244 | Orchestration: queries, scope, tabs, commit, confirm dialog |
-| `src/lib/console/types.ts` | 44 | `ScopeType`, `BulkAction`, `Condition`, `PreviewRow`, `BookfairDefaults` |
-| `src/lib/console/logic.ts` (+ `.test.ts`) | 239 | Pure logic — no runes, no `crypto`, no toasts. 49 tests |
-| `src/lib/console/staging.svelte.ts` | 33 | `createStagingStore()` |
-| `src/lib/console/bulkEdit.svelte.ts` | 78 | `createBulkEditStore(getBooks, getIsActive)` |
-| `src/lib/components/console/PreviewPanel.svelte` | 223 | Filter bar + table + commit bar |
-| `src/lib/components/console/BulkEditPanel.svelte` | 196 | Action/value selectors + condition builder |
-| `src/lib/components/console/AddBooksPanel.svelte` | 141 | Series picker, volume range, price |
-| `src/lib/components/console/ScopeBar.svelte` | 79 | Scope selector + bookfair chip |
+| File                                              | Lines | Role                                                                     |
+| ------------------------------------------------- | ----- | ------------------------------------------------------------------------ |
+| `src/routes/(app)/console/+page.svelte`           | 244   | Orchestration: queries, scope, tabs, commit, confirm dialog              |
+| `src/lib/console/types.ts`                        | 44    | `ScopeType`, `BulkAction`, `Condition`, `PreviewRow`, `BookfairDefaults` |
+| `src/lib/console/logic.ts` (+ `.test.ts`)         | 239   | Pure logic — no runes, no `crypto`, no toasts. 49 tests                  |
+| `src/lib/console/staging.svelte.ts`               | 33    | `createStagingStore()`                                                   |
+| `src/lib/console/bulkEdit.svelte.ts`              | 78    | `createBulkEditStore(getBooks, getIsActive)`                             |
+| `src/lib/components/console/PreviewPanel.svelte`  | 223   | Filter bar + table + commit bar                                          |
+| `src/lib/components/console/BulkEditPanel.svelte` | 196   | Action/value selectors + condition builder                               |
+| `src/lib/components/console/AddBooksPanel.svelte` | 141   | Series picker, volume range, price                                       |
+| `src/lib/components/console/ScopeBar.svelte`      | 79    | Scope selector + bookfair chip                                           |
 
 Test count 58 → **107**. svelte-check: 6 errors (all pre-existing, none in `console/`); warnings 34 → 31, with the Console's own down 5 → 2 — those two are the captured-by-value query args at `+page.svelte:35–36`, i.e. the Step 3 bug markers.
 
 **Where the `ROADMAP.md` "Console follow-ups" items now live** (that list still describes the pre-decomposition layout):
 
-| Follow-up | Now in |
-|---|---|
-| Scope switch stalls the preview (root cause) | `+page.svelte:35–36` |
+| Follow-up                                                                 | Now in                                                               |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Scope switch stalls the preview (root cause)                              | `+page.svelte:35–36`                                                 |
 | Preview filter ignores series-level keys (`publisher:`/`status:`/`type:`) | `PreviewRow` in `console/types.ts`; `buildPreviewRows` in `logic.ts` |
-| `tag:` not handled in the Console remapping | `remapPreviewFilterState` in `logic.ts` |
-| Next-volume ignores out-of-scope ownership | `nextVolumeFor` in `logic.ts`, called from `AddBooksPanel.svelte` |
-| Location selector for the Add Books form | `AddBooksPanel.svelte` |
-| Bulk-edit confirm dialog wording | `+page.svelte` (the dialog stayed on the page) |
-| `volumes` as a bulk-edit condition column | `matchesConditions` in `logic.ts`; `BulkEditPanel.svelte` |
-| Sticky preview count bar, series grouping | `PreviewPanel.svelte` |
+| `tag:` not handled in the Console remapping                               | `remapPreviewFilterState` in `logic.ts`                              |
+| Next-volume ignores out-of-scope ownership                                | `nextVolumeFor` in `logic.ts`, called from `AddBooksPanel.svelte`    |
+| Location selector for the Add Books form                                  | `AddBooksPanel.svelte`                                               |
+| Bulk-edit confirm dialog wording                                          | `+page.svelte` (the dialog stayed on the page)                       |
+| `volumes` as a bulk-edit condition column                                 | `matchesConditions` in `logic.ts`; `BulkEditPanel.svelte`            |
+| Sticky preview count bar, series grouping                                 | `PreviewPanel.svelte`                                                |
 
 Note: the four new components are **unformatted** — prettier cannot process any `.svelte` file in this repo (see the tooling note in the decisions below), so expect a sizeable reformat diff over them once that is fixed.
 
 **Browser smoke test to run before Step 3** (this is what the automated gate cannot prove):
 
-1. `/console` → books load. Filter `location:home`, then clear the box — the list unfilters (a ~150 ms lag is *correct*, the search bar debounces its re-parse).
+1. `/console` → books load. Filter `location:home`, then clear the box — the list unfilters (a ~150 ms lag is _correct_, the search bar debounces its re-parse).
 2. Add tab: pick a series → the volume box auto-advances past the highest owned volume. Stage 2 volumes, then re-stage one → duplicate toast, and the range does **not** advance.
 3. Preview: green NEW badges; `X` removes one; Clear All; re-stage; **Commit All** → toast, list refreshes.
 4. Bulk Edit tab: action = location → home, condition `series = <name>` → amber EDIT badges, `→ Home` arrows, "N affected" in the bottom bar.
 5. **Switch to the Add tab → the amber badges and the "N affected" counter must disappear.** This is the `activeTab` gate — the highest-risk silent regression.
 6. **Switch back and forth between tabs → the Add form keeps its series and volume values** (bits-ui hides rather than unmounts tab content; this proves the panel wasn't remounted).
 7. Still on Bulk Edit: remove a condition with its `X`, then hit **Reset** — action, value and conditions all clear (these are store methods reached through a prop). Re-enter them, then **Execute** → confirm → applies, and the form resets on success.
-8. Deep-link `/console?scope=bookfair&id=<n>` → bookfair chip in the scope bar and the "Bookfair mode:" banner in the Add tab. Stage one volume → **the new preview row's Location reads "Apartment", not "Home"**. That is the only visible proof the bookfair defaults crossed the new page → `defaults` prop → panel seam (there is no Location selector yet — that's a pending follow-up). Commit → the created book carries the event's source and date. *Changing scope via the dropdown still stalls the preview — that is the known Step 3 bug and **must still be broken**.*
+8. Deep-link `/console?scope=bookfair&id=<n>` → bookfair chip in the scope bar and the "Bookfair mode:" banner in the Add tab. Stage one volume → **the new preview row's Location reads "Apartment", not "Home"**. That is the only visible proof the bookfair defaults crossed the new page → `defaults` prop → panel seam (there is no Location selector yet — that's a pending follow-up). Commit → the created book carries the event's source and date. _Changing scope via the dropdown still stalls the preview — that is the known Step 3 bug and **must still be broken**._
 
 ## Completed Phases
 
 ### Phase 0 — Project Init & Scaffolding ✅ `v0.0`
+
 - SvelteKit + TypeScript + Tailwind CSS v4 (shadcn-svelte nova/zinc)
 - Docker Compose (PostgreSQL + SvelteKit app)
 - Auth middleware (HMAC-SHA256 cookie), login/logout
@@ -92,6 +93,7 @@ Note: the four new components are **unformatted** — prettier cannot process an
 - Route stubs, PWA manifest, Dockerfile
 
 ### Phase 1 — Database & Emergency Fallback ✅ `v0.1`
+
 - Full Drizzle schema: 6 tables (`series`, `books`, `reading`, `bookfairs`, `tags`, `series_tags`), 5 enums
 - `volume_number` is `numeric(4,1)` — supports half-volumes (4.5)
 - Airtable migration: **44 series + 300 books imported, 0 warnings**
@@ -100,6 +102,7 @@ Note: the four new components are **unformatted** — prettier cannot process an
 - Full CRUD API routes for all entities (12 endpoints)
 
 ### Phase 2 — Desktop: Core Data Management ✅ `v0.2`
+
 - Navigation shell: sidebar (fixed, collapsible, mobile sheet) + breadcrumbs
 - Dashboard home with stats grid and recent additions
 - Series table: search, type/status filters, column sorting, client-side pagination
@@ -115,6 +118,7 @@ Note: the four new components are **unformatted** — prettier cannot process an
 - Error page (+error.svelte)
 
 ### Phase 2C — Unified Search & Filter ✅ `v0.2.3`
+
 - **Unified filter engine** (`filterEngine.ts`) — single `UnifiedFilterState` object shared across all filter UIs
 - **Tag chips bar** (`TagChipsBar.svelte`) — toggleable tag badges on Series and Books pages, active-first sorting, clear button
 - **Booru-style search bar** (`BooruSearchBar.svelte`) — monospace input with structured search syntax:
@@ -129,11 +133,13 @@ Note: the four new components are **unformatted** — prettier cannot process an
 - Old `AdvancedFilter.svelte` and `advancedFilterUtils.ts` removed (replaced by unified system)
 
 ### Phase 3 — Bookfair & Bulk Workflows 🔵 `v0.3` (in progress)
-Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linking, and the unified Console (`/console`) with *Add Books* (staged batch create) and *Bulk Edit* (condition builder → bulk PATCH) tabs. Remaining: Consolidation milestone, then Activity Log, Bookfair Hitlist, and polish. See the progress table above and `ROADMAP.md`.
+
+Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linking, and the unified Console (`/console`) with _Add Books_ (staged batch create) and _Bulk Edit_ (condition builder → bulk PATCH) tabs. Remaining: Consolidation milestone, then Activity Log, Bookfair Hitlist, and polish. See the progress table above and `ROADMAP.md`.
 
 ## Decisions Log
 
 ### Phase 2 Decisions (2026-04-28)
+
 - **Design identity:** "Interactive Editorial" — typography-driven, monochromatic zinc, generous whitespace
 - **Pagination:** Client-side (dataset fits in memory: ~44 series, ~300 books)
 - **Inline editing:** Status badge + watchlist toggle only; all other fields via detail page / edit dialog
@@ -142,6 +148,7 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Table engine:** Pure Svelte 5 reactivity ($derived/$state) instead of TanStack Table v9 alpha
 
 ### v0.2.1 Decisions (2026-04-29)
+
 - **Sidebar:** Compact, grouped nav with section labels (COLLECTION / TOOLS / ANALYTICS). Text-only links, no icons.
 - **Advanced filtering:** Airtable-style multi-field condition builder, toggleable panel. In-memory only (resets on navigation).
 - **Book editing:** EditBookDialog added — core CRUD was incomplete without it.
@@ -149,6 +156,7 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Phase 3 expansion:** Phase 3 split into 3A (Bookfair & Bulk Entry) and 3B (Command Console — visual bulk editing query builder).
 
 ### v0.2.2 Decisions (2026-05-06)
+
 - **Sidebar polish:** Collapse/expand button consistently at bottom, removed book logo, nav content vertically centered.
 - **Books edit access:** EditBookDialog now accessible from both series detail page and global Books page.
 - **Phase 2C added:** Unified Search & Filter — tag chips toggle, booru-style search DSL, unified filter state.
@@ -156,14 +164,16 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Workflow change:** Atomic execution with upfront planning — plan the full phase first (get approval), then execute one sub-feature per prompt, verify each before moving to next.
 
 ### v0.2.3 Decisions (2026-05-26)
+
 - **Booru search architecture:** Bare words match BOTH tag names and name fields (hybrid OR per term, AND across terms). This replaces the old simple text search entirely.
 - **Filter engine:** Numeric `=` operator uses exact equality (not substring match) to prevent `volumes:1` matching `10`, `15`.
 - **`volumes:` param** maps to `bookCount` column, `name:` param searches across `shortName`/`fullName`/`seriesShortName`/`seriesFullName`.
-- **Edit dialog pattern:** Parent controls `open` state exclusively via `showEditBookDialog` boolean. Dialog calls `onclose()` instead of setting `open = false` internally. Prevents re-open bug after Cancel/Save. *(This resolved the bug formerly tracked in `note_to_self.txt`.)*
+- **Edit dialog pattern:** Parent controls `open` state exclusively via `showEditBookDialog` boolean. Dialog calls `onclose()` instead of setting `open = false` internally. Prevents re-open bug after Cancel/Save. _(This resolved the bug formerly tracked in `note_to_self.txt`.)_
 - **Vitest added** for unit testing (`npm test`, `npm run test:watch`).
 - **Command palette (`Ctrl+K`):** Deferred to Phase 7 (Polish) since booru search bar covers the filtering use case.
 
 ### Phase 3 Decisions (2026-05-27)
+
 - **Unified Console (`/console`):** Single two-panel page replaces both the bookfair entry dialog and the separate command console page. Zero redundancy — one system handles adding books AND bulk editing.
 - **Console two-panel layout:** Preview Panel (left) + Command Panel (right). Command Panel has two tabs: "Add Books" and "Bulk Edit".
 - **Preview Panel — full context view:** Shows ALL existing books in scope by default. Staged additions appear with green left border + "NEW" badge. Staged edits appear with amber highlight + old→new value indicator. Both coexist in the same view.
@@ -179,12 +189,14 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Sidebar updates:** Console added to TOOLS section. Hitlist accessible from bookfairs.
 
 ### Consolidation Decisions (2026-07-01)
+
 - **Consolidation before features:** On revival, decompose the Console, wire the orphaned batch/bulk query hooks, add `filterEngine` tests, and derive types/validation from the schema (`drizzle-zod`) before building Activity Log. Rationale + full item list in `ROADMAP.md`.
 - **Docs single-source-of-truth:** `STATUS.md` owns current state; `ROADMAP.md` owns forward plan (no checkboxes); `CLAUDE.md` owns how-to-work. `HANDOFF.md` and `note_to_self.txt` retired.
 
 ### Consolidation Decisions (2026-07-02)
+
 - **Console overhaul is staged, one variable per step:** (1) fix the `$derived` reactivity/type bug in place, (2) decompose behavior-preserving, (3) wire the hooks. Each step is verified (svelte-check + build + tests + a browser smoke test) before the next, so any regression is attributable. Step 1 is done and browser-verified.
-- **`$derived` vs `$derived.by`:** `$derived(() => x)` stores the *function*; use `$derived.by(() => x)` (or `$derived(x)` for a plain expression) when the body is a closure. This was the root cause of the Console's 31 svelte-check errors.
+- **`$derived` vs `$derived.by`:** `$derived(() => x)` stores the _function_; use `$derived.by(() => x)` (or `$derived(x)` for a plain expression) when the body is a closure. This was the root cause of the Console's 31 svelte-check errors.
 - **Tests are committed to the repo:** executable specs travel with the code (matches the already-tracked `booruParser.test.ts`); they don't ship in the build. This is distinct from the local-only `docs/`-style context.
 - **Console scope-switch bug** traced to query args captured by value (`state_referenced_locally`, now at `console/+page.svelte:35–36` after the Step 2 decomposition); scheduled to be fixed with the batch/bulk hook-wiring step. See "Console follow-ups" in `ROADMAP.md`.
 
@@ -195,66 +207,69 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Pure logic separated from rune modules.** `logic.ts` has no runes, no `crypto`, no toasts, so it is unit-testable without the Svelte compiler (vitest here has no `svelteTesting` plugin). Rule: pure logic never imports a `.svelte.ts`, and no `.test.ts` imports one.
 - **Console modules live in `$lib`, not the route folder.** `src/lib/console/` for pure + rune modules, `src/lib/components/console/` for components — matching `CLAUDE.md`'s "app components sit in `src/lib/components/`" and the Tier 2 direction of keeping pure modules out of `components/`. There is no route-folder colocation precedent in this repo.
 - **Step 2 was a pure refactor.** No logged Console follow-up was fixed, so any regression is attributable. Known quirks were preserved deliberately and pinned by tests rather than corrected: the "Maximum 50" guard that admits 51 volumes, a zero price dropping to `undefined`, blank condition values matching nothing, series-level params (`publisher:`/`status:`/`type:`) matching nothing in the preview, and the `activeTab === 'edit'` gate on `affectedBooks`.
-- **`npm run lint` is broken repo-wide, and predates this work.** `prettier` crashes on *every* `.svelte` file (`TypeError: getVisitorKeys is not a function` — a prettier/`prettier-plugin-svelte` version mismatch), so `npm run format` cannot touch components either. `npx eslint <path>` does work and was used as the unused-import net. Worth fixing as its own task; **not** folded into the refactor.
+- **`npm run lint` is broken repo-wide, and predates this work.** `prettier` crashes on _every_ `.svelte` file (`TypeError: getVisitorKeys is not a function` — a prettier/`prettier-plugin-svelte` version mismatch), so `npm run format` cannot touch components either. `npx eslint <path>` does work and was used as the unused-import net. Worth fixing as its own task; **not** folded into the refactor.
 
 ## Key Files
-| File | Purpose |
-|---|---|
-| `ROADMAP.md` | Forward roadmap (phases, versioning, open-item recommendations) |
-| `context.md` | Original project requirements |
-| `design_direction.md` | Visual identity, keyboard shortcuts, layout foundation |
-| `../CLAUDE.md` | How to work in the repo (commands, architecture, conventions) |
-| `src/hooks.server.ts` | Auth middleware |
-| `src/lib/server/auth.ts` | Auth utilities (HMAC-SHA256) |
-| `src/lib/server/db/schema.ts` | Full Drizzle schema (6 tables, 5 enums) |
-| `src/lib/server/db/index.ts` | Database connection |
-| `src/lib/utils.ts` | `cn()` utility + shadcn-svelte type helpers |
-| `src/lib/utils/booruParser.ts` (+ `.test.ts`) | Booru-style search query parser + builder, with unit tests |
-| `src/lib/types.ts` | Shared TypeScript types (API shapes, enums, mutation payloads) |
-| `src/lib/queries/*.ts` | TanStack Query hooks (series, books, bookfairs, reading, batch, bulk, tags) |
-| `src/lib/components/filterEngine.ts` (+ `.test.ts`) | Unified filter state types + `applyUnifiedFilter()`, with unit tests |
+
+| File                                                   | Purpose                                                                                    |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `ROADMAP.md`                                           | Forward roadmap (phases, versioning, open-item recommendations)                            |
+| `context.md`                                           | Original project requirements                                                              |
+| `design_direction.md`                                  | Visual identity, keyboard shortcuts, layout foundation                                     |
+| `../CLAUDE.md`                                         | How to work in the repo (commands, architecture, conventions)                              |
+| `src/hooks.server.ts`                                  | Auth middleware                                                                            |
+| `src/lib/server/auth.ts`                               | Auth utilities (HMAC-SHA256)                                                               |
+| `src/lib/server/db/schema.ts`                          | Full Drizzle schema (6 tables, 5 enums)                                                    |
+| `src/lib/server/db/index.ts`                           | Database connection                                                                        |
+| `src/lib/utils.ts`                                     | `cn()` utility + shadcn-svelte type helpers                                                |
+| `src/lib/utils/booruParser.ts` (+ `.test.ts`)          | Booru-style search query parser + builder, with unit tests                                 |
+| `src/lib/types.ts`                                     | Shared TypeScript types (API shapes, enums, mutation payloads)                             |
+| `src/lib/queries/*.ts`                                 | TanStack Query hooks (series, books, bookfairs, reading, batch, bulk, tags)                |
+| `src/lib/components/filterEngine.ts` (+ `.test.ts`)    | Unified filter state types + `applyUnifiedFilter()`, with unit tests                       |
 | `src/lib/console/{types,logic}.ts` (+ `logic.test.ts`) | Console types + pure logic (staging, bulk-edit matching, preview rows/filter), unit-tested |
-| `src/lib/console/{staging,bulkEdit}.svelte.ts` | Console rune stores (factories returning getter-backed objects) |
-| `src/lib/components/console/*.svelte` | Console panels: `ScopeBar`, `PreviewPanel`, `AddBooksPanel`, `BulkEditPanel` |
-| `src/lib/components/BooruSearchBar.svelte` | Search input with autocomplete |
-| `src/lib/components/TagChipsBar.svelte` | Toggleable tag filter badges |
-| `src/lib/components/{SeriesTable,BooksTable}.svelte` | Entity tables with booru search/sort/pagination |
-| `src/routes/(app)/console/+page.svelte` | Unified bulk entry + editing workbench (Console) |
-| `src/routes/layout.css` | Global CSS with Tailwind v4 theme tokens |
-| `scripts/{seed,migrate-airtable}.ts` | Dev seed + Airtable CSV → PostgreSQL migration |
+| `src/lib/console/{staging,bulkEdit}.svelte.ts`         | Console rune stores (factories returning getter-backed objects)                            |
+| `src/lib/components/console/*.svelte`                  | Console panels: `ScopeBar`, `PreviewPanel`, `AddBooksPanel`, `BulkEditPanel`               |
+| `src/lib/components/BooruSearchBar.svelte`             | Search input with autocomplete                                                             |
+| `src/lib/components/TagChipsBar.svelte`                | Toggleable tag filter badges                                                               |
+| `src/lib/components/{SeriesTable,BooksTable}.svelte`   | Entity tables with booru search/sort/pagination                                            |
+| `src/routes/(app)/console/+page.svelte`                | Unified bulk entry + editing workbench (Console)                                           |
+| `src/routes/layout.css`                                | Global CSS with Tailwind v4 theme tokens                                                   |
+| `scripts/{seed,migrate-airtable}.ts`                   | Dev seed + Airtable CSV → PostgreSQL migration                                             |
 
 ## API Routes
-| Route | Methods | Description |
-|---|---|---|
-| `/api/series` | GET, POST | List/create series (search, filter, includes tags + book count) |
-| `/api/series/[id]` | GET, PATCH, DELETE | Single series with nested books/tags |
-| `/api/series/[id]/tags` | PUT | Replace tags for series |
-| `/api/books` | GET, POST | List/create books (filter by series/location/draft/event, includes seriesTags) |
-| `/api/books/[id]` | GET, PATCH, DELETE | Single book with reading history |
-| `/api/books/batch` | POST | Batch-create books (Console commit) |
-| `/api/books/bulk` | PATCH | Bulk-update books (allowlisted fields) |
-| `/api/books/[id]/reading` | GET, POST | Reading history + re-reads |
-| `/api/books/[id]/reading/[readingId]` | PATCH | Update reading entry |
-| `/api/bookfairs` | GET, POST | List/create bookfairs |
-| `/api/bookfairs/[id]` | GET, PATCH, DELETE | Bookfair detail / update / delete |
-| `/api/tags` | GET, POST | List/create tags (includes seriesCount) |
-| `/api/tags/[id]` | DELETE | Delete tag |
-| `/api/export/airtable` | GET | CSV download (Airtable format) |
-| `/api/health` | GET | Health check (public) |
-| `/api/logout` | POST | Clear session cookie |
+
+| Route                                 | Methods            | Description                                                                    |
+| ------------------------------------- | ------------------ | ------------------------------------------------------------------------------ |
+| `/api/series`                         | GET, POST          | List/create series (search, filter, includes tags + book count)                |
+| `/api/series/[id]`                    | GET, PATCH, DELETE | Single series with nested books/tags                                           |
+| `/api/series/[id]/tags`               | PUT                | Replace tags for series                                                        |
+| `/api/books`                          | GET, POST          | List/create books (filter by series/location/draft/event, includes seriesTags) |
+| `/api/books/[id]`                     | GET, PATCH, DELETE | Single book with reading history                                               |
+| `/api/books/batch`                    | POST               | Batch-create books (Console commit)                                            |
+| `/api/books/bulk`                     | PATCH              | Bulk-update books (allowlisted fields)                                         |
+| `/api/books/[id]/reading`             | GET, POST          | Reading history + re-reads                                                     |
+| `/api/books/[id]/reading/[readingId]` | PATCH              | Update reading entry                                                           |
+| `/api/bookfairs`                      | GET, POST          | List/create bookfairs                                                          |
+| `/api/bookfairs/[id]`                 | GET, PATCH, DELETE | Bookfair detail / update / delete                                              |
+| `/api/tags`                           | GET, POST          | List/create tags (includes seriesCount)                                        |
+| `/api/tags/[id]`                      | DELETE             | Delete tag                                                                     |
+| `/api/export/airtable`                | GET                | CSV download (Airtable format)                                                 |
+| `/api/health`                         | GET                | Health check (public)                                                          |
+| `/api/logout`                         | POST               | Clear session cookie                                                           |
 
 ## Changelog
-| Date | Change |
-|---|---|
-| 2026-04-20 | Phase 0 completed — scaffolding, Docker, auth, tooling |
-| 2026-04-27 | Phase 1 completed — schema, migration, CRUD API, CSV export |
-| 2026-04-28 | Phase 2 completed — navigation shell, series/books/tags pages, data entry, inline editing |
-| 2026-04-29 | v0.2.1 — compact grouped sidebar, advanced filter, book editing, delete confirmation |
-| 2026-05-06 | v0.2.2 — sidebar polish, books edit from global page, Phase 2C planned, atomic workflow adopted |
-| 2026-05-06 | v0.2.3 start — unified filter engine, tag chips (series + books) |
-| 2026-05-22 | v0.2.3 — booru parser + booru search bar with autocomplete |
-| 2026-05-26 | v0.2.3 done — numeric `=` fix, edit dialog re-open fix, Phase 2 complete |
-| 2026-05-27 | Phase 3 begun — bookfairs CRUD + detail, source/event linking, unified Console (Add Books + Bulk Edit) |
-| 2026-07-01 | **Project revived after pause.** Docs consolidated (STATUS = single source of truth; PLAN → ROADMAP, no checkboxes; HANDOFF + note_to_self retired). Consolidation milestone inserted before the Phase 3 remainder. |
-| 2026-07-02 | Consolidation started — `filterEngine` unit tests added (58 tests total); Console overhaul Step 1 (`$derived.by` fix, svelte-check 31 → 0, browser-verified). Visual-test findings logged as Console follow-ups in `ROADMAP.md`. |
+
+| Date       | Change                                                                                                                                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-20 | Phase 0 completed — scaffolding, Docker, auth, tooling                                                                                                                                                                            |
+| 2026-04-27 | Phase 1 completed — schema, migration, CRUD API, CSV export                                                                                                                                                                       |
+| 2026-04-28 | Phase 2 completed — navigation shell, series/books/tags pages, data entry, inline editing                                                                                                                                         |
+| 2026-04-29 | v0.2.1 — compact grouped sidebar, advanced filter, book editing, delete confirmation                                                                                                                                              |
+| 2026-05-06 | v0.2.2 — sidebar polish, books edit from global page, Phase 2C planned, atomic workflow adopted                                                                                                                                   |
+| 2026-05-06 | v0.2.3 start — unified filter engine, tag chips (series + books)                                                                                                                                                                  |
+| 2026-05-22 | v0.2.3 — booru parser + booru search bar with autocomplete                                                                                                                                                                        |
+| 2026-05-26 | v0.2.3 done — numeric `=` fix, edit dialog re-open fix, Phase 2 complete                                                                                                                                                          |
+| 2026-05-27 | Phase 3 begun — bookfairs CRUD + detail, source/event linking, unified Console (Add Books + Bulk Edit)                                                                                                                            |
+| 2026-07-01 | **Project revived after pause.** Docs consolidated (STATUS = single source of truth; PLAN → ROADMAP, no checkboxes; HANDOFF + note_to_self retired). Consolidation milestone inserted before the Phase 3 remainder.               |
+| 2026-07-02 | Consolidation started — `filterEngine` unit tests added (58 tests total); Console overhaul Step 1 (`$derived.by` fix, svelte-check 31 → 0, browser-verified). Visual-test findings logged as Console follow-ups in `ROADMAP.md`.  |
 | 2026-07-27 | Console overhaul Step 2 — decomposed into 4 panels + 2 rune stores + tested pure logic. `+page.svelte` 978 → 244 lines; 107 tests (was 58); Console svelte-check warnings 5 → 2. Behavior-preserving; browser smoke test pending. |

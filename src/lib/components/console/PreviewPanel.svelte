@@ -117,14 +117,14 @@
 								{#if row.type === 'staged'}
 									<Badge
 										variant="outline"
-										class="border-green-600/40 bg-green-500/10 text-green-600 text-[10px] px-1 py-0"
+										class="border-green-600/40 bg-green-500/10 px-1 py-0 text-[10px] text-green-600"
 									>
 										NEW
 									</Badge>
 								{:else if isAffected}
 									<Badge
 										variant="outline"
-										class="border-amber-500/40 bg-amber-500/10 text-amber-600 text-[10px] px-1 py-0"
+										class="border-amber-500/40 bg-amber-500/10 px-1 py-0 text-[10px] text-amber-600"
 									>
 										EDIT
 									</Badge>
@@ -142,7 +142,7 @@
 									<Badge variant="outline" class="ml-1 text-[10px]">Draft</Badge>
 								{/if}
 							</Table.Cell>
-							<Table.Cell class="py-2 text-center tabular-nums text-sm">
+							<Table.Cell class="py-2 text-center text-sm tabular-nums">
 								{row.volumeNumber}
 							</Table.Cell>
 							<Table.Cell class="py-2 text-sm text-muted-foreground">
@@ -150,11 +150,12 @@
 								{#if isAffected && bulk.action === 'location' && row.location !== bulk.value}
 									<span class="ml-1 inline-flex items-center gap-0.5 text-amber-600">
 										<ArrowRight class="h-2.5 w-2.5" />
-										<span class="text-xs font-medium">{getActionLabel('location', bulk.value)}</span>
+										<span class="text-xs font-medium">{getActionLabel('location', bulk.value)}</span
+										>
 									</span>
 								{/if}
 							</Table.Cell>
-							<Table.Cell class="py-2 text-right tabular-nums text-sm">
+							<Table.Cell class="py-2 text-right text-sm tabular-nums">
 								{formatPrice(row.price)}
 							</Table.Cell>
 							<Table.Cell class="py-2">
@@ -177,9 +178,7 @@
 
 	<!-- Bottom bar -->
 	{#if staging.entries.length > 0 || bulk.affectedBooks.length > 0 || isPreviewFiltered}
-		<div
-			class="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5"
-		>
+		<div class="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5">
 			<div class="flex items-center gap-3 text-sm text-muted-foreground">
 				{#if staging.entries.length > 0}
 					<span class="flex items-center gap-1">

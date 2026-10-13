@@ -76,7 +76,12 @@
 	}
 </script>
 
-<Dialog.Root bind:open onOpenChange={(isOpen) => { if (!isOpen) resetForm(); }}>
+<Dialog.Root
+	bind:open
+	onOpenChange={(isOpen) => {
+		if (!isOpen) resetForm();
+	}}
+>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Add Volume</Dialog.Title>
@@ -91,13 +96,7 @@
 
 			<div class="space-y-2">
 				<Label for="volume-number">Volume Number</Label>
-				<Input
-					id="volume-number"
-					type="number"
-					step="0.5"
-					min="0"
-					bind:value={volumeNumber}
-				/>
+				<Input id="volume-number" type="number" step="0.5" min="0" bind:value={volumeNumber} />
 			</div>
 
 			<div class="space-y-2">
@@ -116,7 +115,13 @@
 
 			<div class="space-y-2">
 				<Label>Source</Label>
-				<Select.Root type="single" bind:value={source} onValueChange={() => { sourceEventId = null; }}>
+				<Select.Root
+					type="single"
+					bind:value={source}
+					onValueChange={() => {
+						sourceEventId = null;
+					}}
+				>
 					<Select.Trigger class="w-full">
 						{source ? source.charAt(0).toUpperCase() + source.slice(1) : 'Select source...'}
 					</Select.Trigger>
@@ -160,7 +165,7 @@
 			</div>
 
 			<div class="flex items-center justify-between">
-				<Label for="draft-toggle" class="font-normal text-sm text-muted-foreground">
+				<Label for="draft-toggle" class="text-sm font-normal text-muted-foreground">
 					Save as draft (incomplete entry)
 				</Label>
 				<Switch id="draft-toggle" bind:checked={isDraft} />

@@ -40,9 +40,7 @@
 <div class="space-y-8">
 	<div>
 		<h1 class="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-		<p class="mt-1 text-sm text-muted-foreground">
-			Overview of your book collection.
-		</p>
+		<p class="mt-1 text-sm text-muted-foreground">Overview of your book collection.</p>
 	</div>
 
 	<div class="flex flex-wrap gap-3">
@@ -65,33 +63,39 @@
 	{:else}
 		{@const s = stats()}
 		<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-			<a href="/series" class="group rounded-lg border border-border p-4 transition-colors hover:bg-accent/50">
+			<a
+				href="/series"
+				class="group rounded-lg border border-border p-4 transition-colors hover:bg-accent/50"
+			>
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
 					<Library class="h-4 w-4" />
 					Total Series
 				</div>
-				<p class="mt-2 text-3xl font-bold tabular-nums text-foreground">{s.totalSeries}</p>
+				<p class="mt-2 text-3xl font-bold text-foreground tabular-nums">{s.totalSeries}</p>
 			</a>
-			<a href="/books" class="group rounded-lg border border-border p-4 transition-colors hover:bg-accent/50">
+			<a
+				href="/books"
+				class="group rounded-lg border border-border p-4 transition-colors hover:bg-accent/50"
+			>
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
 					<BookCopy class="h-4 w-4" />
 					Total Books
 				</div>
-				<p class="mt-2 text-3xl font-bold tabular-nums text-foreground">{s.totalBooks}</p>
+				<p class="mt-2 text-3xl font-bold text-foreground tabular-nums">{s.totalBooks}</p>
 			</a>
 			<div class="rounded-lg border border-border p-4">
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
 					<AlertCircle class="h-4 w-4" />
 					Drafts
 				</div>
-				<p class="mt-2 text-3xl font-bold tabular-nums text-foreground">{s.draftCount}</p>
+				<p class="mt-2 text-3xl font-bold text-foreground tabular-nums">{s.draftCount}</p>
 			</div>
 			<div class="rounded-lg border border-border p-4">
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
 					<BookOpen class="h-4 w-4" />
 					Watchlist
 				</div>
-				<p class="mt-2 text-3xl font-bold tabular-nums text-foreground">{s.watchlistCount}</p>
+				<p class="mt-2 text-3xl font-bold text-foreground tabular-nums">{s.watchlistCount}</p>
 			</div>
 		</div>
 

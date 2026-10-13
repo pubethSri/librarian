@@ -16,7 +16,7 @@
 /** A parsed parameter filter */
 export type ParsedParam = {
 	key: string;
-	op: string;  // '=', '!=', '>', '<', '>=', '<='
+	op: string; // '=', '!=', '>', '<', '>=', '<='
 	value: string;
 };
 

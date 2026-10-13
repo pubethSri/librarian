@@ -32,11 +32,17 @@ export function verifySessionToken(token: string): boolean {
 	if (parts.length !== 2) return false;
 
 	const [timestamp, signature] = parts;
-	const expectedSignature = crypto.createHmac('sha256', AUTH_SECRET).update(timestamp).digest('hex');
+	const expectedSignature = crypto
+		.createHmac('sha256', AUTH_SECRET)
+		.update(timestamp)
+		.digest('hex');
 
 	// Constant-time comparison to prevent timing attacks
 	try {
-		return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'));
+		return crypto.timingSafeEqual(
+			Buffer.from(signature, 'hex'),
+			Buffer.from(expectedSignature, 'hex')
+		);
 	} catch {
 		return false;
 	}

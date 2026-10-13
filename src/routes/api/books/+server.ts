@@ -62,7 +62,12 @@ export const GET: RequestHandler = async ({ url }) => {
 			})
 			.from(seriesTags)
 			.innerJoin(tags, eq(seriesTags.tagId, tags.id))
-			.where(sql`${seriesTags.seriesId} IN (${sql.join(seriesIds.map((id) => sql`${id}`), sql`, `)})`);
+			.where(
+				sql`${seriesTags.seriesId} IN (${sql.join(
+					seriesIds.map((id) => sql`${id}`),
+					sql`, `
+				)})`
+			);
 
 		for (const row of tagRows) {
 			const existing = tagMap.get(row.seriesId) || [];

@@ -116,12 +116,7 @@
 					<Terminal class="h-3.5 w-3.5" />
 					Open in Console
 				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={() => (showEditDialog = true)}
-					class="gap-1.5"
-				>
+				<Button variant="outline" size="sm" onclick={() => (showEditDialog = true)} class="gap-1.5">
 					<Pencil class="h-3.5 w-3.5" />
 					Edit
 				</Button>
@@ -141,19 +136,19 @@
 		<div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Books Purchased</p>
-				<p class="mt-1 text-2xl font-bold tabular-nums text-foreground">
+				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
 					{bf.bookCount}
 				</p>
 			</div>
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Total Spent</p>
-				<p class="mt-1 text-2xl font-bold tabular-nums text-foreground">
+				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
 					฿{bf.totalSpent.toLocaleString()}
 				</p>
 			</div>
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Unique Series</p>
-				<p class="mt-1 text-2xl font-bold tabular-nums text-foreground">
+				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
 					{uniqueSeriesCount()}
 				</p>
 			</div>
@@ -165,7 +160,8 @@
 				<h2 class="text-lg font-semibold text-foreground">Haul</h2>
 				{#if bf.bookCount > 0}
 					<Badge variant="outline" class="text-xs">
-						{bf.bookCount} {bf.bookCount === 1 ? 'volume' : 'volumes'}
+						{bf.bookCount}
+						{bf.bookCount === 1 ? 'volume' : 'volumes'}
 					</Badge>
 				{/if}
 			</div>
@@ -173,16 +169,9 @@
 			{#if booksQuery.isPending}
 				<Skeleton class="h-48" />
 			{:else if booksQuery.isError}
-				<div
-					class="rounded-md border border-destructive/20 bg-destructive/5 p-6 text-center"
-				>
+				<div class="rounded-md border border-destructive/20 bg-destructive/5 p-6 text-center">
 					<p class="text-sm text-destructive">Failed to load books.</p>
-					<Button
-						variant="outline"
-						size="sm"
-						class="mt-3"
-						onclick={() => booksQuery.refetch()}
-					>
+					<Button variant="outline" size="sm" class="mt-3" onclick={() => booksQuery.refetch()}>
 						Retry
 					</Button>
 				</div>

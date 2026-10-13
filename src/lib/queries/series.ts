@@ -1,9 +1,5 @@
 import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-import type {
-	SeriesListItem,
-	CreateSeriesPayload,
-	UpdateSeriesPayload
-} from '$lib/types';
+import type { SeriesListItem, CreateSeriesPayload, UpdateSeriesPayload } from '$lib/types';
 
 /** Fetch all series with optional filters */
 async function fetchSeries(params?: {

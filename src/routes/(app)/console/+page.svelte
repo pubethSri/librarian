@@ -47,9 +47,7 @@
 	});
 
 	const isLoading = $derived(
-		scopeType === 'bookfair' && scopeId
-			? eventBooksQuery.isPending
-			: allBooksQuery.isPending
+		scopeType === 'bookfair' && scopeId ? eventBooksQuery.isPending : allBooksQuery.isPending
 	);
 
 	// ─── Staged Entries ─────────────────────────────────────────────────────────
@@ -207,7 +205,7 @@
 
 		<!-- Command Panel (right) -->
 		<div class="flex flex-col overflow-auto" style="flex-basis: 42%;">
-			<Tabs.Root bind:value={activeTab} class="flex flex-col h-full">
+			<Tabs.Root bind:value={activeTab} class="flex h-full flex-col">
 				<div class="border-b border-border px-4">
 					<Tabs.List class="w-full">
 						<Tabs.Trigger value="add" class="flex-1">Add Books</Tabs.Trigger>

@@ -23,7 +23,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (!sessionToken || !verifySessionToken(sessionToken)) {
 		// Redirect to login, preserving the intended destination
-		const redirectTo = pathname === '/' ? '/login' : `/login?redirectTo=${encodeURIComponent(pathname)}`;
+		const redirectTo =
+			pathname === '/' ? '/login' : `/login?redirectTo=${encodeURIComponent(pathname)}`;
 		throw redirect(303, redirectTo);
 	}
 

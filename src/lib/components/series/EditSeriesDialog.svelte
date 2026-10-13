@@ -113,10 +113,16 @@
 			</div>
 			<div class="space-y-2">
 				<Label for="edit-total">Total Volumes</Label>
-				<Input id="edit-total" type="number" min="0" bind:value={totalVolumes} placeholder="Optional" />
+				<Input
+					id="edit-total"
+					type="number"
+					min="0"
+					bind:value={totalVolumes}
+					placeholder="Optional"
+				/>
 			</div>
 			<div class="flex items-center justify-between">
-				<Label for="edit-watchlist" class="font-normal text-sm">Watchlist</Label>
+				<Label for="edit-watchlist" class="text-sm font-normal">Watchlist</Label>
 				<Switch id="edit-watchlist" bind:checked={watchlist} />
 			</div>
 		</div>

@@ -56,7 +56,12 @@
 	}
 </script>
 
-<Dialog.Root bind:open onOpenChange={(isOpen) => { if (!isOpen) onclose(); }}>
+<Dialog.Root
+	bind:open
+	onOpenChange={(isOpen) => {
+		if (!isOpen) onclose();
+	}}
+>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Edit Bookfair</Dialog.Title>

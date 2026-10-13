@@ -1,6 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { verifyPassword, createSessionToken, getSessionCookieOptions, COOKIE_NAME } from '$lib/server/auth';
+import {
+	verifyPassword,
+	createSessionToken,
+	getSessionCookieOptions,
+	COOKIE_NAME
+} from '$lib/server/auth';
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	// If already authenticated, redirect to home

@@ -29,8 +29,7 @@
 		updateMutation.mutate(
 			{ id, watchlist },
 			{
-				onSuccess: () =>
-					toast.success(watchlist ? 'Added to watchlist' : 'Removed from watchlist'),
+				onSuccess: () => toast.success(watchlist ? 'Added to watchlist' : 'Removed from watchlist'),
 				onError: (err: Error) => toast.error(err.message)
 			}
 		);

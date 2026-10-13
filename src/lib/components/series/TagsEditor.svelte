@@ -67,7 +67,9 @@
 						{#each tagsQuery.data as tag}
 							<button
 								onclick={() => toggleTag(tag.id)}
-								class="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors {selectedIds.has(tag.id)
+								class="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors {selectedIds.has(
+									tag.id
+								)
 									? 'border-foreground bg-foreground text-background'
 									: 'border-border bg-background text-foreground hover:bg-accent'}"
 							>

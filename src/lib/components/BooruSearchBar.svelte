@@ -195,7 +195,9 @@
 <div class="relative">
 	<!-- Search input -->
 	<div class="relative">
-		<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+		<Search
+			class="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50"
+		/>
 		<input
 			bind:this={inputEl}
 			type="text"
@@ -205,14 +207,14 @@
 			onkeydown={handleKeydown}
 			onfocus={handleFocus}
 			onblur={handleBlur}
-			class="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-8 py-2 text-sm font-mono text-foreground ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+			class="flex h-9 w-full rounded-md border border-input bg-background py-2 pr-8 pl-8 font-mono text-sm text-foreground ring-offset-background placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
 			autocomplete="off"
 			spellcheck="false"
 		/>
 		{#if value}
 			<button
 				onclick={clearInput}
-				class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+				class="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground/50 transition-colors hover:text-foreground"
 				tabindex={-1}
 			>
 				<X class="h-3.5 w-3.5" />
@@ -223,22 +225,34 @@
 	<!-- Autocomplete dropdown -->
 	{#if showSuggestions && suggestions().length > 0}
 		<div
-			class="absolute top-full left-0 right-0 z-50 mt-1 max-h-52 overflow-auto rounded-md border border-border bg-popover p-1 shadow-md"
+			class="absolute top-full right-0 left-0 z-50 mt-1 max-h-52 overflow-auto rounded-md border border-border bg-popover p-1 shadow-md"
 		>
 			{#each suggestions() as suggestion, i (suggestion.value)}
 				<button
 					class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors
 						{i === selectedIndex
-							? 'bg-accent text-accent-foreground'
-							: 'text-popover-foreground hover:bg-accent/50'}"
-					onmousedown={(e: MouseEvent) => { e.preventDefault(); applySuggestion(suggestion.value); }}
+						? 'bg-accent text-accent-foreground'
+						: 'text-popover-foreground hover:bg-accent/50'}"
+					onmousedown={(e: MouseEvent) => {
+						e.preventDefault();
+						applySuggestion(suggestion.value);
+					}}
 				>
 					{#if suggestion.type === 'tag'}
-						<span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">T</span>
+						<span
+							class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
+							>T</span
+						>
 					{:else if suggestion.type === 'param'}
-						<span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/10 text-[9px] font-bold text-blue-500">P</span>
+						<span
+							class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/10 text-[9px] font-bold text-blue-500"
+							>P</span
+						>
 					{:else}
-						<span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/10 text-[9px] font-bold text-emerald-500">V</span>
+						<span
+							class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/10 text-[9px] font-bold text-emerald-500"
+							>V</span
+						>
 					{/if}
 					<span class="font-mono text-xs">{suggestion.label}</span>
 				</button>

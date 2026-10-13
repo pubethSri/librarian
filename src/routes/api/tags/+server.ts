@@ -29,10 +29,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	try {
-		const [created] = await db
-			.insert(tags)
-			.values({ name: body.name })
-			.returning();
+		const [created] = await db.insert(tags).values({ name: body.name }).returning();
 
 		return json(created, { status: 201 });
 	} catch (err: unknown) {

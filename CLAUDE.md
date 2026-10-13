@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Librarian is a personal full-stack web app for cataloging a physical collection of light novels and manga, replacing a legacy Airtable setup. It serves a data-rich desktop dashboard plus (planned) a mobile PWA "Field Mode" for rapid data entry at bookstores/bookfairs.
 
 **Current project state — always read these; they own the truth, not this file:**
+
 - `docs/STATUS.md` — **single source of truth for current state**: version, what's done, decisions log, changelog, next step
 - `docs/ROADMAP.md` — forward roadmap (phases, versioning, open-item recommendations); no completion checkboxes
 - `docs/design_direction.md` — visual identity, layout, theming rules
@@ -26,12 +27,14 @@ npm run test:watch       # vitest in watch mode
 ```
 
 Tests: Vitest is scoped to `src/**/*.test.ts` (see `vite.config.ts`) — pure unit tests only, not Svelte component tests. Run a single file or test with:
+
 ```bash
 npx vitest run src/lib/utils/booruParser.test.ts
 npx vitest run -t "parses mixed include and exclude"   # by test name
 ```
 
 Database (requires Docker; `DATABASE_URL` must be set — see `.env.example`):
+
 ```bash
 npm run db:start         # docker compose up -d db  (Postgres 16)
 npm run db:stop
@@ -60,10 +63,11 @@ SvelteKit 2 + **Svelte 5 runes** (runes mode is forced in `svelte.config.js` for
 **Routing:** Everything under the `src/routes/(app)/` group shares the authenticated sidebar shell (`+layout.svelte`). `/login` sits outside the group. API routes are under `src/routes/api/`.
 
 **Filtering (two layers — don't conflate them):**
-- *Coarse, server-side:* `GET /api/books` filters on `seriesId`, `location`, `isDraft`, `sourceEventId` query params via Drizzle.
-- *Rich, client-side:* `src/lib/components/filterEngine.ts` defines `UnifiedFilterState`, the single source of truth applied in-memory over the already-fetched list. It's shared by `SeriesTable`, `BooksTable`, `TagChipsBar`, and `BooruSearchBar`. Booru-style query text (`isekai -harem status:ended volumes:>=4 type:ln`) is parsed by `src/lib/utils/booruParser.ts` (unit-tested) into include/exclude tags, `key:op value` params, and bare search terms. Note the param remapping in the engine (e.g. `volumes` → `bookCount`). Client-side filtering/pagination is a deliberate choice because the dataset is small (per `docs/design_direction.md`).
 
-**Console** (`src/routes/(app)/console/`): a full-page two-panel bulk workbench for adding/editing many books. Edits are *staged* in component state (`StagedBookEntry` / `StagedEdit` in `types.ts`) and previewed before commit, then flushed through the batch (`POST /api/books/batch`) and bulk (`PATCH /api/books/bulk`) endpoints. The bulk endpoint enforces an `ALLOWED_FIELDS` allowlist and clears `sourceEventId` when `source` moves off `bookfair`. Note: the mutation hooks in `queries/batch.ts` / `queries/bulk.ts` are currently unused — the Console calls these endpoints directly with `fetch` and calls `refetch()` manually, instead of going through the hooks + `invalidateQueries` like the rest of the app.
+- _Coarse, server-side:_ `GET /api/books` filters on `seriesId`, `location`, `isDraft`, `sourceEventId` query params via Drizzle.
+- _Rich, client-side:_ `src/lib/components/filterEngine.ts` defines `UnifiedFilterState`, the single source of truth applied in-memory over the already-fetched list. It's shared by `SeriesTable`, `BooksTable`, `TagChipsBar`, and `BooruSearchBar`. Booru-style query text (`isekai -harem status:ended volumes:>=4 type:ln`) is parsed by `src/lib/utils/booruParser.ts` (unit-tested) into include/exclude tags, `key:op value` params, and bare search terms. Note the param remapping in the engine (e.g. `volumes` → `bookCount`). Client-side filtering/pagination is a deliberate choice because the dataset is small (per `docs/design_direction.md`).
+
+**Console** (`src/routes/(app)/console/`): a full-page two-panel bulk workbench for adding/editing many books. Edits are _staged_ in component state (`StagedBookEntry` / `StagedEdit` in `types.ts`) and previewed before commit, then flushed through the batch (`POST /api/books/batch`) and bulk (`PATCH /api/books/bulk`) endpoints. The bulk endpoint enforces an `ALLOWED_FIELDS` allowlist and clears `sourceEventId` when `source` moves off `bookfair`. Note: the mutation hooks in `queries/batch.ts` / `queries/bulk.ts` are currently unused — the Console calls these endpoints directly with `fetch` and calls `refetch()` manually, instead of going through the hooks + `invalidateQueries` like the rest of the app.
 
 **Airtable export:** `GET /api/export/airtable` produces a CSV formatted for emergency re-import — the escape hatch back to the legacy setup.
 
@@ -77,8 +81,9 @@ SvelteKit 2 + **Svelte 5 runes** (runes mode is forced in `svelte.config.js` for
 ## Working agreement
 
 This project follows a strict phased workflow (plan the phase → get approval → execute one sub-feature per prompt → verify before the next). The durable, non-negotiable rules:
+
 - **The build must pass after every change** (`npm run build`, 0 errors) and tests must pass.
-- **Update `docs/STATUS.md` at each version bump** — it is the *only* file that tracks current state (record decisions there; `ROADMAP.md` changes only when the plan itself changes).
+- **Update `docs/STATUS.md` at each version bump** — it is the _only_ file that tracks current state (record decisions there; `ROADMAP.md` changes only when the plan itself changes).
 
 > Currently mid-`v0.3`, revived after a pause. The immediate focus is the **Consolidation milestone** in `docs/ROADMAP.md` (decompose the Console, wire the batch/bulk hooks, test `filterEngine`, derive types via `drizzle-zod`) — do this before the Phase 3 remainder (Activity Log, Hitlist).
 

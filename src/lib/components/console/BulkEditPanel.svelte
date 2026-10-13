@@ -20,7 +20,13 @@
 	<!-- Action selector -->
 	<div class="space-y-2">
 		<Label>Action</Label>
-		<Select.Root type="single" bind:value={bulk.action} onValueChange={() => { bulk.value = ''; }}>
+		<Select.Root
+			type="single"
+			bind:value={bulk.action}
+			onValueChange={() => {
+				bulk.value = '';
+			}}
+		>
 			<Select.Trigger class="w-full">
 				{#if bulk.action === 'location'}
 					Change location to
@@ -47,7 +53,11 @@
 			{#if bulk.action === 'location'}
 				<Select.Root type="single" bind:value={bulk.value}>
 					<Select.Trigger class="w-full">
-						{bulk.value === 'home' ? 'Home' : bulk.value === 'apartment' ? 'Apartment' : 'Select...'}
+						{bulk.value === 'home'
+							? 'Home'
+							: bulk.value === 'apartment'
+								? 'Apartment'
+								: 'Select...'}
 					</Select.Trigger>
 					<Select.Content>
 						<Select.Item value="home" label="Home" />
@@ -57,7 +67,13 @@
 			{:else if bulk.action === 'source'}
 				<Select.Root type="single" bind:value={bulk.value}>
 					<Select.Trigger class="w-full">
-						{bulk.value === 'bookstore' ? 'Bookstore' : bulk.value === 'bookfair' ? 'Bookfair' : bulk.value === 'online' ? 'Online' : 'Select...'}
+						{bulk.value === 'bookstore'
+							? 'Bookstore'
+							: bulk.value === 'bookfair'
+								? 'Bookfair'
+								: bulk.value === 'online'
+									? 'Online'
+									: 'Select...'}
 					</Select.Trigger>
 					<Select.Content>
 						<Select.Item value="bookstore" label="Bookstore" />
@@ -83,21 +99,30 @@
 	<div class="space-y-2">
 		<div class="flex items-center justify-between">
 			<Label>Conditions</Label>
-			<Button variant="ghost" size="sm" class="h-7 gap-1 text-xs" onclick={() => bulk.addCondition()}>
+			<Button
+				variant="ghost"
+				size="sm"
+				class="h-7 gap-1 text-xs"
+				onclick={() => bulk.addCondition()}
+			>
 				<Plus class="h-3 w-3" />
 				Add
 			</Button>
 		</div>
 
 		{#if bulk.conditions.length === 0}
-			<p class="text-xs text-muted-foreground">No conditions — all books in scope will be affected.</p>
+			<p class="text-xs text-muted-foreground">
+				No conditions — all books in scope will be affected.
+			</p>
 		{:else}
 			<div class="space-y-2">
 				{#each bulk.conditions as cond, i (cond.id)}
 					<div class="flex items-center gap-1.5">
-						<span class="text-xs text-muted-foreground w-10 shrink-0">{i === 0 ? 'WHERE' : 'AND'}</span>
+						<span class="w-10 shrink-0 text-xs text-muted-foreground"
+							>{i === 0 ? 'WHERE' : 'AND'}</span
+						>
 						<Select.Root type="single" bind:value={cond.column}>
-							<Select.Trigger class="h-8 text-xs flex-1">
+							<Select.Trigger class="h-8 flex-1 text-xs">
 								{cond.column}
 							</Select.Trigger>
 							<Select.Content>
@@ -108,7 +133,7 @@
 							</Select.Content>
 						</Select.Root>
 						<Select.Root type="single" bind:value={cond.op}>
-							<Select.Trigger class="h-8 text-xs w-14">
+							<Select.Trigger class="h-8 w-14 text-xs">
 								{cond.op}
 							</Select.Trigger>
 							<Select.Content>
@@ -118,7 +143,7 @@
 						</Select.Root>
 						{#if cond.column === 'location'}
 							<Select.Root type="single" bind:value={cond.value}>
-								<Select.Trigger class="h-8 text-xs flex-1">
+								<Select.Trigger class="h-8 flex-1 text-xs">
 									{cond.value || 'value...'}
 								</Select.Trigger>
 								<Select.Content>
@@ -128,7 +153,7 @@
 							</Select.Root>
 						{:else if cond.column === 'source'}
 							<Select.Root type="single" bind:value={cond.value}>
-								<Select.Trigger class="h-8 text-xs flex-1">
+								<Select.Trigger class="h-8 flex-1 text-xs">
 									{cond.value || 'value...'}
 								</Select.Trigger>
 								<Select.Content>
@@ -139,7 +164,7 @@
 							</Select.Root>
 						{:else if cond.column === 'isDraft'}
 							<Select.Root type="single" bind:value={cond.value}>
-								<Select.Trigger class="h-8 text-xs flex-1">
+								<Select.Trigger class="h-8 flex-1 text-xs">
 									{cond.value || 'value...'}
 								</Select.Trigger>
 								<Select.Content>
@@ -148,11 +173,7 @@
 								</Select.Content>
 							</Select.Root>
 						{:else}
-							<Input
-								class="h-8 text-xs flex-1"
-								placeholder="value..."
-								bind:value={cond.value}
-							/>
+							<Input class="h-8 flex-1 text-xs" placeholder="value..." bind:value={cond.value} />
 						{/if}
 						<button
 							class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
@@ -171,23 +192,15 @@
 		<div class="rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
 			<p class="text-sm">
 				<span class="font-medium text-amber-600">{bulk.affectedBooks.length}</span>
-				<span class="text-muted-foreground"> book{bulk.affectedBooks.length !== 1 ? 's' : ''} will be updated</span>
+				<span class="text-muted-foreground">
+					book{bulk.affectedBooks.length !== 1 ? 's' : ''} will be updated</span
+				>
 			</p>
 		</div>
 
 		<div class="flex gap-2">
-			<Button
-				variant="outline"
-				class="flex-1 text-xs"
-				onclick={() => bulk.reset()}
-			>
-				Reset
-			</Button>
-			<Button
-				class="flex-1 gap-1.5"
-				disabled={bulk.affectedBooks.length === 0}
-				onclick={onexecute}
-			>
+			<Button variant="outline" class="flex-1 text-xs" onclick={() => bulk.reset()}>Reset</Button>
+			<Button class="flex-1 gap-1.5" disabled={bulk.affectedBooks.length === 0} onclick={onexecute}>
 				<Zap class="h-3.5 w-3.5" />
 				Execute
 			</Button>

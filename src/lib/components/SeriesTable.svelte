@@ -156,19 +156,27 @@
 </script>
 
 <!-- Toolbar -->
-<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 	<div class="w-full sm:max-w-sm">
 		<BooruSearchBar
-			allTags={allTags}
+			{allTags}
 			bind:value={filterState.booruQuery}
 			placeholder="Search... e.g. isekai status:ended volumes:>=4"
 			onchange={handleBooruChange}
 		/>
 	</div>
 	<div class="flex items-center gap-2">
-		<Select.Root type="single" value={typeFilter} onValueChange={(v: string | undefined) => setQuickFilter('type', v || 'all')}>
+		<Select.Root
+			type="single"
+			value={typeFilter}
+			onValueChange={(v: string | undefined) => setQuickFilter('type', v || 'all')}
+		>
 			<Select.Trigger class="h-9 w-32 text-xs">
-				{typeFilter === 'all' ? 'All Types' : typeFilter === 'light_novel' ? 'Light Novel' : 'Manga'}
+				{typeFilter === 'all'
+					? 'All Types'
+					: typeFilter === 'light_novel'
+						? 'Light Novel'
+						: 'Manga'}
 			</Select.Trigger>
 			<Select.Content>
 				<Select.Item value="all" label="All Types" />
@@ -176,9 +184,15 @@
 				<Select.Item value="manga" label="Manga" />
 			</Select.Content>
 		</Select.Root>
-		<Select.Root type="single" value={statusFilter} onValueChange={(v: string | undefined) => setQuickFilter('status', v || 'all')}>
+		<Select.Root
+			type="single"
+			value={statusFilter}
+			onValueChange={(v: string | undefined) => setQuickFilter('status', v || 'all')}
+		>
 			<Select.Trigger class="h-9 w-32 text-xs">
-				{statusFilter === 'all' ? 'All Status' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+				{statusFilter === 'all'
+					? 'All Status'
+					: statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
 			</Select.Trigger>
 			<Select.Content>
 				<Select.Item value="all" label="All Status" />
@@ -209,7 +223,9 @@
 			<Table.Row>
 				{#each columns as col}
 					<Table.Head
-						class={col.sortable ? 'cursor-pointer select-none whitespace-nowrap' : 'whitespace-nowrap'}
+						class={col.sortable
+							? 'cursor-pointer whitespace-nowrap select-none'
+							: 'whitespace-nowrap'}
 						onclick={() => col.sortable && toggleSort(col.key)}
 					>
 						<div class="flex items-center gap-1">
@@ -237,7 +253,7 @@
 						<a href="/series/{row.id}" class="font-medium text-foreground hover:underline">
 							{row.shortName}
 						</a>
-						<p class="text-xs text-muted-foreground truncate max-w-[200px]">{row.fullName}</p>
+						<p class="max-w-[200px] truncate text-xs text-muted-foreground">{row.fullName}</p>
 					</Table.Cell>
 					<Table.Cell>
 						<TypeBadge type={row.type} />
@@ -254,9 +270,9 @@
 					</Table.Cell>
 					<Table.Cell>
 						{#if row.tags.length > 0}
-							<div class="flex flex-wrap gap-1 max-w-[180px]">
+							<div class="flex max-w-[180px] flex-wrap gap-1">
 								{#each row.tags.slice(0, 3) as tag}
-									<Badge variant="outline" class="text-[10px] px-1.5 py-0">{tag.name}</Badge>
+									<Badge variant="outline" class="px-1.5 py-0 text-[10px]">{tag.name}</Badge>
 								{/each}
 								{#if row.tags.length > 3}
 									<span class="text-[10px] text-muted-foreground">+{row.tags.length - 3}</span>
@@ -320,7 +336,7 @@
 			>
 				Previous
 			</Button>
-			<span class="text-sm text-muted-foreground px-2">
+			<span class="px-2 text-sm text-muted-foreground">
 				{pageIndex + 1} / {pageCount()}
 			</span>
 			<Button
