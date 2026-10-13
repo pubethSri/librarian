@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { tags, seriesTags } from '$lib/server/db/schema';
-import { eq, count, sql } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 
 // GET /api/tags — List all tags with usage count
 export const GET: RequestHandler = async () => {

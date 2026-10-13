@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { BookListItem, TagWithCount } from '$lib/types';
 	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS } from '$lib/types';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -109,7 +110,7 @@
 	const sorted = $derived(() => {
 		const items = [...filtered()];
 		items.sort((a, b) => {
-			let cmp = 0;
+			let cmp: number;
 			switch (sortKey) {
 				case 'seriesShortName':
 					cmp = a.seriesShortName.localeCompare(b.seriesShortName);
@@ -145,12 +146,13 @@
 
 	const pageCount = $derived(() => Math.max(1, Math.ceil(sorted().length / pageSize)));
 
+	// Reset page when filters change
 	$effect(() => {
-		filterState.quickFilters;
-		filterState.includeTags;
-		filterState.excludeTags;
-		filterState.paramFilters;
-		filterState.searchTerms;
+		void filterState.quickFilters;
+		void filterState.includeTags;
+		void filterState.excludeTags;
+		void filterState.paramFilters;
+		void filterState.searchTerms;
 		pageIndex = 0;
 	});
 
@@ -251,7 +253,7 @@
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
-				{#each columns as col}
+				{#each columns as col (col.key)}
 					<Table.Head
 						class={col.sortable
 							? 'cursor-pointer whitespace-nowrap select-none'
@@ -281,7 +283,10 @@
 			{#each paginated() as row (row.id)}
 				<Table.Row>
 					<Table.Cell>
-						<a href="/series/{row.seriesId}" class="font-medium text-foreground hover:underline">
+						<a
+							href={resolve(`/series/${row.seriesId}`)}
+							class="font-medium text-foreground hover:underline"
+						>
 							{row.seriesShortName}
 						</a>
 					</Table.Cell>
@@ -353,7 +358,7 @@
 				{pageSize} / page
 			</Select.Trigger>
 			<Select.Content>
-				{#each [10, 25, 50, 100] as size}
+				{#each [10, 25, 50, 100] as size (size)}
 					<Select.Item value={String(size)} label="{size} / page" />
 				{/each}
 			</Select.Content>

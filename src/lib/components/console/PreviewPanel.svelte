@@ -71,7 +71,7 @@
 	<div class="flex-1 overflow-auto">
 		{#if isLoading}
 			<div class="space-y-2 p-4">
-				{#each Array(5) as _}
+				{#each Array(5) as _, i (i)}
 					<Skeleton class="h-10 w-full" />
 				{/each}
 			</div>

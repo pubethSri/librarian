@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { LogOut, PanelLeftClose, PanelLeft } from '@lucide/svelte';
 	import { page } from '$app/stores';
+	import { resolve } from '$app/paths';
+	import type { ResolvedPathname } from '$app/types';
 	import { sidebarCollapsed } from '$lib/stores/sidebar';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Button } from '$lib/components/ui/button';
@@ -14,28 +16,28 @@
 
 	type NavSection = {
 		label: string;
-		items: { href: string; label: string }[];
+		items: { href: ResolvedPathname; label: string }[];
 	};
 
 	const sections: NavSection[] = [
 		{
 			label: 'COLLECTION',
 			items: [
-				{ href: '/series', label: 'Series' },
-				{ href: '/books', label: 'Books' }
+				{ href: resolve('/series'), label: 'Series' },
+				{ href: resolve('/books'), label: 'Books' }
 			]
 		},
 		{
 			label: 'TOOLS',
 			items: [
-				{ href: '/bookfairs', label: 'Bookfairs' },
-				{ href: '/console', label: 'Console' },
-				{ href: '/tags', label: 'Tags' }
+				{ href: resolve('/bookfairs'), label: 'Bookfairs' },
+				{ href: resolve('/console'), label: 'Console' },
+				{ href: resolve('/tags'), label: 'Tags' }
 			]
 		},
 		{
 			label: 'ANALYTICS',
-			items: [{ href: '/insights', label: 'Insights' }]
+			items: [{ href: resolve('/insights'), label: 'Insights' }]
 		}
 	];
 
@@ -59,7 +61,7 @@
 	<!-- Nav sections — vertically centered -->
 	<nav class="flex flex-1 flex-col justify-center overflow-y-auto {collapsed ? 'px-1' : 'px-3'}">
 		{#if !collapsed}
-			{#each sections as section, i}
+			{#each sections as section, i (section.label)}
 				{#if i > 0}
 					<div class="my-2"></div>
 				{/if}
@@ -68,8 +70,9 @@
 				>
 					{section.label}
 				</p>
-				{#each section.items as item}
+				{#each section.items as item (item.href)}
 					{@const active = isActive(item.href, $page.url.pathname)}
+					<!-- eslint-disable svelte/no-navigation-without-resolve -- resolved in `sections` -->
 					<a
 						href={item.href}
 						class="block rounded px-2 py-1.5 text-[13px] font-medium transition-colors {active
@@ -78,6 +81,7 @@
 					>
 						{item.label}
 					</a>
+					<!-- eslint-enable svelte/no-navigation-without-resolve -->
 				{/each}
 			{/each}
 		{/if}
@@ -127,7 +131,7 @@
 			</Sheet.Header>
 
 			<nav class="flex flex-1 flex-col justify-center px-3 py-3">
-				{#each sections as section, i}
+				{#each sections as section, i (section.label)}
 					{#if i > 0}
 						<div class="my-2"></div>
 					{/if}
@@ -136,8 +140,9 @@
 					>
 						{section.label}
 					</p>
-					{#each section.items as item}
+					{#each section.items as item (item.href)}
 						{@const active = isActive(item.href, $page.url.pathname)}
+						<!-- eslint-disable svelte/no-navigation-without-resolve -- resolved in `sections` -->
 						<a
 							href={item.href}
 							onclick={() => (mobileOpen = false)}
@@ -147,6 +152,7 @@
 						>
 							{item.label}
 						</a>
+						<!-- eslint-enable svelte/no-navigation-without-resolve -->
 					{/each}
 				{/each}
 			</nav>

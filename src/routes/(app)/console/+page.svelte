@@ -123,6 +123,7 @@
 			url.searchParams.set('scope', type);
 			if (id) url.searchParams.set('id', String(id));
 		}
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- derived from page.url, which already includes the base path
 		goto(url.toString(), { replaceState: true, keepFocus: true });
 	}
 

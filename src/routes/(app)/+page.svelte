@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { createSeriesListQuery } from '$lib/queries/series';
 	import { createBooksListQuery } from '$lib/queries/books';
 	import { Button } from '$lib/components/ui/button';
@@ -56,7 +57,7 @@
 
 	{#if seriesQuery.isPending || booksQuery.isPending}
 		<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-			{#each Array(4) as _}
+			{#each Array(4) as _, i (i)}
 				<Skeleton class="h-24" />
 			{/each}
 		</div>
@@ -64,7 +65,7 @@
 		{@const s = stats()}
 		<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
 			<a
-				href="/series"
+				href={resolve('/series')}
 				class="group rounded-lg border border-border p-4 transition-colors hover:bg-accent/50"
 			>
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -74,7 +75,7 @@
 				<p class="mt-2 text-3xl font-bold text-foreground tabular-nums">{s.totalSeries}</p>
 			</a>
 			<a
-				href="/books"
+				href={resolve('/books')}
 				class="group rounded-lg border border-border p-4 transition-colors hover:bg-accent/50"
 			>
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -103,9 +104,9 @@
 			<div class="space-y-3">
 				<h2 class="text-lg font-semibold text-foreground">Recent Additions</h2>
 				<div class="space-y-2">
-					{#each s.recentBooks as book}
+					{#each s.recentBooks as book (book.id)}
 						<a
-							href="/series/{book.seriesId}"
+							href={resolve(`/series/${book.seriesId}`)}
 							class="flex items-center justify-between rounded-lg border border-border px-4 py-3 transition-colors hover:bg-accent/50"
 						>
 							<div>

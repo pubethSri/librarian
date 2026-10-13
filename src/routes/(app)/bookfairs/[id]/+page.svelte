@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { createBookfairDetailQuery, createBookfairDeleteMutation } from '$lib/queries/bookfairs';
@@ -10,17 +11,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
-	import {
-		Pencil,
-		Trash2,
-		Calendar,
-		MapPin,
-		BookOpen,
-		ShoppingCart,
-		Library,
-		Terminal
-	} from '@lucide/svelte';
-	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS } from '$lib/types';
+	import { Pencil, Trash2, Calendar, MapPin, ShoppingCart, Terminal } from '@lucide/svelte';
+	import { BOOK_LOCATION_LABELS } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 
 	const bookfairId = Number($page.params.id);
@@ -55,14 +47,14 @@
 		deleteMutation.mutate(bookfairId, {
 			onSuccess: () => {
 				toast.success('Bookfair deleted');
-				goto('/bookfairs');
+				goto(resolve('/bookfairs'));
 			},
 			onError: (err: Error) => toast.error(err.message)
 		});
 	}
 
 	function openInConsole() {
-		goto(`/console?scope=bookfair&id=${bookfairId}`);
+		goto(resolve(`/console?scope=bookfair&id=${bookfairId}`));
 	}
 </script>
 
@@ -77,7 +69,7 @@
 		<Skeleton class="h-10 w-64" />
 		<Skeleton class="h-6 w-96" />
 		<div class="grid grid-cols-3 gap-4">
-			{#each Array(3) as _}
+			{#each Array(3) as _, i (i)}
 				<Skeleton class="h-20" />
 			{/each}
 		</div>
@@ -87,7 +79,7 @@
 	<div class="flex flex-col items-center justify-center py-16 text-center">
 		<h2 class="text-2xl font-bold text-foreground">Bookfair Not Found</h2>
 		<p class="mt-2 text-muted-foreground">The bookfair you're looking for doesn't exist.</p>
-		<Button variant="outline" class="mt-4" onclick={() => goto('/bookfairs')}>
+		<Button variant="outline" class="mt-4" onclick={() => goto(resolve('/bookfairs'))}>
 			Back to Bookfairs
 		</Button>
 	</div>
@@ -192,7 +184,7 @@
 									<Table.Cell>
 										<button
 											class="text-left font-medium text-foreground hover:underline"
-											onclick={() => goto(`/series/${book.seriesId}`)}
+											onclick={() => goto(resolve(`/series/${book.seriesId}`))}
 										>
 											{book.seriesShortName}
 										</button>

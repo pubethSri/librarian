@@ -49,7 +49,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	// Fetch all tags for these series in one query
 	const seriesIds = seriesRows.map((s) => s.id);
-	let tagMap: Map<number, { id: number; name: string }[]> = new Map();
+	const tagMap: Map<number, { id: number; name: string }[]> = new Map();
 
 	if (seriesIds.length > 0) {
 		const tagRows = await db

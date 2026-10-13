@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { createSeriesDetailQuery } from '$lib/queries/seriesDetail';
@@ -62,7 +63,7 @@
 		deleteMutation.mutate(seriesId, {
 			onSuccess: () => {
 				toast.success('Series deleted');
-				goto('/series');
+				goto(resolve('/series'));
 			},
 			onError: (err: Error) => toast.error(err.message)
 		});
@@ -109,7 +110,7 @@
 		<Skeleton class="h-10 w-64" />
 		<Skeleton class="h-6 w-96" />
 		<div class="grid grid-cols-4 gap-4">
-			{#each Array(4) as _}
+			{#each Array(4) as _, i (i)}
 				<Skeleton class="h-20" />
 			{/each}
 		</div>
@@ -119,7 +120,9 @@
 	<div class="flex flex-col items-center justify-center py-16 text-center">
 		<h2 class="text-2xl font-bold text-foreground">Series Not Found</h2>
 		<p class="mt-2 text-muted-foreground">The series you're looking for doesn't exist.</p>
-		<Button variant="outline" class="mt-4" onclick={() => goto('/series')}>Back to Series</Button>
+		<Button variant="outline" class="mt-4" onclick={() => goto(resolve('/series'))}
+			>Back to Series</Button
+		>
 	</div>
 {:else if detailQuery.data}
 	{@const s = detailQuery.data}
@@ -201,7 +204,7 @@
 				{#if s.tags.length === 0}
 					<p class="text-sm text-muted-foreground">No tags assigned.</p>
 				{:else}
-					{#each s.tags as tag}
+					{#each s.tags as tag (tag.id)}
 						<Badge variant="outline">{tag.name}</Badge>
 					{/each}
 				{/if}
@@ -238,7 +241,7 @@
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
-							{#each s.books as book}
+							{#each s.books as book (book.id)}
 								<Table.Row>
 									<Table.Cell class="font-mono font-medium tabular-nums">
 										{book.volumeNumber}

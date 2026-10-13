@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { SeriesListItem, SeriesStatus, TagWithCount } from '$lib/types';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
@@ -11,7 +12,7 @@
 		createEmptyFilterState,
 		applyUnifiedFilter
 	} from '$lib/components/filterEngine';
-	import { parseBooruQuery, buildBooruQuery } from '$lib/utils/booruParser';
+	import { parseBooruQuery } from '$lib/utils/booruParser';
 	import { Star, ArrowUp, ArrowDown, ChevronsUpDown } from '@lucide/svelte';
 	import * as Table from '$lib/components/ui/table';
 	import { Button } from '$lib/components/ui/button';
@@ -96,7 +97,7 @@
 	const sorted = $derived(() => {
 		const items = [...filtered()];
 		items.sort((a, b) => {
-			let cmp = 0;
+			let cmp: number;
 			switch (sortKey) {
 				case 'shortName':
 					cmp = a.shortName.localeCompare(b.shortName);
@@ -135,11 +136,11 @@
 
 	// Reset page when filters change
 	$effect(() => {
-		filterState.quickFilters;
-		filterState.includeTags;
-		filterState.excludeTags;
-		filterState.paramFilters;
-		filterState.searchTerms;
+		void filterState.quickFilters;
+		void filterState.includeTags;
+		void filterState.excludeTags;
+		void filterState.paramFilters;
+		void filterState.searchTerms;
 		pageIndex = 0;
 	});
 
@@ -221,7 +222,7 @@
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
-				{#each columns as col}
+				{#each columns as col (col.key)}
 					<Table.Head
 						class={col.sortable
 							? 'cursor-pointer whitespace-nowrap select-none'
@@ -250,7 +251,10 @@
 			{#each paginated() as row (row.id)}
 				<Table.Row class="group">
 					<Table.Cell>
-						<a href="/series/{row.id}" class="font-medium text-foreground hover:underline">
+						<a
+							href={resolve(`/series/${row.id}`)}
+							class="font-medium text-foreground hover:underline"
+						>
 							{row.shortName}
 						</a>
 						<p class="max-w-[200px] truncate text-xs text-muted-foreground">{row.fullName}</p>
@@ -271,7 +275,7 @@
 					<Table.Cell>
 						{#if row.tags.length > 0}
 							<div class="flex max-w-[180px] flex-wrap gap-1">
-								{#each row.tags.slice(0, 3) as tag}
+								{#each row.tags.slice(0, 3) as tag (tag.id)}
 									<Badge variant="outline" class="px-1.5 py-0 text-[10px]">{tag.name}</Badge>
 								{/each}
 								{#if row.tags.length > 3}
@@ -322,7 +326,7 @@
 				{pageSize} / page
 			</Select.Trigger>
 			<Select.Content>
-				{#each [10, 25, 50] as size}
+				{#each [10, 25, 50] as size (size)}
 					<Select.Item value={String(size)} label="{size} / page" />
 				{/each}
 			</Select.Content>

@@ -35,7 +35,7 @@
 			{SERIES_STATUS_LABELS[status]}
 		</Select.Trigger>
 		<Select.Content>
-			{#each Object.entries(SERIES_STATUS_LABELS) as [value, label]}
+			{#each Object.entries(SERIES_STATUS_LABELS) as [value, label] (value)}
 				<Select.Item {value} {label} />
 			{/each}
 		</Select.Content>

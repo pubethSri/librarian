@@ -48,7 +48,7 @@
 			<Command.List>
 				<Command.Empty>No series found.</Command.Empty>
 				<Command.Group>
-					{#each filtered() as series}
+					{#each filtered() as series (series.id)}
 						<Command.Item
 							value={String(series.id)}
 							onSelect={() => {

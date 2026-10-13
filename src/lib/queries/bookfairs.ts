@@ -2,7 +2,6 @@ import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-qu
 import type {
 	BookfairWithCount,
 	BookfairDetail,
-	Bookfair,
 	CreateBookfairPayload,
 	UpdateBookfairPayload
 } from '$lib/types';

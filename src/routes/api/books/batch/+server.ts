@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { books, series } from '$lib/server/db/schema';
-import { eq, sql, inArray } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 
 // POST /api/books/batch — Create multiple books at once
 export const POST: RequestHandler = async ({ request }) => {

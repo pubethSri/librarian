@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { books, series, seriesTags, tags } from '$lib/server/db/schema';
-import { eq, ilike, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 // GET /api/books — List all books with optional filters
 export const GET: RequestHandler = async ({ url }) => {
@@ -51,7 +51,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	// Fetch series tags for these books (grouped by seriesId)
 	const seriesIds = [...new Set(rows.map((r) => r.seriesId))];
-	let tagMap: Map<number, { id: number; name: string }[]> = new Map();
+	const tagMap: Map<number, { id: number; name: string }[]> = new Map();
 
 	if (seriesIds.length > 0) {
 		const tagRows = await db

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { createBookfairsListQuery, createBookfairDeleteMutation } from '$lib/queries/bookfairs';
 	import CreateBookfairDialog from '$lib/components/forms/CreateBookfairDialog.svelte';
 	import EditBookfairDialog from '$lib/components/forms/EditBookfairDialog.svelte';
@@ -67,7 +68,7 @@
 	}
 
 	function handleCardClick(id: number) {
-		goto(`/bookfairs/${id}`);
+		goto(resolve(`/bookfairs/${id}`));
 	}
 </script>
 
@@ -92,7 +93,7 @@
 	<!-- Content -->
 	{#if bookfairsQuery.isPending}
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			{#each Array(3) as _}
+			{#each Array(3) as _, i (i)}
 				<Skeleton class="h-36 rounded-lg" />
 			{/each}
 		</div>

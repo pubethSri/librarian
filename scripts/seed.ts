@@ -34,7 +34,7 @@ async function seed() {
 	console.log('  ✓ 5 tags created');
 
 	// ── Bookfairs ────────────────────────────────────────────────────────────
-	const [fair1, fair2, fair3] = await db
+	const [, fair2, fair3] = await db
 		.insert(schema.bookfairs)
 		.values([
 			{ name: 'Bangkok Book Fair 2024', date: '2024-03-28', location: 'BITEC Bangna' },

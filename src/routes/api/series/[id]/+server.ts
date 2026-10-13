@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { series, books, reading, seriesTags, tags } from '$lib/server/db/schema';
+import { series } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 // GET /api/series/[id] — Get single series with books, tags, and reading data

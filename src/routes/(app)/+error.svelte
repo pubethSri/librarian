@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
 	import { AlertTriangle } from '@lucide/svelte';
@@ -15,7 +16,7 @@
 	<div class="mt-6 flex gap-3">
 		<Button variant="outline" onclick={() => history.back()}>Go Back</Button>
 		<a
-			href="/"
+			href={resolve('/')}
 			class="inline-flex h-10 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 		>
 			Dashboard

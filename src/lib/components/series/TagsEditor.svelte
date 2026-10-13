@@ -24,13 +24,9 @@
 	});
 
 	function toggleTag(id: number) {
-		const next = new Set(selectedIds);
-		if (next.has(id)) {
-			next.delete(id);
-		} else {
-			next.add(id);
-		}
-		selectedIds = next;
+		selectedIds = selectedIds.has(id)
+			? new Set([...selectedIds].filter((x) => x !== id))
+			: new Set([...selectedIds, id]);
 	}
 
 	function handleSave() {
@@ -64,7 +60,7 @@
 					</p>
 				{:else}
 					<div class="flex flex-wrap gap-2">
-						{#each tagsQuery.data as tag}
+						{#each tagsQuery.data as tag (tag.id)}
 							<button
 								onclick={() => toggleTag(tag.id)}
 								class="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors {selectedIds.has(

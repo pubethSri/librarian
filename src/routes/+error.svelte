@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 </script>
 
@@ -20,7 +21,7 @@
 				Go Back
 			</button>
 			<a
-				href="/"
+				href={resolve('/')}
 				class="inline-flex h-10 items-center rounded-md bg-zinc-900 px-6 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
 			>
 				Dashboard

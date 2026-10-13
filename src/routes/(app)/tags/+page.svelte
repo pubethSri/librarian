@@ -88,7 +88,7 @@
 	<!-- Tags list -->
 	{#if tagsQuery.isPending}
 		<div class="flex flex-wrap gap-3">
-			{#each Array(6) as _}
+			{#each Array(6) as _, i (i)}
 				<Skeleton class="h-10 w-24" />
 			{/each}
 		</div>
@@ -108,7 +108,7 @@
 			/>
 		{:else}
 			<div class="space-y-2">
-				{#each tagsQuery.data as tag}
+				{#each tagsQuery.data as tag (tag.id)}
 					<div
 						class="flex items-center justify-between rounded-lg border border-border px-4 py-3 transition-colors hover:bg-accent/50"
 					>

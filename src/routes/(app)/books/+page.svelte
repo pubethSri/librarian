@@ -63,7 +63,7 @@
 
 	{#if booksQuery.isPending}
 		<div class="space-y-3">
-			{#each Array(8) as _}
+			{#each Array(8) as _, i (i)}
 				<Skeleton class="h-12 w-full" />
 			{/each}
 		</div>
