@@ -8,85 +8,65 @@
 
 `v0.0` = init; each phase completion bumps `v0.x`. A Git tag is created per milestone.
 
-| Version    | Milestone                                        |
-| ---------- | ------------------------------------------------ |
-| v0.0       | Scaffolding                                      |
-| v0.1       | Database & CSV fallback                          |
-| v0.2       | Desktop core (tables, CRUD, data entry)          |
-| v0.2.x     | Unified search & filter                          |
-| **v0.3.x** | **Consolidation / debt paydown — current focus** |
-| v0.3       | Bookfair & bulk workflows (Hitlist, polish)      |
-| v0.4       | Reading data + Analytics & insights              |
-| v0.5       | Mobile Field Mode (PWA)                          |
-| v0.6       | Social & playful features                        |
-| v0.7       | Polish, decorative design, production hardening  |
+| Version  | Milestone                                       |
+| -------- | ----------------------------------------------- |
+| v0.0     | Scaffolding                                     |
+| v0.1     | Database & CSV fallback                         |
+| v0.2     | Desktop core (tables, CRUD, data entry)         |
+| v0.2.x   | Unified search & filter                         |
+| v0.3.x   | Consolidation / debt paydown (mostly done)      |
+| **v0.3** | **Bookfair release — current focus (Oct 20)**   |
+| v0.4     | Reading queue + Analytics & insights            |
+| v0.5     | Mobile Field Mode, full (PWA, offline)          |
+| v0.6     | Social & playful features                       |
+| v0.7     | Polish, decorative design, production hardening |
 
 ## Delivered
 
 Phases 0–2, unified search/filter (2C), and most of Phase 3 (bookfairs CRUD + detail, source/event linking, Console _Add Books_ + _Bulk Edit_) are shipped, along with most of the Consolidation milestone. `STATUS.md` has the authoritative breakdown and the decisions log.
 
-## Now — finish Consolidation (v0.3.x)
+## Now — Bookfair release (→ v0.3), deadline 2026-10-20
 
-Guiding theme: **one fact, one home** (single source of truth), applied to both code and docs. The Console overhaul and its follow-ups are done; what remains:
+The next bookfair opens **2026-10-23** (attending 24–26 Oct). Everything below exists to make the app usable from a phone at that fair; the rest of the old plan moves after it. Target: deployed by **Oct 20**, a trial run at a bookstore on **Oct 21–22**. One sub-feature per step, verified before the next.
 
-**Tier 1**
-
-- **Single source of truth for types + validation via `drizzle-zod`.** Derive a base type from the schema, then layer the response transforms (dates/`numeric` → string, computed `bookCount`/`tags`/`seriesTags`). Replaces the hand-maintained `types.ts` mirroring and the manual per-route validation. Do it as its own session (touches every API route); do it **before** v0.4 adds columns (e.g. the reading queue), so new fields are declared once.
-
-**Tier 2 — opportunistic, low-risk**
-
-- Replace the manual `innerJoin` + `tagMap` building in `/api/books` with Drizzle relational queries (`with:`); relations are already defined.
-- Move `filterEngine.ts` out of `components/` into `lib/` — it's a pure module.
-- Reject session tokens older than the cookie `maxAge` in `verifySessionToken` (currently signature-only: a copied cookie stays valid until `AUTH_SECRET` rotates).
-- The remaining `state_referenced_locally` warnings (29) in `ProgressBar` and the edit dialogs — `ProgressBar` in particular only reads its initial `owned`/`total`.
-- `npm audit` (18 advisories, all dev tooling) — triage once, upgrade what's safe.
-
-**Optional Console polish** (from the 2026-07-02 visual test — fold in only if they earn it)
-
-- Let bulk-edit **conditions also scope the preview** (show only matched rows), and a way to select rows directly from the preview.
-- **Series-grouping toggle** in the preview.
-
-**Exit criteria:** types/validation derived from the schema, build + tests + `svelte-check` green.
-
-## Then — finish Phase 3 (→ v0.3)
-
-- **Bookfair Hitlist** — shopping list from watchlist series with tag filters; print-friendly + copy-to-clipboard (spec in `STATUS.md`, Phase 3 Decisions). _Open question:_ also list each watchlist series' next unowned volume, grouped by publisher (fair booths are organized that way)? Cheap to add, but `totalVolumes` is empty for every series today, so "missing volumes" can only mean "the next one after the highest owned".
-- Sidebar links, build verification, tag `v0.3`.
+| #   | Item                                    | Notes                                                                                                                                                                                                                                              |
+| --- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | **Reading status per book**             | _Mark read_ / _Re-read_ (and a status control) on the series-detail volumes table and the Books table. Rules in `STATUS.md` → Bookfair-release Decisions: current status = newest reading row; times read = count of Read rows; re-read = new row. |
+| B2  | **Backfill tools in Console Bulk Edit** | _Set reading status_ (backfilled reads get **no date**) and _Set price_ (e.g. `series = X` → 175), so reading history and prices can be filled in one pass.                                                                                        |
+| B3  | **Field Mode 1 — "Do I own this?"**     | Mobile `/field`: type 2–3 letters → series → owned volumes with location, next volume highlighted.                                                                                                                                                 |
+| B4  | **Field Mode 2 — quick add**            | Choose the bookfair once (remembered); tap + volume, optional price, saved immediately with undo; location defaults to Apartment. Minimal _new series_ (name + type, saved as draft to finish on desktop).                                         |
+| B5  | **Bookfair Hitlist (simple)**           | Watchlist series with the next unowned volume, grouped by publisher; tag filter; print-friendly + copy. Doubles as the offline fallback (screenshot/print).                                                                                        |
+| B6  | **Deploy on the laptop**                | Production build as a background service (`ORIGIN` set for adapter-node), **Tailscale** for phone access (`tailscale serve` for HTTPS, nothing public), session-token expiry, daily `pg_dump` backup, laptop power settings.                       |
+| B7  | **Trial run + fixes → tag `v0.3`**      | Use it at a bookstore before the fair; fix what hurts.                                                                                                                                                                                             |
 
 The **Activity Log** was dropped on 2026-10-13 (single user; low value). See `STATUS.md`.
 
-## Phase 4 — Reading data + Analytics & insights → v0.4 _(draft plan, awaiting approval)_
+## After the fair
 
-**Why "reading data" comes first.** A data check on 2026-10-13 found that nothing in the UI writes reading status — the `queries/reading.ts` hooks are unused. All 300 reading rows are `unread` with no dates, 10 books have no reading row at all, **0 of 310 books have a price**, only 15 have a source, and **no series has `totalVolumes`**. Only `boughtAt` is well populated (308/310). Built today, most insight charts would be empty. So v0.4 is split: **4A** makes the data real, **4B** visualizes it. One sub-feature per prompt, verified before the next, as usual.
+### Consolidation leftovers
 
-### 4A — Reading data (prerequisite)
+- **Types + validation via `drizzle-zod`** — deferred past the fair (no user-facing value, touches every route). Do it before the reading-queue table lands.
+- Tier 2: Drizzle relational queries in `/api/books`; move `filterEngine.ts` to `lib/`; the 29 `state_referenced_locally` warnings (`ProgressBar` only reads its initial `owned`/`total`); `npm audit` triage.
+- Optional Console polish: conditions also scope the preview / select rows from the preview; series-grouping toggle.
 
-| #   | Sub-feature                     | Notes                                                                                                                                                                                                                                                                                                                       |
-| --- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.1 | **Reading status on a book**    | Inline status control (Unread / Reading / Read / Dropped) on the series-detail volumes table and the Books table, through the existing reading hooks + `invalidateQueries`. Setting _Reading_ stamps `startedAt`, _Read_ stamps `finishedAt` (today, editable). A book with no reading row is treated as Unread everywhere. |
-| 4.2 | **Bulk "Set reading status"**   | A Console Bulk Edit action, for backfilling history (e.g. `series = X`, `volume <= 12` → Read). Needs bulk-endpoint support, since reading is a separate table. Proposed semantics: update each book's _latest_ reading row (create one if missing); starting a re-read stays a per-book action.                            |
-| 4.3 | **Reading queue**               | An ordered "read next" list with drag-to-reorder. Proposed model: nullable `queue_position` on `books` (the queue is about the physical book, not a reading event). A `/queue` page showing each book's location badge. Check Svelte 5 support before adopting a DnD library; native HTML5 DnD is the fallback.             |
-| 4.4 | **Backfill helpers (optional)** | Bulk Edit actions for `price` and `source` only if you want spending insights in 4B — otherwise skip and let 4.9 wait for organically entered prices.                                                                                                                                                                       |
+### v0.4 — Reading queue + Analytics & insights
 
-### 4B — Insights (`/insights`)
+| #   | Sub-feature                        | Notes                                                                                                                                                                                                                                                                                                   |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1 | **Reading queue**                  | Separate `reading_queue` table (book, position, added at; a book at most once). Behaves as a **pool**: order is a preference, finishing _any_ queued book removes it, so skipping needs no rule. A Read book in the queue means a planned re-read. `/queue` page with location badges; drag to reorder. |
+| 4.2 | **Insights foundation**            | `GET /api/insights` → pure, unit-tested `src/lib/insights/` module. Chart wrapper + stat tiles.                                                                                                                                                                                                         |
+| 4.3 | **Backlog (tsundoku)**             | Unread pile, oldest unread, buy rate vs read rate, time to clear the pile, series owned but never started. Reads with no date are excluded from rates.                                                                                                                                                  |
+| 4.4 | **Collection growth**              | Books per month + cumulative.                                                                                                                                                                                                                                                                           |
+| 4.5 | **Tags & completion**              | Tag distribution; buy vs read by tag; completion vs drop by tag and publisher.                                                                                                                                                                                                                          |
+| 4.6 | **Spending**                       | By month / source, money sitting unread, cost per book read; "coward toggle". Price rules in `STATUS.md`: a price is a lower bound, unpriced books are never ฿0, figures show coverage ("from N of M books").                                                                                           |
+| 4.7 | **Reading pace & bookfair funnel** | Purchase → finish time (dated reads only); per-event purchased vs read.                                                                                                                                                                                                                                 |
+| 4.8 | **Polish → tag v0.4**              |                                                                                                                                                                                                                                                                                                         |
 
-| #    | Sub-feature                        | Notes                                                                                                                                                                                                          |
-| ---- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.5  | **Insights foundation**            | `GET /api/insights` loads rows and hands them to a pure, unit-tested `src/lib/insights/` module (same pattern as `console/logic.ts`). Chart wrapper + page skeleton with stat tiles.                           |
-| 4.6  | **Backlog (tsundoku)**             | Unread pile size, oldest unread book, buy rate vs read rate per month, estimated time to clear the pile at the current pace, series owned but never started.                                                   |
-| 4.7  | **Collection growth**              | Books added per month + cumulative. Works with today's data.                                                                                                                                                   |
-| 4.8  | **Tags & completion**              | Tag distribution; buy vs read by tag; completion vs drop rates by tag and publisher.                                                                                                                           |
-| 4.9  | **Spending**                       | By month and by source (bookfair vs bookstore vs online), money sitting unread, cost per book actually read. Totals hidden by default behind the "coward toggle". Only meaningful once prices exist (see 4.4). |
-| 4.10 | **Reading pace & bookfair funnel** | Average time from purchase to finish; per-event purchased vs read. The funnel needs more than the one recorded bookfair to say much.                                                                           |
-| 4.11 | **Polish → tag v0.4**              | Sidebar, empty states for thin data, build verification.                                                                                                                                                       |
+**Charts:** Chart.js through a thin Svelte action (`use:chart`) rather than a wrapper library — `svelte-chartjs` predates Svelte 5 runes. LayerChart (Svelte-native) is the alternative.
 
-**Charts:** Chart.js driven through a thin Svelte action (`use:chart`) rather than a wrapper library — `svelte-chartjs` predates Svelte 5 runes; verify before adopting any wrapper. LayerChart (Svelte-native) is the alternative if Chart.js feels foreign.
+## v0.5 — Field Mode, full (PWA)
 
-**Decisions needed before 4A starts:** (1) agree to put reading data before charts; (2) `queue_position` on `books` vs a separate queue table; (3) whether to backfill prices (4.4) or defer spending insights.
-
-## Phase 5 — Mobile "Field Mode" (PWA) → v0.5
-
-Responsive Field Mode for one-handed bookfair entry: 3-button landing ("I bought a book" / "New title" / "Add to Watchlist"), persistent bookfair session toggle, fuzzy search (2–3 letter trigger) that doubles as the **"do I own this?"** check (owned volumes + location), +/- volume steppers, large location toggles, skippable price, draft state ("Incomplete" badge), offline-tolerant mutations with a retry queue, installable PWA + service worker.
+Builds on the B3/B4 MVP: 3-button landing ("I bought a book" / "New title" / "Add to Watchlist"), fuzzy search, +/- steppers, draft "Incomplete" badges, offline-tolerant mutations with a retry queue, installable PWA + service worker.
 
 ## Phase 6 — Social & Playful → v0.6
 
@@ -106,7 +86,7 @@ From the old feature brainstorm (`temp/additional-context.md`): ISBN barcode sca
 
 ## Dependencies
 
-v0.3 needs Consolidation's `drizzle-zod` step only loosely (the Hitlist adds no columns). v0.4's 4A precedes 4B. v0.5 is independent of v0.4. Phase 6 depends on 3 + 4; Phase 7 depends on 5 + 6.
+The Bookfair release adds no tables, so it does not wait for `drizzle-zod`; the reading-queue table (4.1) does. v0.5 builds on the B3/B4 Field Mode MVP. Phase 6 depends on 3 + 4; Phase 7 depends on 5 + 6.
 
 ## Open-item recommendations (decide closer to implementation)
 
@@ -116,11 +96,11 @@ v0.3 needs Consolidation's `drizzle-zod` step only loosely (the Hitlist adds no 
 
 ## Verification per phase
 
-| Phase         | Verification                                                                                                                     |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Consolidation | Types derive from schema; build + tests + `svelte-check` green                                                                   |
-| v0.3          | Hitlist generates from watchlist; prints cleanly; copy-to-clipboard works                                                        |
-| v0.4          | Reading status editable singly + in bulk; queue reorders and persists; insight calculations unit-tested; charts render real data |
-| v0.5          | PWA installs on mobile; offline mutations queue and retry; forms are fast                                                        |
-| v0.6          | Receipt image generates and downloads; milestones trigger                                                                        |
-| v0.7          | Lighthouse PWA ≥ 90; accessibility audit passes; production Docker works                                                         |
+| Phase         | Verification                                                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Consolidation | Types derive from schema; build + tests + `svelte-check` green                                                                            |
+| v0.3          | Phone reaches the app over Tailscale; own-check + quick add work in a bookstore trial; reading status + prices backfilled; Hitlist prints |
+| v0.4          | Queue reorders and persists; insight calculations unit-tested; charts render real data                                                    |
+| v0.5          | PWA installs on mobile; offline mutations queue and retry; forms are fast                                                                 |
+| v0.6          | Receipt image generates and downloads; milestones trigger                                                                                 |
+| v0.7          | Lighthouse PWA ≥ 90; accessibility audit passes; production Docker works                                                                  |

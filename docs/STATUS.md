@@ -5,10 +5,10 @@
 
 ## State as of 2026-10-13
 
-- **Current version:** v0.3 — **in progress** (Consolidation milestone nearly done; then the Phase 3 remainder).
+- **Current version:** v0.3 — **in progress**, re-scoped as the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**; plan B1–B7 in `ROADMAP.md`.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
 - **Latest:** Console overhaul **Step 2 browser-verified**, **Step 3 done** (batch/bulk hooks + scope-switch fix), **every logged Console follow-up bug/behavior item fixed**, and `svelte-check` errors 6 → 0. All on branch `consolidation/console-step3` (not yet merged), browser-pre-checked by Claude against a scratch DB copy — **awaiting your visual pass** (checklist below).
-- **Next:** your visual pass → merge the branch → `drizzle-zod` types (own session) → Bookfair Hitlist → tag `v0.3`. Then v0.4, whose draft plan in `ROADMAP.md` needs your decisions (reading data before charts).
+- **Next:** B1 reading status → B2 backfill tools → B3/B4 Field Mode → B5 Hitlist → B6 deploy (Tailscale) → B7 trial run → tag `v0.3`. Work continues stacked on the same branch; your visual pass covers it before merge. `drizzle-zod` moved after the fair.
 - **Direction reset 2026-10-13:** Activity Log dropped; old feature-brainstorm items triaged (see Direction Decisions below and `ROADMAP.md` → "Not adopted").
 
 ### Phase 3 progress
@@ -284,6 +284,20 @@ Taken in the post-migration review of the project and an old feature brainstorm 
 - **`DeleteConfirmDialog` takes `confirmLabel` / `loadingLabel` / `destructive`.** Defaults keep it a delete dialog; the Console's bulk edit passes "Apply". (Renaming the component was not worth the churn.)
 - **bits-ui `Select` values are strings.** Numeric ids are bound through a getter/setter pair converting to and from `number`.
 - **`drizzle-zod` deferred to its own session** rather than squeezed into the end of an unattended run: it rewrites `types.ts` and touches every API route.
+
+### Bookfair-release Decisions (2026-10-13)
+
+- **Re-scope:** v0.3 becomes the _Bookfair release_ (B1–B7 in `ROADMAP.md`): reading status + backfill tools, a Field Mode MVP ("do I own this?" + quick add), a simple Hitlist, laptop deployment. The reading queue, Analytics, `drizzle-zod` and full Field Mode (offline) move after the fair. Side project, so speed over ceremony.
+- **Reading rules** (agreed; backfilled data depends on them):
+  - A book's **current status** is its newest reading row; a book with no rows is Unread.
+  - **Times read** = number of its rows with status Read — derived, never stored.
+  - _Mark read_ on an Unread/Reading book updates the current row. _Re-read_ on a Read book creates a **new** row (status Reading, `startedAt` today).
+  - **Backfilled reads carry no dates** ("read, date unknown"); reads marked from now on get today's date (editable). Insights that need dates skip undated reads.
+- **Reading queue** (after the fair): a **separate `reading_queue` table**. It is a pool: order is a preference, finishing any queued book removes it; a Read book in the queue is a planned re-read. Adding the table later needs no change to existing data.
+- **Price** means "**at least this much**": enter the book's list price even when it came in a pricier set with extras. Analytics never treat an empty price as ฿0 — totals read "at least ฿X, from N of M books", averages use priced books only. A clearly-labelled series-average estimate may come later.
+- **Bulk _Set price_ is in scope** (B2), so prices and reading history are backfilled in one pass.
+- **Remote access via Tailscale** (private network, `tailscale serve` HTTPS); no public exposure, no Cloudflare Tunnel.
+- **`drizzle-zod` deferred past the fair** — reverses the earlier "before new columns" ordering; the Bookfair release adds no tables.
 
 ## Environment
 
