@@ -1,5 +1,31 @@
 import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-import type { CreateReadingPayload, UpdateReadingPayload } from '$lib/types';
+import type { CreateReadingPayload, ReadingStatus, UpdateReadingPayload } from '$lib/types';
+
+/**
+ * Mutation: set a book's current reading status (mark read, re-read, correct).
+ * The server applies the rules in $lib/reading and stamps today's date.
+ */
+export function createReadingStatusMutation() {
+	const queryClient = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: async ({ bookId, status }: { bookId: number; status: ReadingStatus }) => {
+			const res = await fetch(`/api/books/${bookId}/reading/status`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ status })
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				throw new Error(err.message || 'Failed to update reading status');
+			}
+			return res.json() as Promise<{ changed: number }>;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['books'] });
+			queryClient.invalidateQueries({ queryKey: ['series'] });
+		}
+	}));
+}
 
 /** Mutation: create a new reading entry for a book */
 export function createReadingMutation() {

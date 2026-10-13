@@ -1,8 +1,9 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { books, series, seriesTags, tags } from '$lib/server/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { books, reading, series, seriesTags, tags } from '$lib/server/db/schema';
+import { eq, inArray, sql } from 'drizzle-orm';
+import { currentStatus, timesRead } from '$lib/reading';
 
 // GET /api/books — List all books with optional filters
 export const GET: RequestHandler = async ({ url }) => {
@@ -76,10 +77,42 @@ export const GET: RequestHandler = async ({ url }) => {
 		}
 	}
 
-	const result = rows.map((r) => ({
-		...r,
-		seriesTags: tagMap.get(r.seriesId) || []
-	}));
+	// Reading rows → current status + times read per book (rules in $lib/reading)
+	const readingRows =
+		rows.length > 0
+			? await db
+					.select({
+						id: reading.id,
+						bookId: reading.bookId,
+						status: reading.status,
+						startedAt: reading.startedAt,
+						finishedAt: reading.finishedAt,
+						createdAt: reading.createdAt
+					})
+					.from(reading)
+					.where(
+						inArray(
+							reading.bookId,
+							rows.map((r) => r.id)
+						)
+					)
+			: [];
+	const readingMap: Map<number, (typeof readingRows)[number][]> = new Map();
+	for (const row of readingRows) {
+		const list = readingMap.get(row.bookId) || [];
+		list.push(row);
+		readingMap.set(row.bookId, list);
+	}
+
+	const result = rows.map((r) => {
+		const bookReadings = readingMap.get(r.id) || [];
+		return {
+			...r,
+			seriesTags: tagMap.get(r.seriesId) || [],
+			readingStatus: currentStatus(bookReadings),
+			timesRead: timesRead(bookReadings)
+		};
+	});
 
 	return json(result);
 };

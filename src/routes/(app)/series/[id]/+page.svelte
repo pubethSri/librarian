@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ReadingStatusControl from '$lib/components/ReadingStatusControl.svelte';
+	import { currentStatus, timesRead } from '$lib/reading';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -6,7 +8,7 @@
 	import { createSeriesDeleteMutation, createSeriesUpdateMutation } from '$lib/queries/series';
 	import { createBookDeleteMutation } from '$lib/queries/books';
 	import type { SeriesStatus } from '$lib/types';
-	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS, READING_STATUS_LABELS } from '$lib/types';
+	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS } from '$lib/types';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
@@ -88,14 +90,6 @@
 			month: 'short',
 			day: 'numeric'
 		});
-	}
-
-	function getLatestReadingStatus(readings: { status: string }[]): string {
-		if (!readings.length) return 'Unread';
-		return (
-			READING_STATUS_LABELS[readings[0].status as keyof typeof READING_STATUS_LABELS] ||
-			readings[0].status
-		);
 	}
 </script>
 
@@ -186,7 +180,7 @@
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Unread</p>
 				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
-					{s.books.filter((b) => !b.readings.length || b.readings[0].status === 'unread').length}
+					{s.books.filter((b) => currentStatus(b.readings) === 'unread').length}
 				</p>
 			</div>
 		</div>
@@ -236,7 +230,7 @@
 								<Table.Head>Source</Table.Head>
 								<Table.Head>Purchased</Table.Head>
 								<Table.Head>Price</Table.Head>
-								<Table.Head>Status</Table.Head>
+								<Table.Head>Reading</Table.Head>
 								<Table.Head class="w-[80px]"></Table.Head>
 							</Table.Row>
 						</Table.Header>
@@ -264,9 +258,12 @@
 										{book.price ? `฿${Number(book.price).toFixed(2)}` : '—'}
 									</Table.Cell>
 									<Table.Cell>
-										<Badge variant="outline" class="text-xs">
-											{getLatestReadingStatus(book.readings)}
-										</Badge>
+										<ReadingStatusControl
+											bookId={book.id}
+											status={currentStatus(book.readings)}
+											timesRead={timesRead(book.readings)}
+											label="{s.shortName} vol. {Number(book.volumeNumber)}"
+										/>
 									</Table.Cell>
 									<Table.Cell>
 										<div class="flex items-center gap-1">

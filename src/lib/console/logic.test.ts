@@ -38,6 +38,8 @@ function book(overrides: Partial<BookListItem> = {}): BookListItem {
 		createdAt: '2026-01-01',
 		updatedAt: '2026-01-01',
 		seriesTags: [{ id: 1, name: 'isekai' }],
+		readingStatus: 'unread',
+		timesRead: 0,
 		...overrides
 	};
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReadingStatusControl from '$lib/components/ReadingStatusControl.svelte';
 	import { resolve } from '$app/paths';
 	import type { BookListItem, TagWithCount } from '$lib/types';
 	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS } from '$lib/types';
@@ -172,6 +173,7 @@
 		{ key: 'location', label: 'Location', sortable: true },
 		{ key: 'source', label: 'Source', sortable: true },
 		{ key: 'boughtAt', label: 'Purchased', sortable: true },
+		{ key: 'readingStatus', label: 'Reading', sortable: true },
 		{ key: 'isDraft', label: 'Draft', sortable: false }
 	];
 </script>
@@ -299,6 +301,14 @@
 					</Table.Cell>
 					<Table.Cell class="text-sm text-muted-foreground">
 						{formatDate(row.boughtAt)}
+					</Table.Cell>
+					<Table.Cell>
+						<ReadingStatusControl
+							bookId={row.id}
+							status={row.readingStatus}
+							timesRead={row.timesRead}
+							label="{row.seriesShortName} vol. {Number(row.volumeNumber)}"
+						/>
 					</Table.Cell>
 					<Table.Cell>
 						{#if row.isDraft}

@@ -149,6 +149,9 @@ export type BookListItem = {
 	createdAt: string;
 	updatedAt: string;
 	seriesTags: { id: number; name: string }[];
+	/** Derived from the reading rows — see $lib/reading */
+	readingStatus: ReadingStatus;
+	timesRead: number;
 };
 
 // ─── Mutation Payloads ───────────────────────────────────────────────────────
