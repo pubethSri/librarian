@@ -69,7 +69,7 @@ Test count 58 → **107**. svelte-check: 6 errors (all pre-existing, none in `co
 | `volumes` as a bulk-edit condition column                                 | `matchesConditions` in `logic.ts`; `BulkEditPanel.svelte`            |
 | Sticky preview count bar, series grouping                                 | `PreviewPanel.svelte`                                                |
 
-Note: the four new components are **unformatted** — prettier cannot process any `.svelte` file in this repo (see the tooling note in the decisions below), so expect a sizeable reformat diff over them once that is fixed.
+Note: the four new components were formatted in the 2026-10-13 lint fix (see Tooling Decisions below), which is why they carry a reformat diff after this step.
 
 **Browser smoke test to run before Step 3** (this is what the automated gate cannot prove):
 
@@ -207,7 +207,17 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 - **Pure logic separated from rune modules.** `logic.ts` has no runes, no `crypto`, no toasts, so it is unit-testable without the Svelte compiler (vitest here has no `svelteTesting` plugin). Rule: pure logic never imports a `.svelte.ts`, and no `.test.ts` imports one.
 - **Console modules live in `$lib`, not the route folder.** `src/lib/console/` for pure + rune modules, `src/lib/components/console/` for components — matching `CLAUDE.md`'s "app components sit in `src/lib/components/`" and the Tier 2 direction of keeping pure modules out of `components/`. There is no route-folder colocation precedent in this repo.
 - **Step 2 was a pure refactor.** No logged Console follow-up was fixed, so any regression is attributable. Known quirks were preserved deliberately and pinned by tests rather than corrected: the "Maximum 50" guard that admits 51 volumes, a zero price dropping to `undefined`, blank condition values matching nothing, series-level params (`publisher:`/`status:`/`type:`) matching nothing in the preview, and the `activeTab === 'edit'` gate on `affectedBooks`.
-- **`npm run lint` is broken repo-wide, and predates this work.** `prettier` crashes on _every_ `.svelte` file (`TypeError: getVisitorKeys is not a function` — a prettier/`prettier-plugin-svelte` version mismatch), so `npm run format` cannot touch components either. `npx eslint <path>` does work and was used as the unused-import net. Worth fixing as its own task; **not** folded into the refactor.
+- **`npm run lint` is broken repo-wide, and predates this work.** `prettier` crashes on _every_ `.svelte` file (`TypeError: getVisitorKeys is not a function`), so `npm run format` cannot touch components either. `npx eslint <path>` does work and was used as the unused-import net. Worth fixing as its own task; **not** folded into the refactor. _(Fixed 2026-10-13. The cause was `prettier-plugin-tailwindcss`, not `prettier-plugin-svelte`. See Tooling Decisions.)_
+
+### Tooling Decisions (2026-10-13)
+
+- **`npm run lint` passes, both halves.** The Prettier crash came from `prettier-plugin-tailwindcss@0.5.x`. That version predates Tailwind v4: it ignored `tailwindStylesheet` and crashed on `.svelte` files. Upgraded to `0.8.1`, then ran `npm run format` repo-wide in its own commit (cosmetic only). The 84 ESLint errors were then fixed by hand.
+- **shadcn-svelte output is exempt from Prettier** (`/src/lib/components/ui/` in `.prettierignore`), so it stays byte-identical to what the CLI generates. `svelte/no-navigation-without-resolve` is also off for `ui/`: callers pass an already-resolved `href` through `Button`.
+- **Navigation goes through `resolve()` from `$app/paths`.** Use `resolve('/books')` or ``resolve(`/series/${id}`)``. Query strings are accepted (``resolve(`/console?scope=…`)``). The rule cannot trace an href through an object property, so the Sidebar resolves its paths where `sections` is defined and scopes a disable/enable around the links. Hrefs built from `page.url`, which already includes the base path, must **not** be resolved again (breadcrumb, Console URL sync), so those lines carry a reasoned `eslint-disable`.
+- **`_`-prefixed bindings are allowed to go unused** (`no-unused-vars` ignore pattern), as in skeleton loops: `{#each Array(5) as _, i (i)}`. Every `{#each}` now has a key, and data loops key on `id`/`href`/`key`.
+- **`$effect` dependency reads use `void`** (`void filterState.quickFilters;`), so `no-unused-expressions` accepts them. Tracking is unchanged: shallow, per field.
+- **Still open:** `npm run check` reports 6 pre-existing type errors: `vite.config.ts` (`test` key typing), `EditBookDialog.svelte` ×3 and `NewVolumeDialog.svelte` ×2 (number/string/null mismatches on inputs). Not lint; untouched.
+- **`.gitattributes` forces LF** so that Windows checkouts pass Prettier's line-ending check.
 
 ## Key Files
 
@@ -259,17 +269,18 @@ Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linkin
 
 ## Changelog
 
-| Date       | Change                                                                                                                                                                                                                            |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-04-20 | Phase 0 completed — scaffolding, Docker, auth, tooling                                                                                                                                                                            |
-| 2026-04-27 | Phase 1 completed — schema, migration, CRUD API, CSV export                                                                                                                                                                       |
-| 2026-04-28 | Phase 2 completed — navigation shell, series/books/tags pages, data entry, inline editing                                                                                                                                         |
-| 2026-04-29 | v0.2.1 — compact grouped sidebar, advanced filter, book editing, delete confirmation                                                                                                                                              |
-| 2026-05-06 | v0.2.2 — sidebar polish, books edit from global page, Phase 2C planned, atomic workflow adopted                                                                                                                                   |
-| 2026-05-06 | v0.2.3 start — unified filter engine, tag chips (series + books)                                                                                                                                                                  |
-| 2026-05-22 | v0.2.3 — booru parser + booru search bar with autocomplete                                                                                                                                                                        |
-| 2026-05-26 | v0.2.3 done — numeric `=` fix, edit dialog re-open fix, Phase 2 complete                                                                                                                                                          |
-| 2026-05-27 | Phase 3 begun — bookfairs CRUD + detail, source/event linking, unified Console (Add Books + Bulk Edit)                                                                                                                            |
-| 2026-07-01 | **Project revived after pause.** Docs consolidated (STATUS = single source of truth; PLAN → ROADMAP, no checkboxes; HANDOFF + note_to_self retired). Consolidation milestone inserted before the Phase 3 remainder.               |
-| 2026-07-02 | Consolidation started — `filterEngine` unit tests added (58 tests total); Console overhaul Step 1 (`$derived.by` fix, svelte-check 31 → 0, browser-verified). Visual-test findings logged as Console follow-ups in `ROADMAP.md`.  |
-| 2026-07-27 | Console overhaul Step 2 — decomposed into 4 panels + 2 rune stores + tested pure logic. `+page.svelte` 978 → 244 lines; 107 tests (was 58); Console svelte-check warnings 5 → 2. Behavior-preserving; browser smoke test pending. |
+| Date       | Change                                                                                                                                                                                                                              |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-20 | Phase 0 completed — scaffolding, Docker, auth, tooling                                                                                                                                                                              |
+| 2026-04-27 | Phase 1 completed — schema, migration, CRUD API, CSV export                                                                                                                                                                         |
+| 2026-04-28 | Phase 2 completed — navigation shell, series/books/tags pages, data entry, inline editing                                                                                                                                           |
+| 2026-04-29 | v0.2.1 — compact grouped sidebar, advanced filter, book editing, delete confirmation                                                                                                                                                |
+| 2026-05-06 | v0.2.2 — sidebar polish, books edit from global page, Phase 2C planned, atomic workflow adopted                                                                                                                                     |
+| 2026-05-06 | v0.2.3 start — unified filter engine, tag chips (series + books)                                                                                                                                                                    |
+| 2026-05-22 | v0.2.3 — booru parser + booru search bar with autocomplete                                                                                                                                                                          |
+| 2026-05-26 | v0.2.3 done — numeric `=` fix, edit dialog re-open fix, Phase 2 complete                                                                                                                                                            |
+| 2026-05-27 | Phase 3 begun — bookfairs CRUD + detail, source/event linking, unified Console (Add Books + Bulk Edit)                                                                                                                              |
+| 2026-07-01 | **Project revived after pause.** Docs consolidated (STATUS = single source of truth; PLAN → ROADMAP, no checkboxes; HANDOFF + note_to_self retired). Consolidation milestone inserted before the Phase 3 remainder.                 |
+| 2026-07-02 | Consolidation started — `filterEngine` unit tests added (58 tests total); Console overhaul Step 1 (`$derived.by` fix, svelte-check 31 → 0, browser-verified). Visual-test findings logged as Console follow-ups in `ROADMAP.md`.    |
+| 2026-07-27 | Console overhaul Step 2 — decomposed into 4 panels + 2 rune stores + tested pure logic. `+page.svelte` 978 → 244 lines; 107 tests (was 58); Console svelte-check warnings 5 → 2. Behavior-preserving; browser smoke test pending.   |
+| 2026-10-13 | Lint green — `prettier-plugin-tailwindcss` 0.5 → 0.8 (fixes the `.svelte` crash), repo-wide format, 84 ESLint errors fixed (`resolve()` navigation, `{#each}` keys, dead imports). `.gitattributes` forces LF for the Windows move. |
