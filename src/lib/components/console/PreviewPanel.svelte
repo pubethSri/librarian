@@ -5,7 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
-	import { Package, X, BookOpen, Pencil, ArrowRight } from '@lucide/svelte';
+	import { Package, X, BookOpen, Pencil, ArrowRight, Check } from '@lucide/svelte';
 	import { type UnifiedFilterState, createEmptyFilterState } from '$lib/components/filterEngine';
 	import { parseBooruQuery } from '$lib/utils/booruParser';
 	import {
@@ -13,8 +13,11 @@
 		filterPreviewRows,
 		formatPrice,
 		getActionLabel,
-		isFilterActive
+		isFilterActive,
+		rangeIds
 	} from '$lib/console/logic';
+	import { createTagsListQuery } from '$lib/queries/tags';
+	import { createSeriesListQuery } from '$lib/queries/series';
 	import type { StagingStore } from '$lib/console/staging.svelte';
 	import type { BulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import { READING_STATUS_LABELS, type BookListItem } from '$lib/types';
@@ -60,12 +63,55 @@
 	const filteredPreviewRows = $derived.by(() => filterPreviewRows(previewRows, previewFilterState));
 
 	const isPreviewFiltered = $derived(isFilterActive(previewFilterState));
+
+	// ─── Filter autocomplete values ────────────────────────────────────────────
+	const tagsQuery = createTagsListQuery();
+	const seriesQuery = createSeriesListQuery();
+	const valueSuggestions = $derived<Record<string, string[]>>({
+		'tag:': (tagsQuery.data ?? []).map((t) => t.name),
+		'publisher:': [
+			...new Set((seriesQuery.data ?? []).map((s) => s.publisher).filter((p): p is string => !!p))
+		].sort(),
+		'name:': (seriesQuery.data ?? []).map((s) => s.shortName).sort()
+	});
+
+	// ─── Row selection (Bulk Edit tab only) ────────────────────────────────────
+	// Click toggles a row; Shift+click adds the range from the last clicked row.
+	// The anchor is an id, not an index, so it survives the filter changing.
+	let anchorId = $state<string | null>(null);
+
+	function handleRowClick(e: MouseEvent, index: number) {
+		if (!bulk.isActive) return;
+		const row = filteredPreviewRows[index];
+		if (row.type !== 'existing') return;
+		const anchorIndex = anchorId ? filteredPreviewRows.findIndex((r) => r.id === anchorId) : -1;
+		if (e.shiftKey && anchorIndex >= 0) {
+			bulk.addSelected(rangeIds(filteredPreviewRows, anchorIndex, index));
+		} else {
+			bulk.toggleSelected(row.id);
+		}
+		anchorId = row.id;
+	}
+
+	const visibleSelectableIds = $derived(
+		filteredPreviewRows.filter((r) => r.type === 'existing').map((r) => r.id)
+	);
+	const allVisibleSelected = $derived(
+		visibleSelectableIds.length > 0 && visibleSelectableIds.every((id) => bulk.selectedIds.has(id))
+	);
+
+	function toggleAllVisible() {
+		if (allVisibleSelected) bulk.removeSelected(visibleSelectableIds);
+		else bulk.addSelected(visibleSelectableIds);
+	}
 </script>
 
 <div class="flex flex-1 flex-col border-r border-border" style="flex-basis: 58%;">
 	<!-- Preview filter bar -->
 	<div class="border-b border-border px-3 py-2">
 		<BooruSearchBar
+			allTags={tagsQuery.data ?? []}
+			{valueSuggestions}
 			bind:value={previewFilterState.booruQuery}
 			placeholder="Filter preview... e.g. name:isekai location:home"
 			onchange={handlePreviewFilterChange}
@@ -98,7 +144,23 @@
 			<Table.Root>
 				<Table.Header>
 					<Table.Row>
-						<Table.Head class="w-10"></Table.Head>
+						<Table.Head class="w-16">
+							{#if bulk.isActive}
+								<!-- Drawn, not a native checkbox, so it ignores the page color-scheme -->
+								<button
+									role="checkbox"
+									aria-checked={allVisibleSelected}
+									aria-label="Select all visible rows"
+									title="Select all visible rows"
+									class="inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border align-middle {allVisibleSelected
+										? 'border-sky-600 bg-sky-600 text-white'
+										: 'border-input bg-background'}"
+									onclick={toggleAllVisible}
+								>
+									{#if allVisibleSelected}<Check class="h-2.5 w-2.5" />{/if}
+								</button>
+							{/if}
+						</Table.Head>
 						<Table.Head>Series</Table.Head>
 						<Table.Head class="w-16 text-center">Vol.</Table.Head>
 						<Table.Head class="w-24">Location</Table.Head>
@@ -108,16 +170,32 @@
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
-					{#each filteredPreviewRows as row (row.id)}
+					{#each filteredPreviewRows as row, index (row.id)}
 						{@const isAffected = row.type === 'existing' && bulk.affectedBookIds.has(row.id)}
+						{@const isSelectable = bulk.isActive && row.type === 'existing'}
+						{@const isSelected = isSelectable && bulk.selectedIds.has(row.id)}
 						<Table.Row
-							class={row.type === 'staged'
+							class="{row.type === 'staged'
 								? 'border-l-2 border-l-green-600/60 bg-green-500/5'
 								: isAffected
 									? 'border-l-2 border-l-amber-500/60 bg-amber-500/5'
-									: ''}
+									: isSelected
+										? 'border-l-2 border-l-sky-500/60 bg-sky-500/5'
+										: ''} {isSelectable ? 'cursor-pointer select-none' : ''}"
+							onclick={(e: MouseEvent) => handleRowClick(e, index)}
 						>
 							<Table.Cell class="py-2">
+								{#if isSelectable}
+									<!-- Display only: the row's click handler does the toggling -->
+									<span
+										aria-hidden="true"
+										class="mr-1.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border align-middle {isSelected
+											? 'border-sky-600 bg-sky-600 text-white'
+											: 'border-input bg-background'}"
+									>
+										{#if isSelected}<Check class="h-2.5 w-2.5" />{/if}
+									</span>
+								{/if}
 								{#if row.type === 'staged'}
 									<Badge
 										variant="outline"

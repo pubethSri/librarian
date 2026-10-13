@@ -1,10 +1,12 @@
+import { SvelteSet } from 'svelte/reactivity';
 import type { BookListItem } from '$lib/types';
 import type { BulkAction, Condition } from './types';
-import { matchesConditions, toAffectedIds } from './logic';
+import { matchesConditions, selectBooks, toAffectedIds } from './logic';
 
 /**
- * Bulk-edit form state for the Console: the action, its value, and the
- * conditions that select which books it applies to.
+ * Bulk-edit form state for the Console: the action, its value, and which
+ * books it applies to — either rows picked in the preview (the selection) or,
+ * when nothing is selected, the conditions.
  *
  * A factory rather than module-level `$state`, for the same reason as
  * {@link createStagingStore} — see `staging.svelte.ts`.
@@ -20,13 +22,21 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 	let action = $state<BulkAction>('');
 	let value = $state<string>('');
 	let conditions = $state<Condition[]>([]);
+	// A reactive set: reads in $derived / templates track adds and deletes
+	const selectedIds = new SvelteSet<string>();
 
 	const affectedBooks = $derived.by<BookListItem[]>(() => {
 		if (!getIsActive() || !action || !value) return [];
-		return getBooks().filter((b) => matchesConditions(b, conditions));
+		const books = getBooks();
+		// A selection, when present, replaces the conditions
+		if (selectedIds.size > 0) return selectBooks(books, selectedIds);
+		return books.filter((b) => matchesConditions(b, conditions));
 	});
 
 	const affectedBookIds = $derived.by<Set<string>>(() => toAffectedIds(affectedBooks));
+
+	/** Selected ids that are still in scope (a scope change can strand some) */
+	const selectedCount = $derived(selectBooks(getBooks(), selectedIds).length);
 
 	return {
 		// Two-way bound from the panel, so these need setters as well as getters
@@ -43,6 +53,10 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 			value = v;
 		},
 
+		get isActive() {
+			return getIsActive();
+		},
+
 		/** The live array — `bind:value={cond.column}` in the panel writes through it */
 		get conditions() {
 			return conditions;
@@ -52,6 +66,31 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 		},
 		get affectedBookIds() {
 			return affectedBookIds;
+		},
+
+		get selectedIds(): ReadonlySet<string> {
+			return selectedIds;
+		},
+		get selectedCount() {
+			return selectedCount;
+		},
+
+		toggleSelected(id: string) {
+			if (selectedIds.has(id)) selectedIds.delete(id);
+			else selectedIds.add(id);
+		},
+
+		/** Add ids to the selection (shift-click range, select all visible) */
+		addSelected(ids: string[]) {
+			for (const id of ids) selectedIds.add(id);
+		},
+
+		removeSelected(ids: string[]) {
+			for (const id of ids) selectedIds.delete(id);
+		},
+
+		clearSelection() {
+			selectedIds.clear();
 		},
 
 		addCondition() {
@@ -69,6 +108,7 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 			action = '';
 			value = '';
 			conditions = [];
+			selectedIds.clear();
 		}
 	};
 }

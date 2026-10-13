@@ -11,13 +11,16 @@
 		placeholder?: string;
 		/** Called when the query text changes (debounced) */
 		onchange: (query: string) => void;
+		/** Extra value lists for param keys, e.g. { 'tag:': [...tag names] } */
+		valueSuggestions?: Record<string, string[]>;
 	};
 
 	let {
 		allTags = [],
 		value = $bindable(''),
 		placeholder = 'Search... e.g. isekai status:ended volumes:>=4',
-		onchange
+		onchange,
+		valueSuggestions = {}
 	}: Props = $props();
 
 	// ─── Autocomplete state ─────────────────────────────────────────────────────
@@ -58,18 +61,28 @@
 		const colonIdx = lastToken.indexOf(':');
 		if (colonIdx > 0) {
 			const paramKey = lastToken.slice(0, colonIdx + 1).toLowerCase();
-			const paramValue = lastToken.slice(colonIdx + 1).toLowerCase();
-			const paramDef = PARAM_SUGGESTIONS[paramKey];
-			if (paramDef && paramDef.values.length > 0) {
-				for (const val of paramDef.values) {
-					if (!paramValue || val.toLowerCase().startsWith(paramValue)) {
+			// Typed part of the value, without an opening quote
+			const paramValue = lastToken
+				.slice(colonIdx + 1)
+				.replace(/^["']/, '')
+				.toLowerCase();
+			const values = [
+				...(PARAM_SUGGESTIONS[paramKey]?.values ?? []),
+				...(valueSuggestions[paramKey] ?? [])
+			];
+			if (values.length > 0) {
+				for (const val of values) {
+					// Narrow by substring, so "slice" finds "Slice of Life"
+					if (!paramValue || val.toLowerCase().includes(paramValue)) {
+						const quoted = /\s/.test(val) ? `"${val}"` : val;
 						results.push({
 							label: `${paramKey}${val}`,
-							value: `${paramKey}${val}`,
+							value: `${paramKey}${quoted}`,
 							type: 'paramValue'
 						});
 					}
 				}
+				// The dropdown scrolls, so show the whole narrowed list
 				return results;
 			}
 		}

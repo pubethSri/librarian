@@ -3,9 +3,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import { Plus, X, Zap } from '@lucide/svelte';
+	import { MousePointerClick, Plus, X, Zap } from '@lucide/svelte';
 	import type { BulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import type { Condition } from '$lib/console/types';
+	import SeriesSearch from '$lib/components/forms/SeriesSearch.svelte';
 	import { READING_STATUS_LABELS, type ReadingStatus } from '$lib/types';
 
 	let {
@@ -156,12 +157,34 @@
 			</Button>
 		</div>
 
+		{#if bulk.selectedCount > 0}
+			<div
+				class="flex items-center justify-between gap-2 rounded-md border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-xs"
+			>
+				<span class="flex items-center gap-1.5">
+					<MousePointerClick class="h-3.5 w-3.5 text-sky-600" />
+					<span>
+						Using <span class="font-medium">{bulk.selectedCount} selected</span> — conditions are ignored
+					</span>
+				</span>
+				<button
+					class="shrink-0 font-medium text-sky-700 hover:underline dark:text-sky-400"
+					onclick={() => bulk.clearSelection()}
+				>
+					Clear selection
+				</button>
+			</div>
+		{/if}
+
 		{#if bulk.conditions.length === 0}
 			<p class="text-xs text-muted-foreground">
-				No conditions — all books in scope will be affected.
+				{#if bulk.selectedCount === 0}
+					No conditions — all books in scope will be affected. Or click rows in the preview to pick
+					them (Shift+click for a range).
+				{/if}
 			</p>
 		{:else}
-			<div class="space-y-2">
+			<div class="space-y-2 {bulk.selectedCount > 0 ? 'pointer-events-none opacity-40' : ''}">
 				{#each bulk.conditions as cond, i (cond.id)}
 					<div class="flex items-center gap-1.5">
 						<span class="w-10 shrink-0 text-xs text-muted-foreground"
@@ -247,7 +270,13 @@
 								oninput={(e) => (cond.value = e.currentTarget.value)}
 							/>
 						{:else}
-							<Input class="h-8 flex-1 text-xs" placeholder="value..." bind:value={cond.value} />
+							<!-- series: the value is a series id, picked like in Add Books -->
+							<div class="min-w-0 flex-[2] [&_button]:h-8 [&_button]:text-xs">
+								<SeriesSearch
+									value={cond.value ? Number(cond.value) : null}
+									onselect={(s) => (cond.value = String(s.id))}
+								/>
+							</div>
 						{/if}
 						<button
 							class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"

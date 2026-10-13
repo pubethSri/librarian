@@ -9,6 +9,8 @@ import {
 	isFilterActive,
 	matchesConditions,
 	nextVolumeFor,
+	rangeIds,
+	selectBooks,
 	remapPreviewFilterState,
 	toAffectedIds,
 	toBatchPayload,
@@ -131,9 +133,11 @@ describe('matchesConditions', () => {
 		expect(matchesConditions(book({ location: 'home', isDraft: true }), conditions)).toBe(false);
 	});
 
-	it('compares series names case-insensitively', () => {
-		const conditions = [cond({ column: 'series', value: 'MUSHOKU' })];
-		expect(matchesConditions(book({ seriesShortName: 'Mushoku' }), conditions)).toBe(true);
+	it('matches the series condition by series id (picked, not typed)', () => {
+		const conditions = [cond({ column: 'series', value: '10' })];
+		expect(matchesConditions(book({ seriesId: 10 }), conditions)).toBe(true);
+		expect(matchesConditions(book({ seriesId: 11 }), conditions)).toBe(false);
+		expect(matchesConditions(book({ seriesId: 11 }), [{ ...conditions[0], op: '!=' }])).toBe(true);
 	});
 
 	it('supports the != operator', () => {
@@ -215,6 +219,28 @@ describe('bulk edit — reading status and price (B2)', () => {
 	it('carries reading status onto preview rows; staged rows are Unread', () => {
 		const rows = buildPreviewRows([book({ readingStatus: 'read' })], [staged({ volumeNumber: 2 })]);
 		expect(rows.map((r) => r.readingStatus)).toEqual(['read', 'unread']);
+	});
+});
+
+describe('selection — selectBooks / rangeIds', () => {
+	it('selectBooks keeps book order and ignores ids out of scope', () => {
+		const books = [book({ id: 1 }), book({ id: 2 }), book({ id: 3 })];
+		expect(selectBooks(books, new Set(['3', '1', '99'])).map((b) => b.id)).toEqual([1, 3]);
+		expect(selectBooks(books, new Set())).toEqual([]);
+	});
+
+	it('rangeIds spans both directions inclusively and skips staged rows', () => {
+		const rows = buildPreviewRows(
+			[
+				book({ id: 1, volumeNumber: '1' }),
+				book({ id: 2, volumeNumber: '3' }),
+				book({ id: 3, volumeNumber: '4' })
+			],
+			[staged({ tempId: 'tmp', volumeNumber: 2 })]
+		);
+		// rows: vol 1 (1), vol 2 (staged), vol 3 (2), vol 4 (3)
+		expect(rangeIds(rows, 0, 3)).toEqual(['1', '2', '3']);
+		expect(rangeIds(rows, 3, 2)).toEqual(['2', '3']);
 	});
 });
 

@@ -86,7 +86,8 @@ export function matchesConditions(book: BookListItem, conditions: Condition[]): 
 		let bookValue: string;
 		switch (c.column) {
 			case 'series':
-				bookValue = book.seriesShortName.toLowerCase();
+				// The value is a series id, picked with the series search
+				bookValue = String(book.seriesId);
 				break;
 			case 'reading':
 				bookValue = book.readingStatus;
@@ -103,13 +104,35 @@ export function matchesConditions(book: BookListItem, conditions: Condition[]): 
 			default:
 				return true;
 		}
-		const condValue = c.column === 'series' ? c.value.toLowerCase() : c.value;
+		const condValue = c.value;
 		if (c.op === '=') return bookValue === condValue;
 		if (c.op === '!=') return bookValue !== condValue;
 		// An ordering op on a text column is meaningless — match nothing rather
 		// than everything, so a stale op can never widen a bulk edit
 		return false;
 	});
+}
+
+/** The books whose (stringified) id is in the selection, in book order */
+export function selectBooks(
+	books: BookListItem[],
+	selectedIds: ReadonlySet<string>
+): BookListItem[] {
+	if (selectedIds.size === 0) return [];
+	return books.filter((b) => selectedIds.has(String(b.id)));
+}
+
+/**
+ * The ids of the selectable rows between two positions in the visible list,
+ * inclusive and in either direction — a shift-click range. Staged rows are
+ * skipped: only saved books can be bulk-edited.
+ */
+export function rangeIds(rows: PreviewRow[], from: number, to: number): string[] {
+	const [start, end] = from <= to ? [from, to] : [to, from];
+	return rows
+		.slice(Math.max(0, start), end + 1)
+		.filter((r) => r.type === 'existing')
+		.map((r) => r.id);
 }
 
 /**
