@@ -16,8 +16,8 @@
 	import { toast } from 'svelte-sonner';
 
 	const bookfairId = Number($page.params.id);
-	const detailQuery = createBookfairDetailQuery(bookfairId);
-	const booksQuery = createBooksByEventQuery(bookfairId);
+	const detailQuery = createBookfairDetailQuery(() => bookfairId);
+	const booksQuery = createBooksByEventQuery(() => bookfairId);
 	const deleteMutation = createBookfairDeleteMutation();
 
 	let showEditDialog = $state(false);

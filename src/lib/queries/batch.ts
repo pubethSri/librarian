@@ -5,7 +5,7 @@ import type { CreateBookPayload } from '$lib/types';
 export function createBatchBookMutation() {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: async (payload: { books: CreateBookPayload[] }) => {
+		mutationFn: async (payload: { books: CreateBookPayload[] }): Promise<{ created: number }> => {
 			const res = await fetch('/api/books/batch', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },

@@ -4,7 +4,10 @@ import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 export function createBulkBookUpdateMutation() {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: async (payload: { bookIds: number[]; updates: Record<string, unknown> }) => {
+		mutationFn: async (payload: {
+			bookIds: number[];
+			updates: Record<string, unknown>;
+		}): Promise<{ updated: number }> => {
 			const res = await fetch('/api/books/bulk', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },

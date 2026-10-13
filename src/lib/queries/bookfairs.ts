@@ -31,13 +31,21 @@ export function createBookfairsListQuery() {
 	}));
 }
 
-/** Query: single bookfair detail */
-export function createBookfairDetailQuery(id: number) {
-	return createQuery<BookfairDetail>(() => ({
-		queryKey: ['bookfairs', id],
-		queryFn: () => fetchBookfairDetail(id),
-		enabled: id > 0
-	}));
+/**
+ * Query: single bookfair detail.
+ *
+ * Takes the id as a getter so the query re-keys when it changes — passing a
+ * plain number would capture only its initial value.
+ */
+export function createBookfairDetailQuery(getId: () => number) {
+	return createQuery<BookfairDetail>(() => {
+		const id = getId();
+		return {
+			queryKey: ['bookfairs', id],
+			queryFn: () => fetchBookfairDetail(id),
+			enabled: id > 0
+		};
+	});
 }
 
 /** Mutation: create a new bookfair */

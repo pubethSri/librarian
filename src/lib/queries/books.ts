@@ -23,13 +23,21 @@ async function fetchBooksByEvent(eventId: number): Promise<BookListItem[]> {
 	return res.json();
 }
 
-/** Query: list books for a specific bookfair event */
-export function createBooksByEventQuery(eventId: number) {
-	return createQuery<BookListItem[]>(() => ({
-		queryKey: ['books', 'event', eventId],
-		queryFn: () => fetchBooksByEvent(eventId),
-		enabled: eventId > 0
-	}));
+/**
+ * Query: list books for a specific bookfair event.
+ *
+ * Takes the id as a getter so the query re-keys when it changes (see
+ * `createBookfairDetailQuery`).
+ */
+export function createBooksByEventQuery(getEventId: () => number) {
+	return createQuery<BookListItem[]>(() => {
+		const eventId = getEventId();
+		return {
+			queryKey: ['books', 'event', eventId],
+			queryFn: () => fetchBooksByEvent(eventId),
+			enabled: eventId > 0
+		};
+	});
 }
 
 /** Mutation: create a new book */

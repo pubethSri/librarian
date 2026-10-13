@@ -4,6 +4,8 @@
 	import { goto } from '$app/navigation';
 	import { createBooksListQuery, createBooksByEventQuery } from '$lib/queries/books';
 	import { createBookfairsListQuery, createBookfairDetailQuery } from '$lib/queries/bookfairs';
+	import { createBatchBookMutation } from '$lib/queries/batch';
+	import { createBulkBookUpdateMutation } from '$lib/queries/bulk';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import ScopeBar from '$lib/components/console/ScopeBar.svelte';
 	import PreviewPanel from '$lib/components/console/PreviewPanel.svelte';
@@ -32,8 +34,8 @@
 
 	// Bookfair detail query for scope info
 	const bookfairDetailId = $derived(scopeType === 'bookfair' && scopeId ? scopeId : 0);
-	const bookfairDetailQuery = createBookfairDetailQuery(bookfairDetailId);
-	const eventBooksQuery = createBooksByEventQuery(bookfairDetailId);
+	const bookfairDetailQuery = createBookfairDetailQuery(() => bookfairDetailId);
+	const eventBooksQuery = createBooksByEventQuery(() => bookfairDetailId);
 
 	// ─── Scoped Books ───────────────────────────────────────────────────────────
 	const scopedBooks = $derived.by<BookListItem[]>(() => {
@@ -73,40 +75,19 @@
 	});
 
 	// ─── Commit ─────────────────────────────────────────────────────────────────
-	let isCommitting = $state(false);
+	// The hook invalidates ['books'], ['series'] and ['bookfairs'], which by
+	// prefix covers the scoped event-books and bookfair-detail queries too.
+	const batchMutation = createBatchBookMutation();
 
 	async function commitAll() {
 		if (staging.entries.length === 0) return;
-		isCommitting = true;
 
 		try {
-			const payload = toBatchPayload(staging.entries);
-
-			const res = await fetch('/api/books/batch', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ books: payload })
-			});
-
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.message || 'Failed to create books');
-			}
-
-			const result = await res.json();
+			const result = await batchMutation.mutateAsync({ books: toBatchPayload(staging.entries) });
 			toast.success(`Created ${result.created} book${result.created > 1 ? 's' : ''}`);
 			staging.clear();
-
-			// Refetch scoped data
-			if (scopeType === 'bookfair' && scopeId) {
-				eventBooksQuery.refetch();
-				bookfairDetailQuery.refetch();
-			}
-			allBooksQuery.refetch();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Commit failed');
-		} finally {
-			isCommitting = false;
 		}
 	}
 
@@ -134,44 +115,22 @@
 	);
 
 	let showBulkConfirm = $state(false);
-	let isBulkExecuting = $state(false);
+	const bulkMutation = createBulkBookUpdateMutation();
 
 	async function executeBulkEdit() {
 		const affected = bulk.affectedBooks;
 		if (affected.length === 0) return;
-		isBulkExecuting = true;
 
 		try {
-			const updates = toBulkUpdates(bulk.action, bulk.value);
-
-			const res = await fetch('/api/books/bulk', {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					bookIds: affected.map((b) => b.id),
-					updates
-				})
+			const result = await bulkMutation.mutateAsync({
+				bookIds: affected.map((b) => b.id),
+				updates: toBulkUpdates(bulk.action, bulk.value)
 			});
-
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.message || 'Bulk update failed');
-			}
-
-			const result = await res.json();
 			toast.success(`Updated ${result.updated} book${result.updated > 1 ? 's' : ''}`);
 			bulk.reset();
-
-			// Refetch data
-			if (scopeType === 'bookfair' && scopeId) {
-				eventBooksQuery.refetch();
-				bookfairDetailQuery.refetch();
-			}
-			allBooksQuery.refetch();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Bulk update failed');
 		} finally {
-			isBulkExecuting = false;
 			showBulkConfirm = false;
 		}
 	}
@@ -200,7 +159,7 @@
 			{isLoading}
 			{staging}
 			{bulk}
-			{isCommitting}
+			isCommitting={batchMutation.isPending}
 			oncommit={commitAll}
 		/>
 
@@ -236,7 +195,7 @@
 	bind:open={showBulkConfirm}
 	title="Confirm Bulk Edit"
 	description={`Apply "${bulk.action === 'location' ? 'Change location' : bulk.action === 'source' ? 'Set source' : 'Set draft status'}" to ${bulk.affectedBooks.length} book${bulk.affectedBooks.length !== 1 ? 's' : ''}? This cannot be undone.`}
-	loading={isBulkExecuting}
+	loading={bulkMutation.isPending}
 	onconfirm={executeBulkEdit}
 	oncancel={() => (showBulkConfirm = false)}
 />
