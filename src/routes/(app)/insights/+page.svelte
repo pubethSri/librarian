@@ -54,7 +54,8 @@
 		{ id: 'backlog', label: 'Backlog' },
 		{ id: 'growth', label: 'Growth' },
 		{ id: 'tags', label: 'Tags & completion' },
-		{ id: 'spending', label: 'Spending' }
+		{ id: 'spending', label: 'Spending' },
+		{ id: 'pace', label: 'Pace & fairs' }
 	];
 
 	/** A baht amount for chart axes, tooltips and tables — masked while Hide ฿ is on */
@@ -191,6 +192,36 @@
 					],
 					format: chartMoney,
 					hideValueAxis: hideMoney
+				})
+			: null
+	);
+
+	const paceChart = $derived(
+		data
+			? barChart({
+					labels: data.pace.buckets.map((b) => b.label),
+					series: [
+						{
+							label: 'Reads',
+							data: data.pace.buckets.map((b) => b.count),
+							color: READ_STATE_COLORS.read
+						}
+					]
+				})
+			: null
+	);
+
+	const funnelChart = $derived(
+		data
+			? barChart({
+					labels: data.funnel.map((f) => `${f.name} (${percent(f.counts.read, f.bought)} read)`),
+					series: STACK.map((state) => ({
+						label: READING_STATUS_LABELS[state],
+						data: data.funnel.map((f) => f.counts[state]),
+						color: READ_STATE_COLORS[state]
+					})),
+					stacked: true,
+					horizontal: true
 				})
 			: null
 	);
@@ -547,6 +578,77 @@
 					</tbody>
 				</table>
 			</div>
+		</InsightSection>
+
+		<InsightSection
+			id="pace"
+			title="Reading pace & bookfair funnel"
+			description="How long books wait between purchase and finish, and how much of each fair's haul got read."
+		>
+			{@const p = data.pace}
+			<div class="grid grid-cols-2 gap-6 lg:grid-cols-4">
+				<StatTile
+					label="Purchase → finish"
+					value={p.medianDays === null ? '—' : plural(Math.round(p.medianDays), 'day')}
+					sub={p.medianDays === null
+						? `${plural(p.samples, 'dated read')} with a purchase date so far`
+						: `median of ${plural(p.samples, 'read')}`}
+				/>
+			</div>
+			{#if paceChart}
+				<ChartCard
+					title="Time from purchase to finish"
+					description="Dated reads of books with a purchase date."
+					config={paceChart}
+					height={200}
+					empty={p.samples === 0 ? NO_DATED_READS : null}
+				/>
+			{/if}
+
+			{#if funnelChart && data.funnel.length > 0}
+				<ChartCard
+					title="Bookfair hauls by reading state"
+					description="Books linked to each fair, oldest fair first."
+					config={funnelChart}
+					height={rowsHeight(data.funnel.length)}
+				/>
+				<table class="w-full max-w-3xl text-left text-sm tabular-nums">
+					<thead class="text-xs text-muted-foreground">
+						<tr class="border-b border-border">
+							<th class="py-2 pr-4 font-medium">Bookfair</th>
+							<th class="py-2 pr-4 font-medium">Date</th>
+							<th class="py-2 pr-4 text-right font-medium">Bought</th>
+							<th class="py-2 pr-4 text-right font-medium">Read</th>
+							<th class="py-2 text-right font-medium">Spent</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.funnel as f (f.bookfairId)}
+							<tr class="border-b border-border/60">
+								<td class="py-2 pr-4">
+									<a
+										href={resolve(`/bookfairs/${f.bookfairId}`)}
+										class="text-foreground hover:underline">{f.name}</a
+									>
+								</td>
+								<td class="py-2 pr-4 text-muted-foreground">{formatDay(f.date)}</td>
+								<td class="py-2 pr-4 text-right text-muted-foreground">{f.bought}</td>
+								<td class="py-2 pr-4 text-right text-foreground">
+									{f.counts.read}
+									<span class="text-xs text-muted-foreground">
+										· {percent(f.counts.read, f.bought)}
+									</span>
+								</td>
+								<td class="py-2 text-right text-foreground">
+									{f.bought === 0 ? '—' : moneyText(f.spent, hideMoney)}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{:else}
+				<p class="text-sm text-muted-foreground">No bookfairs yet.</p>
+			{/if}
 		</InsightSection>
 	{/if}
 </div>

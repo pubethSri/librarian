@@ -373,6 +373,25 @@ export type InsightsSpending = {
 	readBooks: number;
 };
 
+export type InsightsPace = {
+	/** Dated reads of books with a purchase date (finished on or after it) */
+	samples: number;
+	/** Median days from purchase to finish; null below the minimum sample */
+	medianDays: number | null;
+	/** How long reads took, in fixed bands */
+	buckets: { label: string; count: number }[];
+};
+
+/** One bookfair's haul and how much of it got read */
+export type FunnelRow = {
+	bookfairId: number;
+	name: string;
+	date: string;
+	bought: number;
+	counts: ReadStateCounts;
+	spent: Money;
+};
+
 export type Insights = {
 	generatedAt: string;
 	/** The time zone dated reads were bucketed in */
@@ -382,4 +401,7 @@ export type Insights = {
 	growth: InsightsGrowth;
 	tags: InsightsTags;
 	spending: InsightsSpending;
+	pace: InsightsPace;
+	/** Every bookfair, oldest first */
+	funnel: FunnelRow[];
 };

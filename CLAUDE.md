@@ -92,6 +92,6 @@ This project follows a strict phased workflow (plan the phase → get approval �
 - **The build must pass after every change** (`npm run build`, 0 errors) and tests must pass.
 - **Update `docs/STATUS.md` at each version bump** — it is the _only_ file that tracks current state (record decisions there; `ROADMAP.md` changes only when the plan itself changes).
 
-> Currently mid-`v0.3`. Backfill done; next is **Insights** (I1–I6, pulled forward from v0.4), then the Bookfair release items B3–B7 (deploy target Oct 20). See `docs/STATUS.md` for the live state.
+> Currently mid-`v0.3`. **Insights** (I1–I6) is built on `feature/insights` (pure, tested `src/lib/insights/` behind `GET /api/insights`; charts via the `use:chart` Chart.js action in `src/lib/actions/chart.ts`). Next are the Bookfair release items B3–B7 (deploy target Oct 20). See `docs/STATUS.md` for the live state.
 
 A design-reference skill is available at `.agent/skills/ui-ux-pro-max/` for UI/UX work (invoke its `scripts/search.py` from that directory).

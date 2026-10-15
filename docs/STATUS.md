@@ -7,35 +7,33 @@
 
 - **Current version:** v0.3 — **in progress**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**. **Plan changed 2026-10-16:** Insights (old v0.4 items 4.2–4.7) is pulled forward and comes **first**, then B3–B7 in the time left — see Handoff Decisions 2026-10-16 and `ROADMAP.md` → "Now".
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** **Real-data backfill done** (2026-10-16). Final round: **extra volumes** are a flag (`books.is_extra`, Extra chip, order unchanged), Edit Book volume-number save fixed, Add Volume / Edit Book date follows the picked fair, Add Volume / New Series default to Apartment. Real DB backed up after the backfill: `temp/backups/local-end-of-backfill-20261016-0038.dump`.
-- **Branches:** `main` = everything (`bookfair-release` fast-forwarded into it and pushed 2026-10-16). Start new work on a branch from `main`.
-- **Next:** **Insights I1–I6** (own session) → B3/B4 Field Mode → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 keeps the Reading queue + insights polish.
+- **Latest:** **Insights I1–I6 built** (2026-10-16, branch `feature/insights`, one commit per item, not merged): `/insights` with Overview, Backlog, Growth, Tags & completion, Spending, Pace & bookfair funnel, and "Hide ฿". The 241 backfill read dates were cleared on the real DB first (backup `temp/backups/local-before-insights-20261016-0053.dump`), so rate and pace figures show "needs dated reads" until new reads are marked. Claude-checked on the scratch DB (numbers cross-checked with SQL); **your visual pass is pending** (script below).
+- **Branches:** `main` = everything up to the backfill. `feature/insights` = Insights, awaiting your visual pass → merge into `main`.
+- **Next:** your Insights visual pass → merge → **B3/B4 Field Mode** (from Oct 17; Insights finished inside its timebox) → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 keeps the Reading queue + insights polish.
 
-### Next session — start here (Insights)
+### Next session — start here (Field Mode)
 
-1. **Read** this file's state block + **Handoff Decisions (2026-10-16)** (data facts for the charts), then `ROADMAP.md` → "Now" → **Insights** (I1–I6, chart choice). `CLAUDE.md` has the conventions; reading rules live in `src/lib/reading.ts`, price rules in Bookfair-release Decisions 2026-10-13, extras in Backfill-session Decisions 2026-10-15.
-2. **Decide first — read dates:** all 241 dated reads carry a backfill stamp of **2026-10-15**, not a real date (see Handoff Decisions). Recommended: clear `started_at` / `finished_at` on those rows (back up first), which matches the existing rule "backfilled reads carry no dates". Until then any date-based reading insight (pace, read rate, reads per month) is wrong.
-3. **Then build I1** — insights foundation: `GET /api/insights` over a pure, unit-tested `src/lib/insights/` module, a chart action + stat tiles, an `/insights` page in the sidebar. Then I2–I6, one per step, each verified before the next. Load the `dataviz` skill before writing chart code.
-4. **Timebox:** the fair work (B3–B7) still targets a **deploy by Oct 20** (fair opens Oct 23). Agree with the user up front how many days Insights gets; if it runs over, ship what's done and move to B3.
-5. **Still open:** your visual pass of the **extra volumes** change (committed before it at your request): Silent Witch reads 1–4, Extra, 5–9, Extra (hover: "Extra (after vol. 4)"), Latest Volume 9; editing an extra shows the switch on and "Sort position"; the Console suggests vol. 10 for Silent Witch; no "4.5" anywhere outside the edit dialog. **B6 hosting** — laptop + Tailscale vs Vercel Hobby + Neon Free; decide before B6.
-6. **Working agreement:** Claude runs build / check / lint / tests and browser pre-checks on the **scratch DB only** (`librarian_test`, test server on port 5174 — see Environment); you do the visual pass. Back up the real DB before risky work (`temp/backups/`). Insights is read-only, so the scratch DB is safe to use for every chart check — re-clone it from `local` first so it has the real data.
+1. **Merge** `feature/insights` into `main` once your visual pass (below) is done; fix anything it turns up on the branch first.
+2. **Then B3** — Field Mode 1 "Do I own this?" (`ROADMAP.md` → Bookfair release). `CLAUDE.md` has the conventions; reading rules in `src/lib/reading.ts`, extras in Backfill-session Decisions 2026-10-15 (`latestVolume` skips extras).
+3. **Still open:** your visual pass of the **extra volumes** change: Silent Witch reads 1–4, Extra, 5–9, Extra (hover: "Extra (after vol. 4)"), Latest Volume 9; editing an extra shows the switch on and "Sort position"; the Console suggests vol. 10 for Silent Witch; no "4.5" anywhere outside the edit dialog. **B6 hosting** — laptop + Tailscale vs Vercel Hobby + Neon Free; decide before B6.
+4. **Working agreement:** Claude runs build / check / lint / tests and browser pre-checks on the **scratch DB only** (`librarian_test`, test server on port 5174 — see Environment); you do the visual pass. Back up the real DB before risky work (`temp/backups/`).
 
 ### Bookfair release progress (v0.3)
 
-| #     | Item                                                         | Status                              |
-| ----- | ------------------------------------------------------------ | ----------------------------------- |
-| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)    |
-| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)        |
-| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)        |
-| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)    |
-| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                  |
-| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass) |
-| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ⬜ **Next** (own session)           |
-| B3    | Field Mode 1 — "Do I own this?"                              | ⬜ After Insights                   |
-| B4    | Field Mode 2 — quick add                                     | ⬜                                  |
-| B5    | Bookfair Hitlist (simple)                                    | ⬜                                  |
-| B6    | Deploy on the laptop (Tailscale)                             | ⬜                                  |
-| B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                  |
+| #     | Item                                                         | Status                               |
+| ----- | ------------------------------------------------------------ | ------------------------------------ |
+| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)     |
+| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)         |
+| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)         |
+| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)     |
+| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                   |
+| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)  |
+| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Built (awaiting your visual pass) |
+| B3    | Field Mode 1 — "Do I own this?"                              | ⬜ **Next**                          |
+| B4    | Field Mode 2 — quick add                                     | ⬜                                   |
+| B5    | Bookfair Hitlist (simple)                                    | ⬜                                   |
+| B6    | Deploy on the laptop (Tailscale)                             | ⬜                                   |
+| B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                   |
 
 ### Insights progress (I1–I6, branch `feature/insights`)
 
@@ -48,7 +46,19 @@ Timebox: through **Oct 17** (user's call 2026-10-16); whatever is done then ship
 | I3  | Collection growth                                       | ✅ Done (Claude-checked on scratch DB) |
 | I4  | Tags & completion                                       | ✅ Done (Claude-checked on scratch DB) |
 | I5  | Spending                                                | ✅ Done (Claude-checked on scratch DB) |
-| I6  | Reading pace & bookfair funnel                          | ⬜ Next                                |
+| I6  | Reading pace & bookfair funnel                          | ✅ Done (Claude-checked on scratch DB) |
+
+**Your visual pass — Insights.** Use `localhost:5174` (scratch DB) or your real dev server; Insights only reads, so either is safe. Numbers below are from the scratch DB (= your real data on 2026-10-16).
+
+1. Sidebar → **Insights**. ✅ Overview tiles: Books 385 (incl. 5 extras), Series 57, Read 264 (69%), Reading 0, Unread pile 121, Spent ≥ ฿95,533 "from 369 of 385 books". Chart _Books by type and reading state_: Light Novel mostly grey, Manga mostly blue. ❌ Red flag: "Loading" skeleton that never ends, or a ฿0 where prices exist.
+2. **Hide ฿** (top right) on → every baht amount on the page reads "฿ •••" (tiles, by-source table, fair table, spend chart axis and tooltip); chart bar shapes stay. Off → amounts back. Reload the page → it starts **shown** again.
+3. **Backlog:** Buying 6.8 / month; Reading "—" ("0 dated reads so far"); Time to clear "—". The bought-vs-read chart's last 12 months match what you remember buying; note under it says reads need dating. _Waiting longest_ lists your five oldest unread purchases (links open the series). _Owned but never started_: 8 series, Strange Fake first; World Teacher carries a Dropped chip.
+4. **Growth:** Since Dec 2020; busiest month Dec 2023 (98 books). Bars stacked violet (LN) / yellow (manga); _Books owned over time_ climbs to ~381; note says 4 books without a purchase date.
+5. **Tags & completion:** tags sorted by books (Contemporary top, ~214 books, 145 read). Completion by tag / publisher: 100% bars, blue = Finished, green = In progress, grey = Not started, orange = Abandoned (series you dropped). Does each publisher's picture match your sense of it?
+6. **Spending:** Sitting unread ≥ ฿39,634 (105 of 121 unread priced); Cost per book read ≥ ฿362; Average ฿371 per LN · ฿177 per manga. By source: Bookfair 190 / ฿42,069, Unknown 124 (108 priced), Online 68, Bookstore 3.
+7. **Pace & fairs:** _Time from purchase to finish_ shows the dashed "needs 5+ dated reads" box. Funnel: 7 fairs oldest first, each label with its read %; the table's Bought column sums to 190 and links open each fair.
+8. **Show data** under any chart opens a table of the same numbers. Hovering a bar shows a dark tooltip.
+9. On **5174 (scratch DB)**, **mark one book Read** from a series page and come back to Insights → Read goes up by one and _Reading_ under Backlog says "1 dated read so far" (the page refetches on every visit).
 
 - **Direction reset 2026-10-13:** Activity Log dropped; old feature-brainstorm items triaged (see Direction Decisions below and `ROADMAP.md` → "Not adopted").
 
@@ -471,6 +481,7 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-16 | **Insights I6 — Pace & bookfair funnel:** purchase → finish median + banded histogram (dated reads only; empty state until 5+), per-fair haul by reading state with read % and spend. **Insights I1–I6 built** inside the timebox. Tests 226 → 231.                                                                                                                                                                                                                                                                                                                                              |
 | 2026-10-16 | **Insights I5 — Spending:** spent, sitting unread, cost per book read, average price by type; spent per month; by-source table (books, spent, average). "Hide ฿" masks every amount (tiles, tables, chart axis and tooltips). Tests 221 → 226.                                                                                                                                                                                                                                                                                                                                                   |
 | 2026-10-16 | **Insights I4 — Tags & completion:** books per tag split read / not yet; series completion (finished / in progress / not started / abandoned) by tag and by publisher as 100% bars. Tests 215 → 221.                                                                                                                                                                                                                                                                                                                                                                                             |
 | 2026-10-16 | **Insights I3 — Collection growth:** books bought per month by type (stacked) and books owned over time (separate chart — never a second y-axis); since / busiest-month tiles; undated books footnoted. Tests 212 → 215.                                                                                                                                                                                                                                                                                                                                                                         |

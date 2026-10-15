@@ -7,6 +7,7 @@ import { computeBacklog } from './backlog';
 import { computeGrowth } from './growth';
 import { computeTags } from './tags';
 import { computeSpending } from './spending';
+import { computeFunnel, computePace } from './pace';
 import {
 	buildBookFacts,
 	dayInZone,
@@ -58,6 +59,8 @@ export function computeInsights(
 		backlog: computeBacklog(facts, input.series, today),
 		growth: computeGrowth(facts, today),
 		tags: computeTags(facts, input),
-		spending: computeSpending(facts, today)
+		spending: computeSpending(facts, today),
+		pace: computePace(facts),
+		funnel: computeFunnel(facts, input.bookfairs)
 	};
 }
