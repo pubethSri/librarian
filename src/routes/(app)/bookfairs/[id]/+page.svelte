@@ -12,6 +12,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import { groupHaulBySeries, type HaulSeries } from '$lib/utils/haul';
 	import {
 		Pencil,
 		Trash2,
@@ -30,6 +32,25 @@
 	const booksQuery = createBooksByEventQuery(() => bookfairId);
 	const deleteMutation = createBookfairDeleteMutation();
 	const unlinkMutation = createBulkBookUpdateMutation();
+
+	// "By series" groups the haul into one card per series; "Haul" is the full list
+	let haulView = $state('series');
+	const seriesGroups = $derived(groupHaulBySeries(booksQuery.data ?? []));
+
+	/** Money for a series card — a lower bound when some books are unpriced */
+	function spentLabel(g: HaulSeries): string {
+		if (g.pricedCount === 0) return 'No prices';
+		const total = `฿${g.spent.toLocaleString()}`;
+		return g.pricedCount === g.books.length
+			? total
+			: `≥ ${total} · ${g.pricedCount}/${g.books.length} priced`;
+	}
+
+	function locationLabel(g: HaulSeries): string {
+		const entries = Object.entries(g.locations) as [keyof typeof BOOK_LOCATION_LABELS, number][];
+		if (entries.length === 1) return BOOK_LOCATION_LABELS[entries[0][0]];
+		return entries.map(([loc, n]) => `${BOOK_LOCATION_LABELS[loc]} ${n}`).join(' · ');
+	}
 
 	let showEditDialog = $state(false);
 	let showDeleteConfirm = $state(false);
@@ -180,12 +201,17 @@
 			</div>
 		</div>
 
-		<!-- Books table -->
-		<div class="space-y-4">
-			<div class="flex items-center justify-between">
-				<h2 class="text-lg font-semibold text-foreground">Haul</h2>
+		<!-- Haul: by series (cards) or the full list -->
+		<Tabs.Root bind:value={haulView} class="space-y-4">
+			<div class="flex items-center justify-between gap-3">
+				<Tabs.List>
+					<Tabs.Trigger value="series">By series</Tabs.Trigger>
+					<Tabs.Trigger value="haul">Haul</Tabs.Trigger>
+				</Tabs.List>
 				{#if bf.bookCount > 0}
 					<Badge variant="outline" class="text-xs">
+						{seriesGroups.length}
+						series ·
 						{bf.bookCount}
 						{bf.bookCount === 1 ? 'volume' : 'volumes'}
 					</Badge>
@@ -202,60 +228,91 @@
 					</Button>
 				</div>
 			{:else if booksQuery.data && booksQuery.data.length > 0}
-				<div class="rounded-md border border-border">
-					<Table.Root>
-						<Table.Header>
-							<Table.Row>
-								<Table.Head>Series</Table.Head>
-								<Table.Head class="w-20 text-center">Vol.</Table.Head>
-								<Table.Head>Location</Table.Head>
-								<Table.Head class="text-right">Price</Table.Head>
-								<Table.Head class="w-10"></Table.Head>
-							</Table.Row>
-						</Table.Header>
-						<Table.Body>
-							{#each booksQuery.data as book (book.id)}
+				<Tabs.Content value="series">
+					<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						{#each seriesGroups as g (g.seriesId)}
+							<button
+								class="flex flex-col rounded-lg border border-border p-4 text-left transition-colors hover:bg-accent/50"
+								onclick={() => goto(resolve(`/series/${g.seriesId}`))}
+							>
+								<div class="flex items-start justify-between gap-2">
+									<div class="min-w-0">
+										<p class="truncate font-medium text-foreground">{g.seriesShortName}</p>
+										<p class="truncate text-xs text-muted-foreground">{g.seriesFullName}</p>
+									</div>
+									<Badge variant="secondary" class="shrink-0 text-xs tabular-nums">
+										{g.books.length}
+										{g.books.length === 1 ? 'vol' : 'vols'}
+									</Badge>
+								</div>
+								<p class="mt-3 font-mono text-sm text-foreground tabular-nums">Vol. {g.volumes}</p>
+								<div
+									class="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground"
+								>
+									<span>{locationLabel(g)}</span>
+									<span class="tabular-nums">{spentLabel(g)}</span>
+								</div>
+							</button>
+						{/each}
+					</div>
+				</Tabs.Content>
+
+				<Tabs.Content value="haul">
+					<div class="rounded-md border border-border">
+						<Table.Root>
+							<Table.Header>
 								<Table.Row>
-									<Table.Cell>
-										<button
-											class="text-left font-medium text-foreground hover:underline"
-											onclick={() => goto(resolve(`/series/${book.seriesId}`))}
-										>
-											{book.seriesShortName}
-										</button>
-										{#if book.isDraft}
-											<Badge variant="outline" class="ml-2 text-xs">Draft</Badge>
-										{/if}
-									</Table.Cell>
-									<Table.Cell class="text-center tabular-nums">
-										{book.volumeNumber}
-									</Table.Cell>
-									<Table.Cell class="text-muted-foreground">
-										{BOOK_LOCATION_LABELS[book.location]}
-									</Table.Cell>
-									<Table.Cell class="text-right tabular-nums">
-										{formatPrice(book.price)}
-									</Table.Cell>
-									<Table.Cell>
-										<Button
-											variant="ghost"
-											size="icon"
-											class="h-7 w-7 text-muted-foreground hover:text-destructive"
-											title="Remove from this fair"
-											aria-label="Remove {book.seriesShortName} vol. {Number(
-												book.volumeNumber
-											)} from this fair"
-											disabled={unlinkMutation.isPending}
-											onclick={() => removeFromFair(book)}
-										>
-											<Unlink class="h-3.5 w-3.5" />
-										</Button>
-									</Table.Cell>
+									<Table.Head>Series</Table.Head>
+									<Table.Head class="w-20 text-center">Vol.</Table.Head>
+									<Table.Head>Location</Table.Head>
+									<Table.Head class="text-right">Price</Table.Head>
+									<Table.Head class="w-10"></Table.Head>
 								</Table.Row>
-							{/each}
-						</Table.Body>
-					</Table.Root>
-				</div>
+							</Table.Header>
+							<Table.Body>
+								{#each booksQuery.data as book (book.id)}
+									<Table.Row>
+										<Table.Cell>
+											<button
+												class="text-left font-medium text-foreground hover:underline"
+												onclick={() => goto(resolve(`/series/${book.seriesId}`))}
+											>
+												{book.seriesShortName}
+											</button>
+											{#if book.isDraft}
+												<Badge variant="outline" class="ml-2 text-xs">Draft</Badge>
+											{/if}
+										</Table.Cell>
+										<Table.Cell class="text-center tabular-nums">
+											{Number(book.volumeNumber)}
+										</Table.Cell>
+										<Table.Cell class="text-muted-foreground">
+											{BOOK_LOCATION_LABELS[book.location]}
+										</Table.Cell>
+										<Table.Cell class="text-right tabular-nums">
+											{formatPrice(book.price)}
+										</Table.Cell>
+										<Table.Cell>
+											<Button
+												variant="ghost"
+												size="icon"
+												class="h-7 w-7 text-muted-foreground hover:text-destructive"
+												title="Remove from this fair"
+												aria-label="Remove {book.seriesShortName} vol. {Number(
+													book.volumeNumber
+												)} from this fair"
+												disabled={unlinkMutation.isPending}
+												onclick={() => removeFromFair(book)}
+											>
+												<Unlink class="h-3.5 w-3.5" />
+											</Button>
+										</Table.Cell>
+									</Table.Row>
+								{/each}
+							</Table.Body>
+						</Table.Root>
+					</div>
+				</Tabs.Content>
 			{:else}
 				<EmptyState
 					icon={ShoppingCart}
@@ -263,7 +320,7 @@
 					description="Use “Add books from your collection” to link books you already logged, or Open in Console to add new ones."
 				/>
 			{/if}
-		</div>
+		</Tabs.Root>
 	</div>
 
 	<!-- Dialogs -->
