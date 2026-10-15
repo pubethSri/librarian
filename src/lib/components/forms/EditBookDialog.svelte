@@ -15,6 +15,7 @@
 	type EditableBook = {
 		id: number;
 		volumeNumber: string;
+		isExtra: boolean;
 		location: BookLocation;
 		source: BookSource | null;
 		sourceEventId: number | null;
@@ -35,7 +36,9 @@
 	const bookfairsQuery = createBookfairsListQuery();
 
 	// Form state — initialized from the book prop
-	let volumeNumber = $state(String(book.volumeNumber));
+	// bind:value on a number input yields a number (null when empty), not a string
+	let volumeNumber = $state<number | null>(Number(book.volumeNumber));
+	let isExtra = $state(book.isExtra);
 	let location = $state<BookLocation>(book.location);
 	let source = $state<BookSource | ''>(book.source || '');
 	let sourceEventId = $state<number | null>(book.sourceEventId);
@@ -45,7 +48,8 @@
 
 	// Sync form state when the book prop changes (e.g., switching which book to edit)
 	$effect(() => {
-		volumeNumber = String(book.volumeNumber);
+		volumeNumber = Number(book.volumeNumber);
+		isExtra = book.isExtra;
 		location = book.location;
 		source = book.source || '';
 		sourceEventId = book.sourceEventId;
@@ -57,7 +61,7 @@
 	let isSubmitting = $state(false);
 
 	async function handleSubmit() {
-		if (!volumeNumber.trim()) {
+		if (volumeNumber == null || !Number.isFinite(volumeNumber)) {
 			toast.error('Volume number is required');
 			return;
 		}
@@ -66,7 +70,8 @@
 		try {
 			await updateMutation.mutateAsync({
 				id: book.id,
-				volumeNumber: Number(volumeNumber),
+				volumeNumber,
+				isExtra,
 				location,
 				source: source || undefined,
 				sourceEventId: source === 'bookfair' ? (sourceEventId ?? undefined) : null,
@@ -74,7 +79,7 @@
 				price: price ? Number(price) : undefined,
 				isDraft
 			});
-			toast.success(`Volume ${volumeNumber} updated`);
+			toast.success(isExtra ? 'Extra volume updated' : `Volume ${volumeNumber} updated`);
 			onclose?.();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to update book');
@@ -92,14 +97,28 @@
 >
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Edit Volume {book.volumeNumber}</Dialog.Title>
+			<Dialog.Title>
+				{book.isExtra ? 'Edit Extra Volume' : `Edit Volume ${Number(book.volumeNumber)}`}
+			</Dialog.Title>
 			<Dialog.Description>Update this volume's details.</Dialog.Description>
 		</Dialog.Header>
 
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
-				<Label for="edit-vol-num">Volume Number *</Label>
+				<Label for="edit-vol-num">{isExtra ? 'Sort position' : 'Volume Number *'}</Label>
 				<Input id="edit-vol-num" type="number" step="0.5" min="0" bind:value={volumeNumber} />
+				{#if isExtra}
+					<p class="text-xs text-muted-foreground">
+						Only orders the extra — 4.5 sits between volumes 4 and 5. It shows as “Extra”.
+					</p>
+				{/if}
+			</div>
+
+			<div class="flex items-center justify-between">
+				<Label for="edit-extra-toggle" class="text-sm font-normal text-muted-foreground">
+					Extra volume (side story, short-story collection…)
+				</Label>
+				<Switch id="edit-extra-toggle" bind:checked={isExtra} />
 			</div>
 
 			<div class="space-y-2">

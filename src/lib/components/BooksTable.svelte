@@ -16,6 +16,8 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
+	import { volumeText } from '$lib/utils/volume';
 	import { ArrowUp, ArrowDown, ChevronsUpDown, Trash2, Pencil } from '@lucide/svelte';
 
 	type Props = {
@@ -292,7 +294,9 @@
 							{row.seriesShortName}
 						</a>
 					</Table.Cell>
-					<Table.Cell class="font-mono tabular-nums">{row.volumeNumber}</Table.Cell>
+					<Table.Cell class="font-mono tabular-nums">
+						{#if row.isExtra}<ExtraBadge book={row} />{:else}{row.volumeNumber}{/if}
+					</Table.Cell>
 					<Table.Cell class="text-sm text-muted-foreground">
 						{BOOK_LOCATION_LABELS[row.location]}
 					</Table.Cell>
@@ -307,7 +311,7 @@
 							bookId={row.id}
 							status={row.readingStatus}
 							timesRead={row.timesRead}
-							label="{row.seriesShortName} vol. {Number(row.volumeNumber)}"
+							label="{row.seriesShortName} {volumeText(row)}"
 						/>
 					</Table.Cell>
 					<Table.Cell>

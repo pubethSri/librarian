@@ -8,6 +8,13 @@
       "when": 1776746518151,
       "tag": "0000_talented_iron_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792080275873,
+      "tag": "0001_extra_volumes",
+      "breakpoints": true
     }
   ]
 }

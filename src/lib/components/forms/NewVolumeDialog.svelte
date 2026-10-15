@@ -24,6 +24,7 @@
 
 	let selectedSeriesId = $state<number | null>(preselectedSeriesId);
 	let volumeNumber = $state<number>(1);
+	let isExtra = $state(false);
 	let location = $state<BookLocation>('apartment');
 	let source = $state<BookSource | ''>('');
 	let sourceEventId = $state<number | null>(null);
@@ -39,6 +40,7 @@
 	function resetForm() {
 		selectedSeriesId = preselectedSeriesId;
 		volumeNumber = 1;
+		isExtra = false;
 		location = 'apartment';
 		source = '';
 		sourceEventId = null;
@@ -57,6 +59,7 @@
 			{
 				seriesId: selectedSeriesId,
 				volumeNumber,
+				isExtra,
 				location,
 				source: source || undefined,
 				sourceEventId: source === 'bookfair' && sourceEventId ? sourceEventId : undefined,
@@ -66,7 +69,7 @@
 			},
 			{
 				onSuccess: () => {
-					toast.success(`Volume ${volumeNumber} added`);
+					toast.success(isExtra ? 'Extra volume added' : `Volume ${volumeNumber} added`);
 					resetForm();
 					open = false;
 				},
@@ -95,8 +98,20 @@
 			</div>
 
 			<div class="space-y-2">
-				<Label for="volume-number">Volume Number</Label>
+				<Label for="volume-number">{isExtra ? 'Sort position' : 'Volume Number'}</Label>
 				<Input id="volume-number" type="number" step="0.5" min="0" bind:value={volumeNumber} />
+				{#if isExtra}
+					<p class="text-xs text-muted-foreground">
+						Only orders the extra — 4.5 sits between volumes 4 and 5. It shows as “Extra”.
+					</p>
+				{/if}
+			</div>
+
+			<div class="flex items-center justify-between">
+				<Label for="extra-toggle" class="text-sm font-normal text-muted-foreground">
+					Extra volume (side story, short-story collection…)
+				</Label>
+				<Switch id="extra-toggle" bind:checked={isExtra} />
 			</div>
 
 			<div class="space-y-2">

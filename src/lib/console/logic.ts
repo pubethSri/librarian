@@ -11,6 +11,7 @@ import {
 	type StagedBookEntry
 } from '$lib/types';
 import { applyUnifiedFilter, type UnifiedFilterState } from '$lib/components/filterEngine';
+import { latestVolume } from '$lib/utils/volume';
 import type { BulkAction, Condition, PreviewRow, PurchaseFields, SeriesMeta } from './types';
 
 // ─── Display helpers ────────────────────────────────────────────────────────
@@ -238,19 +239,18 @@ export function toBulkUpdates(
 
 /**
  * The next volume to suggest for a series: one past the highest volume already
- * owned or staged. Pass *all* owned books, not the scoped list — otherwise a
- * series owned outside a bookfair scope would suggest volume 1.
+ * owned or staged; extras don't count. Pass *all* owned books, not the scoped
+ * list — otherwise a series owned outside a bookfair scope would suggest volume 1.
  */
 export function nextVolumeFor(
 	books: BookListItem[],
 	staged: StagedBookEntry[],
 	seriesId: number
 ): number {
-	const allVols = [
-		...books.filter((b) => b.seriesId === seriesId).map((b) => Number(b.volumeNumber)),
+	const maxVol = Math.max(
+		latestVolume(books.filter((b) => b.seriesId === seriesId)),
 		...staged.filter((e) => e.seriesId === seriesId).map((e) => e.volumeNumber)
-	];
-	const maxVol = allVols.length > 0 ? Math.max(...allVols) : 0;
+	);
 	return maxVol + 1;
 }
 
@@ -380,6 +380,7 @@ export function buildPreviewRows(
 		id: String(b.id),
 		seriesShortName: b.seriesShortName,
 		volumeNumber: Number(b.volumeNumber),
+		isExtra: b.isExtra,
 		location: b.location,
 		source: b.source,
 		sourceEventId: b.sourceEventId,
@@ -395,6 +396,7 @@ export function buildPreviewRows(
 		id: e.tempId,
 		seriesShortName: e.seriesShortName,
 		volumeNumber: e.volumeNumber,
+		isExtra: false,
 		location: e.location,
 		source: e.source ?? null,
 		sourceEventId: e.sourceEventId ?? null,

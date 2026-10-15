@@ -37,6 +37,7 @@ function book(overrides: Partial<BookListItem> = {}): BookListItem {
 		seriesShortName: 'Mushoku',
 		seriesFullName: 'Mushoku Tensei',
 		volumeNumber: '1',
+		isExtra: false,
 		location: 'home',
 		boughtAt: null,
 		price: '350',
@@ -373,8 +374,9 @@ describe('nextVolumeFor', () => {
 		expect(nextVolumeFor(books, [staged({ seriesId: 99, volumeNumber: 30 })], 10)).toBe(1);
 	});
 
-	it('rounds half-volumes up through Math.max (4.5 owned suggests 5.5)', () => {
-		expect(nextVolumeFor([book({ volumeNumber: '4.5' })], [], 10)).toBe(5.5);
+	it('skips extras, even one sorted after the latest volume', () => {
+		const books = [book({ volumeNumber: '9' }), book({ volumeNumber: '9.5', isExtra: true })];
+		expect(nextVolumeFor(books, [], 10)).toBe(10);
 	});
 });
 

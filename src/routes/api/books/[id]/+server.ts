@@ -39,6 +39,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 	const updateFields: Record<string, unknown> = {};
 	if (body.volumeNumber !== undefined)
 		updateFields.volumeNumber = Number(body.volumeNumber).toFixed(1);
+	if (body.isExtra !== undefined) updateFields.isExtra = body.isExtra === true;
 	if (body.location !== undefined) updateFields.location = body.location;
 	if (body.boughtAt !== undefined)
 		updateFields.boughtAt = body.boughtAt ? new Date(body.boughtAt) : null;

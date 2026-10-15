@@ -6,6 +6,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { BookOpen, Library, BookCopy, AlertCircle, Plus } from '@lucide/svelte';
 	import NewVolumeDialog from '$lib/components/forms/NewVolumeDialog.svelte';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import NewSeriesDialog from '$lib/components/forms/NewSeriesDialog.svelte';
 
 	const seriesQuery = createSeriesListQuery();
@@ -113,9 +114,13 @@
 								<span class="text-sm font-medium text-foreground">
 									{book.seriesShortName}
 								</span>
-								<span class="ml-2 font-mono text-sm text-muted-foreground">
-									Vol. {book.volumeNumber}
-								</span>
+								{#if book.isExtra}
+									<ExtraBadge {book} class="ml-2" />
+								{:else}
+									<span class="ml-2 font-mono text-sm text-muted-foreground">
+										Vol. {book.volumeNumber}
+									</span>
+								{/if}
 							</div>
 							<span class="text-xs text-muted-foreground">
 								{new Date(book.createdAt).toLocaleDateString('en-US', {

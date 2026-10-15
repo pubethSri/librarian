@@ -175,6 +175,8 @@ async function migrate() {
 			.values({
 				seriesId,
 				volumeNumber: volumeNumber.toFixed(1),
+				// Airtable recorded extras as fractional volumes (4.5)
+				isExtra: !Number.isInteger(volumeNumber),
 				location: location || 'home',
 				boughtAt,
 				createdAt: boughtAt || new Date()

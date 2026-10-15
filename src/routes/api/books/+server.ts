@@ -36,6 +36,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			seriesShortName: series.shortName,
 			seriesFullName: series.fullName,
 			volumeNumber: books.volumeNumber,
+			isExtra: books.isExtra,
 			location: books.location,
 			boughtAt: books.boughtAt,
 			price: books.price,
@@ -136,6 +137,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		.values({
 			seriesId: body.seriesId,
 			volumeNumber: Number(body.volumeNumber).toFixed(1),
+			isExtra: body.isExtra === true,
 			location: body.location || 'home',
 			boughtAt: body.boughtAt ? new Date(body.boughtAt) : null,
 			price: body.price || null,

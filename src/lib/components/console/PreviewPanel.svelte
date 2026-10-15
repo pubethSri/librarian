@@ -3,6 +3,7 @@
 	import BooruSearchBar from '$lib/components/BooruSearchBar.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
 	import { Package, X, BookOpen, Pencil, ArrowRight, Check } from '@lucide/svelte';
@@ -249,7 +250,7 @@
 								{/if}
 							</Table.Cell>
 							<Table.Cell class="py-2 text-center text-sm tabular-nums">
-								{row.volumeNumber}
+								{#if row.isExtra}<ExtraBadge book={row} />{:else}{row.volumeNumber}{/if}
 							</Table.Cell>
 							<Table.Cell class="py-2 text-sm text-muted-foreground">
 								{row.location === 'home' ? 'Home' : 'Apartment'}

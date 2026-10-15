@@ -76,6 +76,8 @@ export type BookWithReadings = {
 	id: number;
 	seriesId: number;
 	volumeNumber: string;
+	/** An extra volume — volumeNumber is then only its sort position */
+	isExtra: boolean;
 	location: BookLocation;
 	boughtAt: string | null;
 	price: string | null;
@@ -140,6 +142,8 @@ export type BookListItem = {
 	seriesShortName: string;
 	seriesFullName: string;
 	volumeNumber: string;
+	/** An extra volume — volumeNumber is then only its sort position */
+	isExtra: boolean;
 	location: BookLocation;
 	boughtAt: string | null;
 	price: string | null;
@@ -171,6 +175,7 @@ export type UpdateSeriesPayload = Partial<CreateSeriesPayload>;
 export type CreateBookPayload = {
 	seriesId: number;
 	volumeNumber: number;
+	isExtra?: boolean;
 	location?: BookLocation;
 	boughtAt?: string;
 	price?: number;

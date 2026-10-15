@@ -155,6 +155,7 @@ async function seed() {
 	booksData.push({
 		seriesId: seriesSlave.id,
 		volumeNumber: '4.5',
+		isExtra: true,
 		location: 'apartment',
 		boughtAt: new Date('2024-07-15T14:00:00Z'),
 		source: 'bookfair',

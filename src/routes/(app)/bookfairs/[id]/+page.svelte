@@ -10,6 +10,8 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
+	import { volumeLabel, volumeText } from '$lib/utils/volume';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
@@ -95,14 +97,17 @@
 	}
 
 	/** Undo a wrong link: the book keeps its data but no longer counts for this fair */
-	function removeFromFair(book: { id: number; seriesShortName: string; volumeNumber: string }) {
+	function removeFromFair(book: {
+		id: number;
+		seriesShortName: string;
+		volumeNumber: string;
+		isExtra: boolean;
+	}) {
 		unlinkMutation.mutate(
 			{ bookIds: [book.id], updates: { source: null, sourceEventId: null } },
 			{
 				onSuccess: () =>
-					toast.success(
-						`Removed ${book.seriesShortName} vol. ${Number(book.volumeNumber)} from this fair`
-					),
+					toast.success(`Removed ${book.seriesShortName} ${volumeText(book)} from this fair`),
 				onError: (err: Error) => toast.error(err.message)
 			}
 		);
@@ -246,15 +251,15 @@
 									</Badge>
 								</div>
 								<div class="mt-3 flex flex-wrap gap-1.5" aria-label="Volumes bought">
-									{#each g.volumes as chip (chip.volume)}
+									{#each g.volumes as chip (`${chip.volume}:${chip.isExtra}`)}
+										{@const vol = { volumeNumber: chip.volume, isExtra: chip.isExtra }}
+										{@const name = volumeText(vol).replace(/^./, (c) => c.toUpperCase())}
 										<span
 											class="inline-flex h-6 min-w-7 items-center justify-center rounded-md border border-border bg-muted/50 px-1.5 font-mono text-xs text-foreground tabular-nums"
-											title={chip.copies > 1
-												? `Vol. ${chip.volume} — ${chip.copies} copies`
-												: `Vol. ${chip.volume}`}
+											title={chip.copies > 1 ? `${name} — ${chip.copies} copies` : name}
 										>
-											{chip.volume}{#if chip.copies > 1}<span class="ml-0.5 text-muted-foreground"
-													>×{chip.copies}</span
+											{volumeLabel(vol)}{#if chip.copies > 1}<span
+													class="ml-0.5 text-muted-foreground">×{chip.copies}</span
 												>{/if}
 										</span>
 									{/each}
@@ -297,7 +302,7 @@
 											{/if}
 										</Table.Cell>
 										<Table.Cell class="text-center tabular-nums">
-											{Number(book.volumeNumber)}
+											{#if book.isExtra}<ExtraBadge {book} />{:else}{Number(book.volumeNumber)}{/if}
 										</Table.Cell>
 										<Table.Cell class="text-muted-foreground">
 											{BOOK_LOCATION_LABELS[book.location]}
@@ -311,9 +316,7 @@
 												size="icon"
 												class="h-7 w-7 text-muted-foreground hover:text-destructive"
 												title="Remove from this fair"
-												aria-label="Remove {book.seriesShortName} vol. {Number(
-													book.volumeNumber
-												)} from this fair"
+												aria-label="Remove {book.seriesShortName} {volumeText(book)} from this fair"
 												disabled={unlinkMutation.isPending}
 												onclick={() => removeFromFair(book)}
 											>

@@ -63,7 +63,9 @@ export type PreviewRow = {
 	type: 'existing' | 'staged';
 	id: string;
 	seriesShortName: string;
+	/** Sort position; shown as "Extra" when isExtra */
 	volumeNumber: number;
+	isExtra: boolean;
 	location: BookLocation;
 	source: BookSource | null;
 	/** The bookfair the book is linked to, if any */

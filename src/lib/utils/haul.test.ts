@@ -9,6 +9,7 @@ function book(overrides: Partial<BookListItem> = {}): BookListItem {
 		seriesShortName: 'Mushoku',
 		seriesFullName: 'Mushoku Tensei',
 		volumeNumber: '1',
+		isExtra: false,
 		location: 'apartment',
 		boughtAt: null,
 		price: null,
@@ -24,21 +25,23 @@ function book(overrides: Partial<BookListItem> = {}): BookListItem {
 	};
 }
 
+const vol = (volumeNumber: number, isExtra = false) => ({ volumeNumber, isExtra });
+
 describe('volumeChips', () => {
-	it('lists each volume once, in order, half volumes included', () => {
-		expect(volumeChips([3, 1, 4.5, 2])).toEqual([
-			{ volume: 1, copies: 1 },
-			{ volume: 2, copies: 1 },
-			{ volume: 3, copies: 1 },
-			{ volume: 4.5, copies: 1 }
+	it('lists each volume once, in sort order, extras in place', () => {
+		expect(volumeChips([vol(3), vol(1), vol(2.5, true), vol(2)])).toEqual([
+			{ volume: 1, isExtra: false, copies: 1 },
+			{ volume: 2, isExtra: false, copies: 1 },
+			{ volume: 2.5, isExtra: true, copies: 1 },
+			{ volume: 3, isExtra: false, copies: 1 }
 		]);
 		expect(volumeChips([])).toEqual([]);
 	});
 
 	it('counts duplicate copies of a volume', () => {
-		expect(volumeChips([2, 1, 2])).toEqual([
-			{ volume: 1, copies: 1 },
-			{ volume: 2, copies: 2 }
+		expect(volumeChips([vol(2), vol(1), vol(2)])).toEqual([
+			{ volume: 1, isExtra: false, copies: 1 },
+			{ volume: 2, isExtra: false, copies: 2 }
 		]);
 	});
 });

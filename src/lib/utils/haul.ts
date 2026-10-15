@@ -3,17 +3,22 @@
 // Pure; unit-tested.
 
 import type { BookListItem, BookLocation } from '$lib/types';
+import type { VolumeLike } from './volume';
 
-/** One chip on a series card: a volume number and how many copies were bought */
-export type VolumeChip = { volume: number; copies: number };
+/** One chip on a series card: a volume (by sort position) and how many copies were bought */
+export type VolumeChip = { volume: number; isExtra: boolean; copies: number };
 
 /** Volumes in order, one entry each; a volume bought twice has copies: 2 */
-export function volumeChips(volumes: readonly number[]): VolumeChip[] {
-	const counts = new Map<number, number>();
-	for (const v of volumes) counts.set(v, (counts.get(v) ?? 0) + 1);
-	return [...counts.entries()]
-		.sort(([a], [b]) => a - b)
-		.map(([volume, copies]) => ({ volume, copies }));
+export function volumeChips(books: readonly VolumeLike[]): VolumeChip[] {
+	const chips = new Map<string, VolumeChip>();
+	for (const b of books) {
+		const volume = Number(b.volumeNumber);
+		const key = `${volume}:${b.isExtra}`;
+		const chip = chips.get(key);
+		if (chip) chip.copies++;
+		else chips.set(key, { volume, isExtra: b.isExtra, copies: 1 });
+	}
+	return [...chips.values()].sort((a, b) => a.volume - b.volume);
 }
 
 export type HaulSeries = {
@@ -49,7 +54,7 @@ export function groupHaulBySeries(books: readonly BookListItem[]): HaulSeries[] 
 				seriesShortName: sorted[0].seriesShortName,
 				seriesFullName: sorted[0].seriesFullName,
 				books: sorted,
-				volumes: volumeChips(sorted.map((b) => Number(b.volumeNumber))),
+				volumes: volumeChips(sorted),
 				spent: priced.reduce((sum, b) => sum + Number(b.price), 0),
 				pricedCount: priced.length,
 				locations

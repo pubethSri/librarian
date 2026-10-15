@@ -19,6 +19,8 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
+	import { latestVolume, volumeText } from '$lib/utils/volume';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
 	import { Pencil, Trash2, Plus, Star, Tag, BookOpen } from '@lucide/svelte';
@@ -167,7 +169,7 @@
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Latest Volume</p>
 				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
-					{s.books.length > 0 ? Math.max(...s.books.map((b) => Number(b.volumeNumber))) : '—'}
+					{latestVolume(s.books) || '—'}
 				</p>
 			</div>
 			<div class="rounded-lg border border-border p-4">
@@ -237,7 +239,11 @@
 							{#each s.books as book (book.id)}
 								<Table.Row>
 									<Table.Cell class="font-mono font-medium tabular-nums">
-										{book.volumeNumber}
+										{#if book.isExtra}
+											<ExtraBadge {book} />
+										{:else}
+											{book.volumeNumber}
+										{/if}
 										{#if book.isDraft}
 											<Badge variant="outline" class="ml-2 border-amber-300 text-xs text-amber-600">
 												Draft
@@ -261,7 +267,7 @@
 											bookId={book.id}
 											status={currentStatus(book.readings)}
 											timesRead={timesRead(book.readings)}
-											label="{s.shortName} vol. {Number(book.volumeNumber)}"
+											label="{s.shortName} {volumeText(book)}"
 										/>
 									</Table.Cell>
 									<Table.Cell>
