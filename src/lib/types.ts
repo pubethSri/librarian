@@ -356,6 +356,23 @@ export type InsightsTags = {
 	publishers: GroupStats[];
 };
 
+export type InsightsSpending = {
+	total: Money;
+	/** Dated purchases only: first dated month → this month */
+	monthly: { month: string; spent: Money }[];
+	/** Priced books with no purchase date — in the totals, not the timeline */
+	undatedPriced: number;
+	/** Bookfair / online / bookstore / unknown, biggest spend first */
+	bySource: { source: BookSource | 'unknown'; spent: Money }[];
+	/** Average price of priced books per series type */
+	averageByType: Record<SeriesType, Money>;
+	/** What the unread pile cost */
+	unread: Money;
+	/** Everything spent ÷ books read; null with nothing read or priced */
+	costPerRead: number | null;
+	readBooks: number;
+};
+
 export type Insights = {
 	generatedAt: string;
 	/** The time zone dated reads were bucketed in */
@@ -364,4 +381,5 @@ export type Insights = {
 	backlog: InsightsBacklog;
 	growth: InsightsGrowth;
 	tags: InsightsTags;
+	spending: InsightsSpending;
 };

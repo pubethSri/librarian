@@ -20,8 +20,11 @@
 		TYPE_COLORS
 	} from '$lib/components/insights/charts';
 	import {
+		averagePrice,
+		baht,
 		coverageText,
 		durationText,
+		HIDDEN_MONEY,
 		monthLabel,
 		moneyText,
 		percent,
@@ -31,8 +34,10 @@
 	import { formatDay } from '$lib/console/logic';
 	import { MIN_DATED_READS } from '$lib/insights/backlog';
 	import {
+		BOOK_SOURCE_LABELS,
 		READING_STATUS_LABELS,
 		SERIES_TYPE_LABELS,
+		type Money,
 		type CompletionState,
 		type GroupStats,
 		type InsightsBacklog,
@@ -48,8 +53,19 @@
 	const sections = [
 		{ id: 'backlog', label: 'Backlog' },
 		{ id: 'growth', label: 'Growth' },
-		{ id: 'tags', label: 'Tags & completion' }
+		{ id: 'tags', label: 'Tags & completion' },
+		{ id: 'spending', label: 'Spending' }
 	];
+
+	/** A baht amount for chart axes, tooltips and tables — masked while Hide ฿ is on */
+	const chartMoney = (v: number) => (hideMoney ? HIDDEN_MONEY : baht(v));
+
+	/** Average price of a Money's priced books, as text */
+	function averageText(m: Money): string {
+		const avg = averagePrice(m);
+		if (avg === null) return 'No prices';
+		return hideMoney ? HIDDEN_MONEY : baht(avg);
+	}
 
 	const COMPLETION_STACK: readonly CompletionState[] = [
 		'finished',
@@ -158,6 +174,23 @@
 					],
 					stacked: true,
 					horizontal: true
+				})
+			: null
+	);
+
+	const spendChart = $derived(
+		data
+			? barChart({
+					labels: data.spending.monthly.map((m) => monthLabel(m.month, true)),
+					series: [
+						{
+							label: 'Spent',
+							data: data.spending.monthly.map((m) => m.spent.total),
+							color: NEUTRAL
+						}
+					],
+					format: chartMoney,
+					hideValueAxis: hideMoney
 				})
 			: null
 	);
@@ -432,6 +465,87 @@
 						height={rowsHeight(t.publishers.length)}
 					/>
 				{/if}
+			</div>
+		</InsightSection>
+
+		<InsightSection
+			id="spending"
+			title="Spending"
+			description="A price is the least a book cost, so totals with unpriced books read as “at least” and say how many books they cover."
+		>
+			{@const sp = data.spending}
+			<div class="grid grid-cols-2 gap-6 lg:grid-cols-4">
+				<StatTile
+					label="Spent"
+					value={moneyText(sp.total, hideMoney)}
+					sub={hideMoney ? null : coverageText(sp.total)}
+				/>
+				<StatTile
+					label="Sitting unread"
+					value={moneyText(sp.unread, hideMoney)}
+					sub={sp.unread.priced < sp.unread.of
+						? `${sp.unread.priced} of ${plural(sp.unread.of, 'unread book')} priced`
+						: plural(sp.unread.of, 'unread book')}
+				/>
+				<StatTile
+					label="Cost per book read"
+					value={sp.costPerRead === null
+						? '—'
+						: hideMoney
+							? HIDDEN_MONEY
+							: `${sp.total.priced < sp.total.of ? '≥ ' : ''}${baht(sp.costPerRead)}`}
+					sub={`everything spent ÷ ${plural(sp.readBooks, 'book')} read`}
+				/>
+				<StatTile
+					label="Average price"
+					value={averageText(sp.averageByType.light_novel)}
+					sub={`per light novel · ${averageText(sp.averageByType.manga)} per manga`}
+				/>
+			</div>
+
+			{#if spendChart && sp.monthly.length > 0}
+				<ChartCard
+					title="Spent per month"
+					description="Priced books by purchase month — a lower bound in months with unpriced books."
+					config={spendChart}
+					format={chartMoney}
+					note={sp.undatedPriced > 0
+						? `${plural(sp.undatedPriced, 'priced book')} without a purchase date only in the totals.`
+						: null}
+				/>
+			{/if}
+
+			<div class="space-y-3">
+				<p class="text-sm font-medium text-foreground">By source</p>
+				<table class="w-full max-w-2xl text-left text-sm tabular-nums">
+					<thead class="text-xs text-muted-foreground">
+						<tr class="border-b border-border">
+							<th class="py-2 pr-4 font-medium">Source</th>
+							<th class="py-2 pr-4 text-right font-medium">Books</th>
+							<th class="py-2 pr-4 text-right font-medium">Spent</th>
+							<th class="py-2 text-right font-medium">Avg. price</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each sp.bySource as row (row.source)}
+							<tr class="border-b border-border/60">
+								<td class="py-2 pr-4 text-foreground">
+									{row.source === 'unknown' ? 'Unknown' : BOOK_SOURCE_LABELS[row.source]}
+								</td>
+								<td class="py-2 pr-4 text-right text-muted-foreground">{row.spent.of}</td>
+								<td class="py-2 pr-4 text-right text-foreground">
+									{moneyText(row.spent, hideMoney)}
+									{#if !hideMoney && coverageText(row.spent)}
+										<span class="block text-xs text-muted-foreground">
+											{row.spent.priced} of {row.spent.of} priced
+										</span>
+									{/if}
+								</td>
+								<td class="py-2 text-right text-muted-foreground">{averageText(row.spent)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			</div>
 		</InsightSection>
 	{/if}
