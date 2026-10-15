@@ -275,9 +275,53 @@ export type InsightsOverview = {
 	datedReads: number;
 };
 
+/** An unread book in a backlog list */
+export type BacklogBook = {
+	bookId: number;
+	seriesId: number;
+	seriesShortName: string;
+	volumeNumber: number;
+	isExtra: boolean;
+	boughtDay: string;
+};
+
+/** How long the unread pile takes to clear at the current pace */
+export type ClearEstimate =
+	| { kind: 'unknown' } // not enough dated reads to know the read rate
+	| { kind: 'never' } // buying at least as fast as reading
+	| { kind: 'months'; months: number };
+
+export type InsightsBacklog = {
+	pile: number;
+	pileByType: Record<SeriesType, number>;
+	/** The longest-waiting unread books (dated purchases only) */
+	oldestUnread: BacklogBook[];
+	/** Unread books with no purchase date (can't be ranked by age) */
+	undatedPile: number;
+	/** Books bought per month, last 12 months */
+	buyRate: number;
+	/** Dated reads per month; null below the minimum sample */
+	readRate: number | null;
+	datedReads: number;
+	clear: ClearEstimate;
+	/** Months to clear if buying stopped; null when the read rate is unknown */
+	clearWithoutBuying: number | null;
+	/** Last 12 months, oldest first */
+	monthly: { month: string; bought: number; read: number }[];
+	/** Series with books owned but none read, reading or dropped — most owned first */
+	neverStarted: {
+		seriesId: number;
+		shortName: string;
+		type: SeriesType;
+		status: SeriesStatus;
+		owned: number;
+	}[];
+};
+
 export type Insights = {
 	generatedAt: string;
 	/** The time zone dated reads were bucketed in */
 	timeZone: string;
 	overview: InsightsOverview;
+	backlog: InsightsBacklog;
 };

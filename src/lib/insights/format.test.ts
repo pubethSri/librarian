@@ -6,7 +6,9 @@ import {
 	HIDDEN_MONEY,
 	monthLabel,
 	moneyText,
-	percent
+	percent,
+	durationText,
+	rateText
 } from './format';
 
 describe('money text', () => {
@@ -41,5 +43,19 @@ describe('labels', () => {
 		expect(percent(0, 0)).toBe('—');
 		expect(monthLabel('2026-10')).toBe('Oct 2026');
 		expect(monthLabel('2026-01', true)).toBe('Jan 26');
+	});
+});
+
+describe('durations and rates', () => {
+	it('reads months as months under two years, years beyond', () => {
+		expect(durationText(0.4)).toBe('< 1 month');
+		expect(durationText(7.6)).toBe('≈ 8 months');
+		expect(durationText(42)).toBe('≈ 3.5 years');
+		expect(durationText(48)).toBe('≈ 4 years');
+	});
+
+	it('rounds a rate to one decimal', () => {
+		expect(rateText(3.4166)).toBe('3.4 / month');
+		expect(rateText(2)).toBe('2 / month');
 	});
 });

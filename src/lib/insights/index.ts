@@ -3,8 +3,10 @@
 // the /insights page shows. Pure; each part is unit-tested in its own module.
 
 import type { Insights, InsightsOverview, SeriesType } from '$lib/types';
+import { computeBacklog } from './backlog';
 import {
 	buildBookFacts,
+	dayInZone,
 	countReadStates,
 	moneyOf,
 	safeTimeZone,
@@ -45,9 +47,11 @@ export function computeInsights(
 	const facts = buildBookFacts(input, zone);
 	// Series with no books own nothing yet
 	const seriesCount = new Set(facts.map((b) => b.seriesId)).size;
+	const today = dayInZone(now, zone);
 	return {
 		generatedAt: now.toISOString(),
 		timeZone: zone,
-		overview: overviewOf(facts, seriesCount)
+		overview: overviewOf(facts, seriesCount),
+		backlog: computeBacklog(facts, input.series, today)
 	};
 }

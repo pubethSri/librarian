@@ -54,3 +54,15 @@ export function monthLabel(month: string, short = false): string {
 export function plural(n: number, one: string, many = `${one}s`): string {
 	return `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
 }
+
+/** A duration in months: "< 1 month", "≈ 8 months", "≈ 3.5 years" */
+export function durationText(months: number): string {
+	if (months < 1) return '< 1 month';
+	if (months < 24) return `≈ ${Math.round(months)} months`;
+	return `≈ ${decimal(Math.round((months / 12) * 10) / 10)} years`;
+}
+
+/** A per-month rate: "3.4 / month" */
+export function rateText(perMonth: number): string {
+	return `${decimal(Math.round(perMonth * 10) / 10)} / month`;
+}
