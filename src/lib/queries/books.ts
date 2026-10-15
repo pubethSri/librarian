@@ -8,11 +8,12 @@ async function fetchBooks(): Promise<BookListItem[]> {
 	return res.json();
 }
 
-/** Query: list all books */
-export function createBooksListQuery() {
+/** Query: list all books; `fresh` as in `createSeriesListQuery` */
+export function createBooksListQuery(opts: { fresh?: boolean } = {}) {
 	return createQuery<BookListItem[]>(() => ({
 		queryKey: ['books'],
-		queryFn: () => fetchBooks()
+		queryFn: () => fetchBooks(),
+		...(opts.fresh ? { staleTime: 0, refetchOnWindowFocus: true } : {})
 	}));
 }
 

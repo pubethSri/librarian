@@ -17,11 +17,18 @@ async function fetchSeries(params?: {
 	return res.json();
 }
 
-/** Query: list all series */
-export function createSeriesListQuery() {
+/**
+ * Query: list all series.
+ *
+ * `fresh` refetches on every mount and whenever the tab regains focus — for
+ * Field Mode, where a phone must not answer "do I own this?" from data the
+ * laptop has since changed.
+ */
+export function createSeriesListQuery(opts: { fresh?: boolean } = {}) {
 	return createQuery<SeriesListItem[]>(() => ({
 		queryKey: ['series'],
-		queryFn: () => fetchSeries()
+		queryFn: () => fetchSeries(),
+		...(opts.fresh ? { staleTime: 0, refetchOnWindowFocus: true } : {})
 	}));
 }
 

@@ -30,6 +30,7 @@
 		{
 			label: 'TOOLS',
 			items: [
+				{ href: resolve('/field'), label: 'Field Mode' },
 				{ href: resolve('/bookfairs'), label: 'Bookfairs' },
 				{ href: resolve('/console'), label: 'Console' },
 				{ href: resolve('/tags'), label: 'Tags' }
