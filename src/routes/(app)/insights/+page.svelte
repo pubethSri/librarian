@@ -9,7 +9,13 @@
 	import ChartCard from '$lib/components/insights/ChartCard.svelte';
 	import InsightSection from '$lib/components/insights/InsightSection.svelte';
 	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
-	import { barChart, NEUTRAL, READ_STATE_COLORS } from '$lib/components/insights/charts';
+	import {
+		barChart,
+		lineChart,
+		NEUTRAL,
+		READ_STATE_COLORS,
+		TYPE_COLORS
+	} from '$lib/components/insights/charts';
 	import {
 		coverageText,
 		durationText,
@@ -34,7 +40,10 @@
 	// "Hide ฿": money shows by default; the switch hides every baht figure for this visit
 	let hideMoney = $state(false);
 
-	const sections = [{ id: 'backlog', label: 'Backlog' }];
+	const sections = [
+		{ id: 'backlog', label: 'Backlog' },
+		{ id: 'growth', label: 'Growth' }
+	];
 
 	// Stacking order: the finished part first, the pile last
 	const STACK: readonly ReadState[] = ['read', 'reading', 'dropped', 'unread'];
@@ -68,6 +77,33 @@
 							color: READ_STATE_COLORS.read
 						}
 					]
+				})
+			: null
+	);
+
+	const growthLabels = $derived(
+		data ? data.growth.monthly.map((m) => monthLabel(m.month, true)) : []
+	);
+
+	const growthChart = $derived(
+		data
+			? barChart({
+					labels: growthLabels,
+					series: (['light_novel', 'manga'] as const).map((type) => ({
+						label: SERIES_TYPE_LABELS[type],
+						data: data.growth.monthly.map((m) => m[type]),
+						color: TYPE_COLORS[type]
+					})),
+					stacked: true
+				})
+			: null
+	);
+
+	const cumulativeChart = $derived(
+		data
+			? lineChart({
+					labels: growthLabels,
+					series: [{ label: 'Books owned', data: data.growth.cumulative, color: NEUTRAL }]
 				})
 			: null
 	);
@@ -262,6 +298,45 @@
 					{/if}
 				</div>
 			</div>
+		</InsightSection>
+
+		<InsightSection
+			id="growth"
+			title="Collection growth"
+			description="Books by purchase month, from the first dated purchase."
+		>
+			{@const g = data.growth}
+			{#if growthChart && cumulativeChart && g.monthly.length > 0}
+				{@const busiest = g.monthly.reduce((max, m) => (m.total > max.total ? m : max))}
+				<div class="grid grid-cols-2 gap-6 lg:grid-cols-4">
+					<StatTile
+						label="Since"
+						value={monthLabel(g.monthly[0].month)}
+						sub={plural(g.monthly.length, 'month')}
+					/>
+					<StatTile
+						label="Busiest month"
+						value={monthLabel(busiest.month)}
+						sub={plural(busiest.total, 'book')}
+					/>
+				</div>
+				<ChartCard
+					title="Books bought per month"
+					config={growthChart}
+					height={260}
+					note={g.undated > 0
+						? `${plural(g.undated, 'book')} without a purchase date not shown.`
+						: null}
+				/>
+				<ChartCard
+					title="Books owned over time"
+					description="Running total of dated purchases."
+					config={cumulativeChart}
+					height={200}
+				/>
+			{:else}
+				<p class="text-sm text-muted-foreground">No dated purchases yet.</p>
+			{/if}
 		</InsightSection>
 	{/if}
 </div>

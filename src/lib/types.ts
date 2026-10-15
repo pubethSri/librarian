@@ -318,10 +318,20 @@ export type InsightsBacklog = {
 	}[];
 };
 
+export type InsightsGrowth = {
+	/** First dated purchase month → this month, gaps included */
+	monthly: { month: string; light_novel: number; manga: number; total: number }[];
+	/** Running total of dated purchases, aligned with `monthly` */
+	cumulative: number[];
+	/** Books with no purchase date — not on the timeline */
+	undated: number;
+};
+
 export type Insights = {
 	generatedAt: string;
 	/** The time zone dated reads were bucketed in */
 	timeZone: string;
 	overview: InsightsOverview;
 	backlog: InsightsBacklog;
+	growth: InsightsGrowth;
 };

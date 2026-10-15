@@ -4,6 +4,7 @@
 
 import type { Insights, InsightsOverview, SeriesType } from '$lib/types';
 import { computeBacklog } from './backlog';
+import { computeGrowth } from './growth';
 import {
 	buildBookFacts,
 	dayInZone,
@@ -52,6 +53,7 @@ export function computeInsights(
 		generatedAt: now.toISOString(),
 		timeZone: zone,
 		overview: overviewOf(facts, seriesCount),
-		backlog: computeBacklog(facts, input.series, today)
+		backlog: computeBacklog(facts, input.series, today),
+		growth: computeGrowth(facts, today)
 	};
 }

@@ -170,7 +170,7 @@ export function lineChart(opts: {
 				borderWidth: 2,
 				borderCapStyle: 'round' as const,
 				borderJoinStyle: 'round' as const,
-				tension: 0.25,
+				cubicInterpolationMode: 'monotone' as const,
 				pointRadius: 0,
 				pointHoverRadius: 5,
 				pointHoverBorderWidth: 2,
