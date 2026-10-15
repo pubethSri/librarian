@@ -28,6 +28,9 @@
 		urlScope === 'bookfair' ? 'bookfair' : urlScope === 'series' ? 'series' : 'all'
 	);
 	let scopeId = $state<number | null>(urlId ? Number(urlId) : null);
+	// `?link=<bookfairId>` — from a bookfair's "Add books from your collection":
+	// open Bulk Edit with "Link to bookfair" pre-set, over All Books
+	const urlLink = $page.url.searchParams.get('link');
 
 	// ─── Queries ────────────────────────────────────────────────────────────────
 	const allBooksQuery = createBooksListQuery();
@@ -67,7 +70,7 @@
 	// once, before any scope change, so the panel keeps the original behavior of
 	// not resyncing when the scope changes later.
 	const initialSeriesId = untrack(() => (scopeType === 'series' && scopeId ? scopeId : null));
-	let activeTab = $state('add');
+	let activeTab = $state(urlLink ? 'edit' : 'add');
 
 	// Bookfair scope defaults
 	const bookfairDefaults = $derived.by(() => {
@@ -120,8 +123,20 @@
 		() => activeTab === 'edit'
 	);
 
+	if (urlLink) {
+		bulk.action = 'bookfair';
+		bulk.value = urlLink;
+	}
+
 	let showBulkConfirm = $state(false);
 	const bulkMutation = createBulkBookUpdateMutation();
+
+	/** The fair a "Link to bookfair" edit targets */
+	const linkFair = $derived(
+		bulk.action === 'bookfair'
+			? bookfairsQuery.data?.find((bf) => String(bf.id) === bulk.value)
+			: undefined
+	);
 
 	async function executeBulkEdit() {
 		const affected = bulk.affectedBooks;
@@ -130,7 +145,9 @@
 		try {
 			const result = await bulkMutation.mutateAsync({
 				bookIds: affected.map((b) => b.id),
-				updates: toBulkUpdates(bulk.action, bulk.value)
+				updates: toBulkUpdates(bulk.action, bulk.value, {
+					fairDate: bulk.setFairDate ? linkFair?.date : null
+				})
 			});
 			toast.success(`Updated ${result.updated} book${result.updated > 1 ? 's' : ''}`);
 			bulk.reset();
@@ -206,7 +223,11 @@
 <DeleteConfirmDialog
 	bind:open={showBulkConfirm}
 	title="Confirm Bulk Edit"
-	description={bulkConfirmText(bulk.action, bulk.value, bulk.affectedBooks.length)}
+	description={bulkConfirmText(bulk.action, bulk.value, bulk.affectedBooks.length, {
+		valueLabel: linkFair?.name,
+		note:
+			linkFair && bulk.setFairDate ? `Purchase dates will be set to ${linkFair.date}.` : undefined
+	})}
 	confirmLabel="Apply"
 	loadingLabel="Applying..."
 	destructive={false}

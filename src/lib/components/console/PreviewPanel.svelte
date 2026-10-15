@@ -18,6 +18,7 @@
 	} from '$lib/console/logic';
 	import { createTagsListQuery } from '$lib/queries/tags';
 	import { createSeriesListQuery } from '$lib/queries/series';
+	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import type { StagingStore } from '$lib/console/staging.svelte';
 	import type { BulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import { READING_STATUS_LABELS, type BookListItem } from '$lib/types';
@@ -67,6 +68,13 @@
 	// ─── Filter autocomplete values ────────────────────────────────────────────
 	const tagsQuery = createTagsListQuery();
 	const seriesQuery = createSeriesListQuery();
+	const bookfairsQuery = createBookfairsListQuery();
+	/** The fair a pending "Link to bookfair" points at, for the old→new arrow */
+	const linkFair = $derived(
+		bulk.action === 'bookfair'
+			? bookfairsQuery.data?.find((bf) => String(bf.id) === bulk.value)
+			: undefined
+	);
 	const valueSuggestions = $derived<Record<string, string[]>>({
 		'tag:': (tagsQuery.data ?? []).map((t) => t.name),
 		'publisher:': [
@@ -222,6 +230,12 @@
 								</span>
 								{#if row.isDraft}
 									<Badge variant="outline" class="ml-1 text-[10px]">Draft</Badge>
+								{/if}
+								{#if isAffected && linkFair && row.sourceEventId !== linkFair.id}
+									<span class="ml-1 inline-flex items-center gap-0.5 text-amber-600">
+										<ArrowRight class="h-2.5 w-2.5" />
+										<span class="text-xs font-medium">📍 {linkFair.name}</span>
+									</span>
 								{/if}
 							</Table.Cell>
 							<Table.Cell class="py-2 text-center text-sm tabular-nums">

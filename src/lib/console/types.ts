@@ -23,7 +23,14 @@ export type BookfairDefaults = {
 
 // ─── Bulk Edit ──────────────────────────────────────────────────────────────
 
-export type BulkAction = 'location' | 'source' | 'isDraft' | 'readingStatus' | 'price' | '';
+export type BulkAction =
+	| 'location'
+	| 'source'
+	| 'isDraft'
+	| 'readingStatus'
+	| 'price'
+	| 'bookfair'
+	| '';
 export type ConditionColumn = 'series' | 'volume' | 'reading' | 'location' | 'source' | 'isDraft';
 /** The ordering operators apply to the numeric `volume` column only */
 export type ConditionOp = '=' | '!=' | '>' | '<' | '>=' | '<=';
@@ -48,6 +55,8 @@ export type PreviewRow = {
 	volumeNumber: number;
 	location: BookLocation;
 	source: BookSource | null;
+	/** The bookfair the book is linked to, if any */
+	sourceEventId: number | null;
 	price: string | null;
 	isDraft: boolean;
 	/** Current reading status; staged rows are Unread */

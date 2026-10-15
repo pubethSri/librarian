@@ -1,11 +1,18 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { books } from '$lib/server/db/schema';
-import { inArray } from 'drizzle-orm';
+import { bookfairs, books } from '$lib/server/db/schema';
+import { eq, inArray } from 'drizzle-orm';
 import { applyReadingStatus, isReadingStatus } from '$lib/server/reading';
 
-const ALLOWED_FIELDS = ['location', 'source', 'sourceEventId', 'isDraft', 'price'] as const;
+const ALLOWED_FIELDS = [
+	'location',
+	'source',
+	'sourceEventId',
+	'isDraft',
+	'price',
+	'boughtAt'
+] as const;
 
 // PATCH /api/books/bulk — Bulk update books
 //
@@ -46,6 +53,21 @@ export const PATCH: RequestHandler = async ({ request }) => {
 		const price = Number(allowedUpdates.price);
 		if (!Number.isFinite(price) || price < 0) throw error(400, 'Invalid price');
 		allowedUpdates.price = price.toFixed(2);
+	}
+
+	// Purchase date: a date string, or null to clear
+	if (allowedUpdates.boughtAt !== undefined && allowedUpdates.boughtAt !== null) {
+		const boughtAt = new Date(allowedUpdates.boughtAt as string);
+		if (Number.isNaN(boughtAt.getTime())) throw error(400, 'Invalid purchase date');
+		allowedUpdates.boughtAt = boughtAt;
+	}
+
+	// Linking to a bookfair: the event must exist (a clear 400, not an FK 500)
+	if (allowedUpdates.sourceEventId !== undefined && allowedUpdates.sourceEventId !== null) {
+		const fair = await db.query.bookfairs.findFirst({
+			where: eq(bookfairs.id, Number(allowedUpdates.sourceEventId))
+		});
+		if (!fair) throw error(400, 'Bookfair not found');
 	}
 
 	// Clear sourceEventId if source is changed away from 'bookfair'

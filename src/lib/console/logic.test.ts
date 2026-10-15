@@ -10,6 +10,7 @@ import {
 	matchesConditions,
 	nextVolumeFor,
 	rangeIds,
+	requiresExplicitTarget,
 	selectBooks,
 	remapPreviewFilterState,
 	toAffectedIds,
@@ -207,6 +208,46 @@ describe('bulk edit — reading status and price (B2)', () => {
 			'Apply "Set reading status" (Read) to 1 book? No dates will be recorded. This cannot be undone.'
 		);
 		expect(bulkConfirmText('location', 'home', 2)).toContain('"Change location" (Home)');
+	});
+
+	it('links to a bookfair: source + event together, purchase date only when asked', () => {
+		expect(toBulkUpdates('bookfair', '5')).toEqual({ source: 'bookfair', sourceEventId: 5 });
+		expect(toBulkUpdates('bookfair', '5', { fairDate: null })).toEqual({
+			source: 'bookfair',
+			sourceEventId: 5
+		});
+		expect(toBulkUpdates('bookfair', '5', { fairDate: '2025-10-12' })).toEqual({
+			source: 'bookfair',
+			sourceEventId: 5,
+			boughtAt: '2025-10-12'
+		});
+	});
+
+	it('confirm text uses a value label for ids and appends a note', () => {
+		expect(
+			bulkConfirmText('bookfair', '5', 3, {
+				valueLabel: 'มหกรรมหนังสือระดับชาติ 30',
+				note: 'Purchase dates will be set to 2025-10-12.'
+			})
+		).toBe(
+			'Apply "Link to bookfair" (มหกรรมหนังสือระดับชาติ 30) to 3 books? Purchase dates will be set to 2025-10-12. This cannot be undone.'
+		);
+	});
+
+	it('only "Link to bookfair" refuses to default to every book in scope', () => {
+		expect(requiresExplicitTarget('bookfair')).toBe(true);
+		for (const action of ['location', 'source', 'isDraft', 'readingStatus', 'price'] as const) {
+			expect(requiresExplicitTarget(action)).toBe(false);
+		}
+	});
+
+	it('carries the linked bookfair onto preview rows', () => {
+		const rows = buildPreviewRows(
+			[book({ sourceEventId: 4 })],
+			[staged({ volumeNumber: 2, sourceEventId: 7 })]
+		);
+		expect(rows.map((r) => r.sourceEventId)).toEqual([4, 7]);
+		expect(buildPreviewRows([book()], [])[0].sourceEventId).toBeNull();
 	});
 
 	it('matches the reading condition exactly', () => {

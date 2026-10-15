@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { createBookfairDetailQuery, createBookfairDeleteMutation } from '$lib/queries/bookfairs';
 	import { createBooksByEventQuery } from '$lib/queries/books';
+	import { createBulkBookUpdateMutation } from '$lib/queries/bulk';
 	import EditBookfairDialog from '$lib/components/forms/EditBookfairDialog.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -11,7 +12,16 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
-	import { Pencil, Trash2, Calendar, MapPin, ShoppingCart, Terminal } from '@lucide/svelte';
+	import {
+		Pencil,
+		Trash2,
+		Calendar,
+		MapPin,
+		ShoppingCart,
+		Terminal,
+		BookPlus,
+		Unlink
+	} from '@lucide/svelte';
 	import { BOOK_LOCATION_LABELS } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 
@@ -19,6 +29,7 @@
 	const detailQuery = createBookfairDetailQuery(() => bookfairId);
 	const booksQuery = createBooksByEventQuery(() => bookfairId);
 	const deleteMutation = createBookfairDeleteMutation();
+	const unlinkMutation = createBulkBookUpdateMutation();
 
 	let showEditDialog = $state(false);
 	let showDeleteConfirm = $state(false);
@@ -55,6 +66,25 @@
 
 	function openInConsole() {
 		goto(resolve(`/console?scope=bookfair&id=${bookfairId}`));
+	}
+
+	/** Console over All Books, Bulk Edit pre-set to "Link to bookfair" → this fair */
+	function addFromCollection() {
+		goto(resolve(`/console?link=${bookfairId}`));
+	}
+
+	/** Undo a wrong link: the book keeps its data but no longer counts for this fair */
+	function removeFromFair(book: { id: number; seriesShortName: string; volumeNumber: string }) {
+		unlinkMutation.mutate(
+			{ bookIds: [book.id], updates: { source: null, sourceEventId: null } },
+			{
+				onSuccess: () =>
+					toast.success(
+						`Removed ${book.seriesShortName} vol. ${Number(book.volumeNumber)} from this fair`
+					),
+				onError: (err: Error) => toast.error(err.message)
+			}
+		);
 	}
 </script>
 
@@ -107,6 +137,10 @@
 				<Button size="sm" class="gap-1.5" onclick={openInConsole}>
 					<Terminal class="h-3.5 w-3.5" />
 					Open in Console
+				</Button>
+				<Button variant="outline" size="sm" class="gap-1.5" onclick={addFromCollection}>
+					<BookPlus class="h-3.5 w-3.5" />
+					Add books from your collection
 				</Button>
 				<Button variant="outline" size="sm" onclick={() => (showEditDialog = true)} class="gap-1.5">
 					<Pencil class="h-3.5 w-3.5" />
@@ -176,6 +210,7 @@
 								<Table.Head class="w-20 text-center">Vol.</Table.Head>
 								<Table.Head>Location</Table.Head>
 								<Table.Head class="text-right">Price</Table.Head>
+								<Table.Head class="w-10"></Table.Head>
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
@@ -201,6 +236,21 @@
 									<Table.Cell class="text-right tabular-nums">
 										{formatPrice(book.price)}
 									</Table.Cell>
+									<Table.Cell>
+										<Button
+											variant="ghost"
+											size="icon"
+											class="h-7 w-7 text-muted-foreground hover:text-destructive"
+											title="Remove from this fair"
+											aria-label="Remove {book.seriesShortName} vol. {Number(
+												book.volumeNumber
+											)} from this fair"
+											disabled={unlinkMutation.isPending}
+											onclick={() => removeFromFair(book)}
+										>
+											<Unlink class="h-3.5 w-3.5" />
+										</Button>
+									</Table.Cell>
 								</Table.Row>
 							{/each}
 						</Table.Body>
@@ -210,7 +260,7 @@
 				<EmptyState
 					icon={ShoppingCart}
 					title="No books yet"
-					description="Open the Console to start adding books to this bookfair."
+					description="Use “Add books from your collection” to link books you already logged, or Open in Console to add new ones."
 				/>
 			{/if}
 		</div>

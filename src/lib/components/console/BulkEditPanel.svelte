@@ -7,6 +7,9 @@
 	import type { BulkEditStore } from '$lib/console/bulkEdit.svelte';
 	import type { Condition } from '$lib/console/types';
 	import SeriesSearch from '$lib/components/forms/SeriesSearch.svelte';
+	import { Switch } from '$lib/components/ui/switch';
+	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
+	import { requiresExplicitTarget } from '$lib/console/logic';
 	import { READING_STATUS_LABELS, type ReadingStatus } from '$lib/types';
 
 	let {
@@ -19,6 +22,21 @@
 	} = $props();
 
 	const READING_STATUSES: ReadingStatus[] = ['unread', 'reading', 'read', 'dropped'];
+
+	const bookfairsQuery = createBookfairsListQuery();
+	const selectedFair = $derived(
+		bulk.action === 'bookfair'
+			? bookfairsQuery.data?.find((bf) => String(bf.id) === bulk.value)
+			: undefined
+	);
+
+	function formatFairDate(date: string): string {
+		return new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		});
+	}
 	const TEXT_OPS = ['=', '!='] as const;
 	const NUMERIC_OPS = ['=', '!=', '>', '<', '>=', '<='] as const;
 
@@ -51,6 +69,8 @@
 					Set reading status
 				{:else if bulk.action === 'price'}
 					Set price
+				{:else if bulk.action === 'bookfair'}
+					Link to bookfair
 				{:else}
 					Select action...
 				{/if}
@@ -61,6 +81,7 @@
 				<Select.Item value="isDraft" label="Set draft status" />
 				<Select.Item value="readingStatus" label="Set reading status" />
 				<Select.Item value="price" label="Set price" />
+				<Select.Item value="bookfair" label="Link to bookfair" />
 			</Select.Content>
 		</Select.Root>
 	</div>
@@ -88,18 +109,18 @@
 					<Select.Trigger class="w-full">
 						{bulk.value === 'bookstore'
 							? 'Bookstore'
-							: bulk.value === 'bookfair'
-								? 'Bookfair'
-								: bulk.value === 'online'
-									? 'Online'
-									: 'Select...'}
+							: bulk.value === 'online'
+								? 'Online'
+								: 'Select...'}
 					</Select.Trigger>
 					<Select.Content>
 						<Select.Item value="bookstore" label="Bookstore" />
-						<Select.Item value="bookfair" label="Bookfair" />
 						<Select.Item value="online" label="Online" />
 					</Select.Content>
 				</Select.Root>
+				<p class="text-xs text-muted-foreground">
+					For bookfair purchases use "Link to bookfair", which records which fair.
+				</p>
 			{:else if bulk.action === 'isDraft'}
 				<Select.Root type="single" bind:value={bulk.value}>
 					<Select.Trigger class="w-full">
@@ -124,6 +145,28 @@
 				<p class="text-xs text-muted-foreground">
 					Backfill: no dates are recorded. Re-reads are never created in bulk — a Read book set to
 					Reading is skipped (use Re-read on the book).
+				</p>
+			{:else if bulk.action === 'bookfair'}
+				<Select.Root type="single" bind:value={bulk.value}>
+					<Select.Trigger class="w-full">
+						{selectedFair?.name ?? 'Select bookfair...'}
+					</Select.Trigger>
+					<Select.Content>
+						{#each bookfairsQuery.data ?? [] as bf (bf.id)}
+							<Select.Item value={String(bf.id)} label={bf.name} />
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<div class="flex items-center justify-between gap-3 pt-1">
+					<Label for="bulk-fair-date" class="text-xs font-normal text-muted-foreground">
+						Also set purchase date to the fair's date{selectedFair
+							? ` (${formatFairDate(selectedFair.date)})`
+							: ''}
+					</Label>
+					<Switch id="bulk-fair-date" size="sm" bind:checked={bulk.setFairDate} />
+				</div>
+				<p class="text-xs text-muted-foreground">
+					Sets the source to Bookfair and links the books to this fair.
 				</p>
 			{:else if bulk.action === 'price'}
 				<Input
@@ -178,7 +221,9 @@
 
 		{#if bulk.conditions.length === 0}
 			<p class="text-xs text-muted-foreground">
-				{#if bulk.selectedCount === 0}
+				{#if bulk.selectedCount === 0 && requiresExplicitTarget(bulk.action)}
+					Pick the books: click rows in the preview (Shift+click for a range), or add a condition.
+				{:else if bulk.selectedCount === 0}
 					No conditions — all books in scope will be affected. Or click rows in the preview to pick
 					them (Shift+click for a range).
 				{/if}

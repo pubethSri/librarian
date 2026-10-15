@@ -26,18 +26,31 @@ export const BULK_ACTION_LABELS: Record<Exclude<BulkAction, ''>, string> = {
 	source: 'Set source',
 	isDraft: 'Set draft status',
 	readingStatus: 'Set reading status',
-	price: 'Set price'
+	price: 'Set price',
+	bookfair: 'Link to bookfair'
 };
 
 /**
  * The bulk-edit confirm text, e.g. `Apply "Set price" (฿175) to 5 books?`.
  * Reading-status edits say they are undated, since that is easy to forget.
  */
-export function bulkConfirmText(action: BulkAction, value: string, count: number): string {
+export function bulkConfirmText(
+	action: BulkAction,
+	value: string,
+	count: number,
+	options: {
+		/** Display name for the value when it is an id, e.g. the bookfair's name */
+		valueLabel?: string;
+		/** An extra sentence, e.g. that purchase dates will change */
+		note?: string;
+	} = {}
+): string {
 	if (!action) return '';
 	const books = `${count} book${count !== 1 ? 's' : ''}`;
+	const label = options.valueLabel ?? getActionLabel(action, value);
 	const undated = action === 'readingStatus' ? ' No dates will be recorded.' : '';
-	return `Apply "${BULK_ACTION_LABELS[action]}" (${getActionLabel(action, value)}) to ${books}?${undated} This cannot be undone.`;
+	const note = options.note ? ` ${options.note}` : '';
+	return `Apply "${BULK_ACTION_LABELS[action]}" (${label}) to ${books}?${undated}${note} This cannot be undone.`;
 }
 
 /** Display label for a bulk-action value (used in the preview's old→new arrow) */
@@ -113,6 +126,15 @@ export function matchesConditions(book: BookListItem, conditions: Condition[]): 
 	});
 }
 
+/**
+ * Actions that never fall back to "every book in scope". Linking books to a
+ * bookfair is always about specific books, and the Console opens pre-set to
+ * it from a bookfair page — one careless Apply must not link the collection.
+ */
+export function requiresExplicitTarget(action: BulkAction): boolean {
+	return action === 'bookfair';
+}
+
 /** The books whose (stringified) id is in the selection, in book order */
 export function selectBooks(
 	books: BookListItem[],
@@ -147,7 +169,12 @@ export function toAffectedIds(books: BookListItem[]): Set<string> {
 }
 
 /** Build the PATCH body for /api/books/bulk from the selected action + value */
-export function toBulkUpdates(action: BulkAction, value: string): Record<string, unknown> {
+export function toBulkUpdates(
+	action: BulkAction,
+	value: string,
+	/** For 'bookfair': the fair's date, when its purchase dates should follow */
+	options: { fairDate?: string | null } = {}
+): Record<string, unknown> {
 	const updates: Record<string, unknown> = {};
 	if (action === 'location') updates.location = value;
 	if (action === 'source') updates.source = value;
@@ -155,6 +182,13 @@ export function toBulkUpdates(action: BulkAction, value: string): Record<string,
 	// Reading status is applied server-side through the reading rules, undated
 	if (action === 'readingStatus') updates.readingStatus = value;
 	if (action === 'price') updates.price = Number(value);
+	// Linking sets the source and the event together, so no book ends up as
+	// "bookfair" without saying which one
+	if (action === 'bookfair') {
+		updates.source = 'bookfair';
+		updates.sourceEventId = Number(value);
+		if (options.fairDate) updates.boughtAt = options.fairDate;
+	}
 	return updates;
 }
 
@@ -301,6 +335,7 @@ export function buildPreviewRows(
 		volumeNumber: Number(b.volumeNumber),
 		location: b.location,
 		source: b.source,
+		sourceEventId: b.sourceEventId,
 		price: b.price,
 		isDraft: b.isDraft,
 		readingStatus: b.readingStatus,
@@ -314,6 +349,7 @@ export function buildPreviewRows(
 		volumeNumber: e.volumeNumber,
 		location: e.location,
 		source: e.source ?? null,
+		sourceEventId: e.sourceEventId ?? null,
 		price: e.price != null ? String(e.price) : null,
 		isDraft: e.isDraft,
 		readingStatus: 'unread',

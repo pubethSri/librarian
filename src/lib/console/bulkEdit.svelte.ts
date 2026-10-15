@@ -2,7 +2,7 @@ import { SvelteSet } from 'svelte/reactivity';
 import { newId } from '$lib/utils/id';
 import type { BookListItem } from '$lib/types';
 import type { BulkAction, Condition } from './types';
-import { matchesConditions, selectBooks, toAffectedIds } from './logic';
+import { matchesConditions, requiresExplicitTarget, selectBooks, toAffectedIds } from './logic';
 
 /**
  * Bulk-edit form state for the Console: the action, its value, and which
@@ -23,6 +23,8 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 	let action = $state<BulkAction>('');
 	let value = $state<string>('');
 	let conditions = $state<Condition[]>([]);
+	/** 'Link to bookfair' option: also set purchase dates to the fair's date */
+	let setFairDate = $state(false);
 	// A reactive set: reads in $derived / templates track adds and deletes
 	const selectedIds = new SvelteSet<string>();
 
@@ -31,6 +33,9 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 		const books = getBooks();
 		// A selection, when present, replaces the conditions
 		if (selectedIds.size > 0) return selectBooks(books, selectedIds);
+		// No selection and no conditions means "everything" — except for actions
+		// that must name their books
+		if (conditions.length === 0 && requiresExplicitTarget(action)) return [];
 		return books.filter((b) => matchesConditions(b, conditions));
 	});
 
@@ -52,6 +57,13 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 		},
 		set value(v: string) {
 			value = v;
+		},
+
+		get setFairDate() {
+			return setFairDate;
+		},
+		set setFairDate(v: boolean) {
+			setFairDate = v;
 		},
 
 		get isActive() {
@@ -106,6 +118,7 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 			action = '';
 			value = '';
 			conditions = [];
+			setFairDate = false;
 			selectedIds.clear();
 		}
 	};
