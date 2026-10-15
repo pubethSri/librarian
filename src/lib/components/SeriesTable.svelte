@@ -3,7 +3,6 @@
 	import type { SeriesListItem, SeriesStatus, TagWithCount } from '$lib/types';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
-	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import TagChipsBar from '$lib/components/TagChipsBar.svelte';
 	import BooruSearchBar from '$lib/components/BooruSearchBar.svelte';
@@ -286,8 +285,9 @@
 							<span class="text-xs text-muted-foreground/40">—</span>
 						{/if}
 					</Table.Cell>
-					<Table.Cell>
-						<ProgressBar owned={row.bookCount} total={row.totalVolumes} />
+					<!-- Volumes owned — counted from the books, never typed in -->
+					<Table.Cell class="font-mono text-sm tabular-nums">
+						{row.bookCount}
 					</Table.Cell>
 					<Table.Cell>
 						<button

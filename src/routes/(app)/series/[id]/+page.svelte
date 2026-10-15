@@ -11,7 +11,6 @@
 	import { BOOK_LOCATION_LABELS, BOOK_SOURCE_LABELS } from '$lib/types';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
-	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import EditSeriesDialog from '$lib/components/series/EditSeriesDialog.svelte';
 	import TagsEditor from '$lib/components/series/TagsEditor.svelte';
@@ -166,16 +165,16 @@
 				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">{s.books.length}</p>
 			</div>
 			<div class="rounded-lg border border-border p-4">
-				<p class="text-sm text-muted-foreground">Total Volumes</p>
+				<p class="text-sm text-muted-foreground">Latest Volume</p>
 				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
-					{s.totalVolumes ?? '?'}
+					{s.books.length > 0 ? Math.max(...s.books.map((b) => Number(b.volumeNumber))) : '—'}
 				</p>
 			</div>
 			<div class="rounded-lg border border-border p-4">
-				<p class="text-sm text-muted-foreground">Progress</p>
-				<div class="mt-2">
-					<ProgressBar owned={s.books.length} total={s.totalVolumes} />
-				</div>
+				<p class="text-sm text-muted-foreground">Read</p>
+				<p class="mt-1 text-2xl font-bold text-foreground tabular-nums">
+					{s.books.filter((b) => currentStatus(b.readings) === 'read').length}
+				</p>
 			</div>
 			<div class="rounded-lg border border-border p-4">
 				<p class="text-sm text-muted-foreground">Unread</p>

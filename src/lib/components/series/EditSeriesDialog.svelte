@@ -25,7 +25,6 @@
 	let seriesType = $state<SeriesType>(series.type);
 	let status = $state<SeriesStatus>(series.status);
 	let publisher = $state(series.publisher || '');
-	let totalVolumes = $state(series.totalVolumes != null ? String(series.totalVolumes) : '');
 	let watchlist = $state(series.watchlist);
 
 	$effect(() => {
@@ -34,7 +33,6 @@
 		seriesType = series.type;
 		status = series.status;
 		publisher = series.publisher || '';
-		totalVolumes = series.totalVolumes != null ? String(series.totalVolumes) : '';
 		watchlist = series.watchlist;
 	});
 
@@ -52,7 +50,6 @@
 				type: seriesType,
 				status,
 				publisher: publisher.trim() || undefined,
-				totalVolumes: totalVolumes ? Number(totalVolumes) : undefined,
 				watchlist
 			},
 			{
@@ -111,16 +108,6 @@
 			<div class="space-y-2">
 				<Label for="edit-publisher">Publisher</Label>
 				<PublisherInput id="edit-publisher" bind:value={publisher} />
-			</div>
-			<div class="space-y-2">
-				<Label for="edit-total">Total Volumes</Label>
-				<Input
-					id="edit-total"
-					type="number"
-					min="0"
-					bind:value={totalVolumes}
-					placeholder="Optional"
-				/>
 			</div>
 			<div class="flex items-center justify-between">
 				<Label for="edit-watchlist" class="text-sm font-normal">Watchlist</Label>
