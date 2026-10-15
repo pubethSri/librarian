@@ -1,4 +1,5 @@
 import { SvelteSet } from 'svelte/reactivity';
+import { newId } from '$lib/utils/id';
 import type { BookListItem } from '$lib/types';
 import type { BulkAction, Condition } from './types';
 import { matchesConditions, selectBooks, toAffectedIds } from './logic';
@@ -94,10 +95,7 @@ export function createBulkEditStore(getBooks: () => BookListItem[], getIsActive:
 		},
 
 		addCondition() {
-			conditions = [
-				...conditions,
-				{ id: crypto.randomUUID(), column: 'location', op: '=', value: '' }
-			];
+			conditions = [...conditions, { id: newId(), column: 'location', op: '=', value: '' }];
 		},
 
 		removeCondition(id: string) {

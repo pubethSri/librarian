@@ -1,3 +1,4 @@
+import { newId } from '$lib/utils/id';
 import type { StagedBookEntry } from '$lib/types';
 
 /**
@@ -17,7 +18,7 @@ export function createStagingStore() {
 
 		/** `tempId` is stamped here so the pure logic stays deterministic */
 		add(newEntries: Omit<StagedBookEntry, 'tempId'>[]) {
-			entries = [...entries, ...newEntries.map((e) => ({ ...e, tempId: crypto.randomUUID() }))];
+			entries = [...entries, ...newEntries.map((e) => ({ ...e, tempId: newId() }))];
 		},
 
 		remove(tempId: string) {
