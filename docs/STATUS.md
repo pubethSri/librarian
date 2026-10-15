@@ -7,16 +7,17 @@
 
 - **Current version:** v0.3 — **in progress**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**. **Plan changed 2026-10-16:** Insights (old v0.4 items 4.2–4.7) is pulled forward and comes **first**, then B3–B7 in the time left — see Handoff Decisions 2026-10-16 and `ROADMAP.md` → "Now".
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** **Insights I1–I6 built** (2026-10-16, branch `feature/insights`, one commit per item, not merged): `/insights` with Overview, Backlog, Growth, Tags & completion, Spending, Pace & bookfair funnel, and "Hide ฿". The 241 backfill read dates were cleared on the real DB first (backup `temp/backups/local-before-insights-20261016-0053.dump`), so rate and pace figures show "needs dated reads" until new reads are marked. Claude-checked on the scratch DB (numbers cross-checked with SQL); **your visual pass is pending** (script below).
-- **Branches:** `main` = everything up to the backfill. `feature/insights` = Insights, awaiting your visual pass → merge into `main`.
-- **Next:** your Insights visual pass → merge → **B3/B4 Field Mode** (from Oct 17; Insights finished inside its timebox) → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 keeps the Reading queue + insights polish.
+- **Latest:** **B3 Field Mode 1 "Do I own this?" built** (2026-10-16, branch `feature/field-mode`) and **Insights I1–I6 built** (branch `feature/insights`). Neither is merged; both are Claude-checked on the scratch DB and **await your visual pass** (scripts below). The 241 backfill read dates were cleared on the real DB before Insights (backup `temp/backups/local-before-insights-20261016-0053.dump`).
+- **Branches:** `main` = everything up to the backfill. `feature/insights` (6 commits) → `feature/field-mode` (branched from it, + B3). Merging `feature/field-mode` into `main` brings both — a fast-forward, since `main` hasn't moved.
+- **Next:** your visual passes (Insights, Field Mode) → merge → **B4 Field Mode 2 — quick add** → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 keeps the Reading queue + insights polish.
 
-### Next session — start here (Field Mode)
+### Next session — start here (B4 quick add)
 
-1. **Merge** `feature/insights` into `main` once your visual pass (below) is done; fix anything it turns up on the branch first.
-2. **Then B3** — Field Mode 1 "Do I own this?" (`ROADMAP.md` → Bookfair release). `CLAUDE.md` has the conventions; reading rules in `src/lib/reading.ts`, extras in Backfill-session Decisions 2026-10-15 (`latestVolume` skips extras).
-3. **Still open:** your visual pass of the **extra volumes** change: Silent Witch reads 1–4, Extra, 5–9, Extra (hover: "Extra (after vol. 4)"), Latest Volume 9; editing an extra shows the switch on and "Sort position"; the Console suggests vol. 10 for Silent Witch; no "4.5" anywhere outside the edit dialog. **B6 hosting** — laptop + Tailscale vs Vercel Hobby + Neon Free; decide before B6.
-4. **Working agreement:** Claude runs build / check / lint / tests and browser pre-checks on the **scratch DB only** (`librarian_test`, test server on port 5174 — see Environment); you do the visual pass. Back up the real DB before risky work (`temp/backups/`).
+1. **Merge first.** If your visual passes are done, fast-forward `main` to `feature/field-mode` (`git switch main`, then `git merge --ff-only feature/field-mode`), push, and branch B4 from `main`. If a pass turned something up, fix it on `feature/field-mode` first.
+2. **Build B4 — Field Mode 2, quick add** (`ROADMAP.md` → Bookfair release B4) on top of `/field`: choose the bookfair once (remembered on the device), then from a series' Field view tap **+ Vol. N** (the "next" tile already exists in `src/routes/(app)/field/+page.svelte`) → saved immediately with an **Undo** toast; optional price; location defaults to Apartment; source = bookfair + the fair's event + the fair's date. A minimal **new series** (name + type, saved as a draft to finish on desktop). Reuse `createBookMutation` / the batch endpoint, `newId()` (never `crypto.randomUUID` — the phone uses plain HTTP over the LAN) and the `SuggestInput` patterns.
+3. **Cross-device staleness (audit #9) — half done.** Field Mode's series/books queries already use `{ fresh: true }` (refetch on mount + tab focus). B4 still needs the **save-time duplicate guard**: before adding vol. N, refetch (or have the server check) so the phone and the laptop can't both add the same volume; a true second copy should need an explicit "add another copy".
+4. **Still open:** your visual pass of the **extra volumes** change (Silent Witch reads 1–4, Extra, 5–9, Extra; Latest Volume 9; Console suggests vol. 10). **B6 hosting** — laptop + Tailscale vs Vercel Hobby + Neon Free; decide before B6. **Read dates can't be edited in the UI** — mark missed backfill reads through Console → Bulk Edit → Set reading status → Read (undated); per-book Mark read stamps _now_ (finish date only; the start stays empty). A date editor is a v0.4 candidate.
+5. **Working agreement:** Claude runs build / check / lint / tests and browser pre-checks on the **scratch DB only** (`librarian_test`, test server on port 5174 — see Environment); you do the visual pass. Back up the real DB before risky work (`temp/backups/`). B4 writes data: test it on 5174 only.
 
 ### Bookfair release progress (v0.3)
 
@@ -29,8 +30,8 @@
 | B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                   |
 | B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)  |
 | I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Built (awaiting your visual pass) |
-| B3    | Field Mode 1 — "Do I own this?"                              | ⬜ **Next**                          |
-| B4    | Field Mode 2 — quick add                                     | ⬜                                   |
+| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Built (awaiting your visual pass) |
+| B4    | Field Mode 2 — quick add                                     | ⬜ **Next**                          |
 | B5    | Bookfair Hitlist (simple)                                    | ⬜                                   |
 | B6    | Deploy on the laptop (Tailscale)                             | ⬜                                   |
 | B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                   |
@@ -59,6 +60,16 @@ Timebox: through **Oct 17** (user's call 2026-10-16); whatever is done then ship
 7. **Pace & fairs:** _Time from purchase to finish_ shows the dashed "needs 5+ dated reads" box. Funnel: 7 fairs oldest first, each label with its read %; the table's Bought column sums to 190 and links open each fair.
 8. **Show data** under any chart opens a table of the same numbers. Hovering a bar shows a dark tooltip.
 9. On **5174 (scratch DB)**, **mark one book Read** from a series page and come back to Insights → Read goes up by one and _Reading_ under Backlog says "1 dated read so far" (the page refetches on every visit).
+
+**Your visual pass — Field Mode (B3).** Best on your phone: `npm run dev -- --host` on the laptop, then `http://<laptop-IP>:5173/field` (Field Mode only reads, so the real DB is safe). On desktop: sidebar → Tools → **Field Mode**.
+
+1. `/field` opens with the cursor in a big "Do I own…?" box and your **Watchlist** below it, each with its next volume. ✅ Silent Witch says **next 10**.
+2. Type `sw` → Silent Witch (initials). Type `ดาบ` → เกิดใหม่เป็นดาบ (any part of a Thai name). Type `zzz` → "Not in the collection". The ✕ clears the box.
+3. Tap **Silent Witch** → big black **Next to buy · Vol. 10**, "own 1–9", tiles 1–9 each marked **A** (Apartment) with a ✓ on read ones, an outlined **10 next** tile, and **Extras**: "Extra (after vol. 4)", "Extra (after vol. 9)".
+4. Open **สัมพันธ์ลับสัปดาห์ละครั้ง** → "latest vol. 7", a dashed **Missing: vol. 4, 5** line and dashed _missing_ tiles 4 and 5. **Arifureta** → tile 8 reads **A ×2** (two copies), next 15.
+5. Phone **back** (or ← Search) → the results come back with your query still typed.
+6. Add a book on the laptop (any series), then switch back to the phone's tab → Field Mode shows it within a second (refetch on focus). ❌ Red flag: the phone still shows the old next volume after switching back.
+7. Nothing scrolls sideways at phone width; the tiles are readable at arm's length.
 
 - **Direction reset 2026-10-13:** Activity Log dropped; old feature-brainstorm items triaged (see Direction Decisions below and `ROADMAP.md` → "Not adopted").
 
@@ -390,6 +401,15 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 - **"Hide ฿" (the coward toggle), flipped by the user:** money is **shown** by default; the switch hides every baht figure on the page for that visit (not remembered).
 - **Charts:** Chart.js 4 through `use:chart` (`$lib/actions/chart.ts`), configs from `$lib/components/insights/charts.ts` (thin bars, 2px stack gaps, hairline grid, legend only for ≥ 2 series, **never a second y-axis**). Colours checked with the dataviz palette validator: read states Read blue / Reading aqua / Dropped orange / Unread neutral grey (deliberately recessive), series types violet / yellow — no hue means two things. Every chart has a "Show data" table.
 
+### Field Mode Decisions (2026-10-16)
+
+- **B3 built in the Insights session** (user's call), on `feature/field-mode` branched from `feature/insights` so the docs don't conflict.
+- **Search** (`searchSeries` in `$lib/field/logic.ts`): short or full name, ranked name prefix → any word's prefix → initials ("mt" → Mushoku Tensei) → anywhere (spaces ignored); ties go to the series with more books. NFKC + lower-case, punctuation ignored; Thai matches by substring. An empty box shows the **watchlist**.
+- **Volume grid** (`ownedVolumes`): regular volumes **1 … latest**, unowned ones shown as **missing** (display only — no gap tracking was added), copies (`×2`) and each copy's location (A / H), ✓ = read at least once; extras listed apart and never the latest; **next = latest + 1** even for an Ended series (its status is shown; there is no published-volume count).
+- **The open series is in the URL** (`/field?series=<id>`), so the phone's back button returns to the results with the query kept.
+- **`createSeriesListQuery` / `createBooksListQuery` take `{ fresh: true }`** (staleTime 0 + refetch on window focus). Only Field Mode uses it; the rest of the app keeps the 5-minute cache. First half of audit #9; the save-time duplicate guard is B4.
+- Field Mode stays inside the app shell (sidebar sheet on phones); a separate full-screen shell belongs to v0.5 (PWA).
+
 ## Environment
 
 - **Windows 11** since 2026-10-13 (was Arch Linux). Repo at `C:\librarian`; `core.autocrlf=input` + `.gitattributes` force LF. Shell: PowerShell, Git Bash also available.
@@ -403,35 +423,40 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 
 ## Key Files
 
-| File                                                   | Purpose                                                                                    |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `ROADMAP.md`                                           | Forward roadmap (phases, versioning, open-item recommendations)                            |
-| `context.md`                                           | Original project requirements                                                              |
-| `design_direction.md`                                  | Visual identity, keyboard shortcuts, layout foundation                                     |
-| `../CLAUDE.md`                                         | How to work in the repo (commands, architecture, conventions)                              |
-| `src/hooks.server.ts`                                  | Auth middleware                                                                            |
-| `src/lib/server/auth.ts`                               | Auth utilities (HMAC-SHA256)                                                               |
-| `src/lib/server/db/schema.ts`                          | Full Drizzle schema (6 tables, 5 enums)                                                    |
-| `src/lib/server/db/index.ts`                           | Database connection                                                                        |
-| `src/lib/utils.ts`                                     | `cn()` utility + shadcn-svelte type helpers                                                |
-| `src/lib/utils/booruParser.ts` (+ `.test.ts`)          | Booru-style search query parser + builder, with unit tests                                 |
-| `src/lib/types.ts`                                     | Shared TypeScript types (API shapes, enums, mutation payloads)                             |
-| `src/lib/queries/*.ts`                                 | TanStack Query hooks (series, books, bookfairs, reading, batch, bulk, tags)                |
-| `src/lib/components/filterEngine.ts` (+ `.test.ts`)    | Unified filter state types + `applyUnifiedFilter()`, with unit tests                       |
-| `src/lib/console/{types,logic}.ts` (+ `logic.test.ts`) | Console types + pure logic (staging, bulk-edit matching, preview rows/filter), unit-tested |
-| `src/lib/console/{staging,bulkEdit}.svelte.ts`         | Console rune stores (factories returning getter-backed objects)                            |
-| `src/lib/reading.ts` (+ `.test.ts`)                    | Reading rules: current status, times read, `planReadingChange`                             |
-| `src/lib/server/reading.ts`                            | `applyReadingStatus(tx, bookIds, status, now)` — applies the rules for one or many books   |
-| `src/lib/utils/{id,suggest,bookfairNames}.ts`          | `newId()` (LAN-safe ids); suggestion helpers; fair-name suggestions — all unit-tested      |
-| `src/lib/components/forms/SuggestInput.svelte`         | Shared free-text combobox (`PublisherInput` wraps it; bookfair name/location use it)       |
-| `src/lib/components/ReadingStatusControl.svelte`       | Status dropdown + one-tap Mark read / Re-read on book rows                                 |
-| `src/lib/components/console/*.svelte`                  | Console panels: `ScopeBar`, `PreviewPanel`, `AddBooksPanel`, `BulkEditPanel`               |
-| `src/lib/components/BooruSearchBar.svelte`             | Search input with autocomplete                                                             |
-| `src/lib/components/TagChipsBar.svelte`                | Toggleable tag filter badges                                                               |
-| `src/lib/components/{SeriesTable,BooksTable}.svelte`   | Entity tables with booru search/sort/pagination                                            |
-| `src/routes/(app)/console/+page.svelte`                | Unified bulk entry + editing workbench (Console)                                           |
-| `src/routes/layout.css`                                | Global CSS: Tailwind v4 theme tokens + bits-ui state-variant mapping (`@custom-variant`)   |
-| `scripts/{seed,migrate-airtable}.ts`                   | Dev seed + Airtable CSV → PostgreSQL migration                                             |
+| File                                                   | Purpose                                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `ROADMAP.md`                                           | Forward roadmap (phases, versioning, open-item recommendations)                              |
+| `context.md`                                           | Original project requirements                                                                |
+| `design_direction.md`                                  | Visual identity, keyboard shortcuts, layout foundation                                       |
+| `../CLAUDE.md`                                         | How to work in the repo (commands, architecture, conventions)                                |
+| `src/hooks.server.ts`                                  | Auth middleware                                                                              |
+| `src/lib/server/auth.ts`                               | Auth utilities (HMAC-SHA256)                                                                 |
+| `src/lib/server/db/schema.ts`                          | Full Drizzle schema (6 tables, 5 enums)                                                      |
+| `src/lib/server/db/index.ts`                           | Database connection                                                                          |
+| `src/lib/utils.ts`                                     | `cn()` utility + shadcn-svelte type helpers                                                  |
+| `src/lib/utils/booruParser.ts` (+ `.test.ts`)          | Booru-style search query parser + builder, with unit tests                                   |
+| `src/lib/types.ts`                                     | Shared TypeScript types (API shapes, enums, mutation payloads)                               |
+| `src/lib/queries/*.ts`                                 | TanStack Query hooks (series, books, bookfairs, reading, batch, bulk, tags)                  |
+| `src/lib/components/filterEngine.ts` (+ `.test.ts`)    | Unified filter state types + `applyUnifiedFilter()`, with unit tests                         |
+| `src/lib/console/{types,logic}.ts` (+ `logic.test.ts`) | Console types + pure logic (staging, bulk-edit matching, preview rows/filter), unit-tested   |
+| `src/lib/console/{staging,bulkEdit}.svelte.ts`         | Console rune stores (factories returning getter-backed objects)                              |
+| `src/lib/reading.ts` (+ `.test.ts`)                    | Reading rules: current status, times read, `planReadingChange`                               |
+| `src/lib/insights/*.ts` (+ tests)                      | Pure insights: `computeInsights()` = overview, backlog, growth, tags, spending, pace/funnel  |
+| `src/lib/server/insights.ts`                           | `loadInsightsInput()` — the rows `/api/insights` computes from                               |
+| `src/lib/actions/chart.ts`                             | `use:chart` — Chart.js 4 Svelte action                                                       |
+| `src/lib/components/insights/*`                        | Chart builders (`charts.ts`), `ChartCard` (chart + data table), `StatTile`, `InsightSection` |
+| `src/lib/field/logic.ts` (+ `.test.ts`)                | Field Mode: `searchSeries`, `ownedVolumes`, `groupBySeries`                                  |
+| `src/lib/server/reading.ts`                            | `applyReadingStatus(tx, bookIds, status, now)` — applies the rules for one or many books     |
+| `src/lib/utils/{id,suggest,bookfairNames}.ts`          | `newId()` (LAN-safe ids); suggestion helpers; fair-name suggestions — all unit-tested        |
+| `src/lib/components/forms/SuggestInput.svelte`         | Shared free-text combobox (`PublisherInput` wraps it; bookfair name/location use it)         |
+| `src/lib/components/ReadingStatusControl.svelte`       | Status dropdown + one-tap Mark read / Re-read on book rows                                   |
+| `src/lib/components/console/*.svelte`                  | Console panels: `ScopeBar`, `PreviewPanel`, `AddBooksPanel`, `BulkEditPanel`                 |
+| `src/lib/components/BooruSearchBar.svelte`             | Search input with autocomplete                                                               |
+| `src/lib/components/TagChipsBar.svelte`                | Toggleable tag filter badges                                                                 |
+| `src/lib/components/{SeriesTable,BooksTable}.svelte`   | Entity tables with booru search/sort/pagination                                              |
+| `src/routes/(app)/console/+page.svelte`                | Unified bulk entry + editing workbench (Console)                                             |
+| `src/routes/layout.css`                                | Global CSS: Tailwind v4 theme tokens + bits-ui state-variant mapping (`@custom-variant`)     |
+| `scripts/{seed,migrate-airtable}.ts`                   | Dev seed + Airtable CSV → PostgreSQL migration                                               |
 
 ## API Routes
 
@@ -452,6 +477,7 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 | `/api/tags`                           | GET, POST          | List/create tags (includes seriesCount)                                                                          |
 | `/api/tags/[id]`                      | DELETE             | Delete tag                                                                                                       |
 | `/api/export/airtable`                | GET                | CSV download (Airtable format)                                                                                   |
+| `/api/insights`                       | GET                | Every Insights figure (`?tz=` = the viewer's time zone for dated reads)                                          |
 | `/api/health`                         | GET                | Health check (public)                                                                                            |
 | `/api/logout`                         | POST               | Clear session cookie                                                                                             |
 
@@ -481,6 +507,7 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-16 | **B3 Field Mode 1 — "Do I own this?"** (branch `feature/field-mode`): `/field` search (prefix / word / initials / anywhere, Thai OK, watchlist when empty) → series view with Next to buy, volume tiles 1…latest (missing gaps, copies, A/H location, ✓ read), extras; `?series=` URL for the back button; fresh queries (refetch on focus); sidebar link. Pure `$lib/field/logic`. Tests 231 → 246.                                                                                                                                                                                             |
 | 2026-10-16 | **Insights I6 — Pace & bookfair funnel:** purchase → finish median + banded histogram (dated reads only; empty state until 5+), per-fair haul by reading state with read % and spend. **Insights I1–I6 built** inside the timebox. Tests 226 → 231.                                                                                                                                                                                                                                                                                                                                              |
 | 2026-10-16 | **Insights I5 — Spending:** spent, sitting unread, cost per book read, average price by type; spent per month; by-source table (books, spent, average). "Hide ฿" masks every amount (tiles, tables, chart axis and tooltips). Tests 221 → 226.                                                                                                                                                                                                                                                                                                                                                   |
 | 2026-10-16 | **Insights I4 — Tags & completion:** books per tag split read / not yet; series completion (finished / in progress / not started / abandoned) by tag and by publisher as 100% bars. Tests 215 → 221.                                                                                                                                                                                                                                                                                                                                                                                             |
