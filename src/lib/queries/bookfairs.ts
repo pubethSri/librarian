@@ -1,5 +1,6 @@
 import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 import type {
+	Bookfair,
 	BookfairWithCount,
 	BookfairDetail,
 	CreateBookfairPayload,
@@ -84,11 +85,13 @@ export function createBookfairUpdateMutation() {
 				const err = await res.json().catch(() => ({}));
 				throw new Error(err.message || 'Failed to update bookfair');
 			}
-			return res.json();
+			return res.json() as Promise<Bookfair & { movedBooks: number }>;
 		},
-		onSuccess: (_data: unknown, variables: UpdateBookfairPayload & { id: number }) => {
+		onSuccess: (data, variables: UpdateBookfairPayload & { id: number }) => {
 			queryClient.invalidateQueries({ queryKey: ['bookfairs'] });
 			queryClient.invalidateQueries({ queryKey: ['bookfairs', variables.id] });
+			// Moved purchase dates show up in every book list
+			if (data.movedBooks > 0) queryClient.invalidateQueries({ queryKey: ['books'] });
 		}
 	}));
 }

@@ -192,7 +192,10 @@ export type CreateBookfairPayload = {
 	location?: string;
 };
 
-export type UpdateBookfairPayload = Partial<CreateBookfairPayload>;
+export type UpdateBookfairPayload = Partial<CreateBookfairPayload> & {
+	/** When the date changes: move linked books still dated the old day */
+	moveBookDates?: boolean;
+};
 
 // ─── Reading Payloads ───────────────────────────────────────────────────────
 
