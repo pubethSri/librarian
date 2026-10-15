@@ -140,7 +140,12 @@
 						type="single"
 						bind:value={
 							() => (sourceEventId ? String(sourceEventId) : ''),
-							(v) => (sourceEventId = v ? Number(v) : null)
+							(v) => {
+								sourceEventId = v ? Number(v) : null;
+								// Bought at the fair → default the date to the fair's date
+								const fair = bookfairsQuery.data?.find((bf) => bf.id === sourceEventId);
+								if (fair) boughtAt = fair.date;
+							}
 						}
 					>
 						<Select.Trigger class="w-full">
