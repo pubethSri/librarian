@@ -2,8 +2,10 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import SuggestInput from '$lib/components/forms/SuggestInput.svelte';
+	import { distinctNames } from '$lib/utils/suggest';
 	import { Label } from '$lib/components/ui/label';
-	import { createBookfairUpdateMutation } from '$lib/queries/bookfairs';
+	import { createBookfairUpdateMutation, createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import type { Bookfair } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 
@@ -20,6 +22,9 @@
 	let name = $state(bookfair.name);
 	let date = $state(bookfair.date);
 	let location = $state(bookfair.location || '');
+
+	const bookfairsQuery = createBookfairsListQuery();
+	const locations = $derived(distinctNames((bookfairsQuery.data ?? []).map((f) => f.location)));
 
 	// Sync when bookfair prop changes
 	$effect(() => {
@@ -79,7 +84,7 @@
 			</div>
 			<div class="space-y-2">
 				<Label for="edit-bf-location">Location</Label>
-				<Input id="edit-bf-location" bind:value={location} placeholder="Optional" />
+				<SuggestInput id="edit-bf-location" bind:value={location} options={locations} />
 			</div>
 		</div>
 

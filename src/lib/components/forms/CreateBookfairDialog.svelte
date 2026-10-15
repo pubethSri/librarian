@@ -3,7 +3,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { createBookfairMutation } from '$lib/queries/bookfairs';
+	import SuggestInput from '$lib/components/forms/SuggestInput.svelte';
+	import { createBookfairMutation, createBookfairsListQuery } from '$lib/queries/bookfairs';
+	import { nextEditions } from '$lib/utils/bookfairNames';
+	import { distinctNames } from '$lib/utils/suggest';
 	import { toast } from 'svelte-sonner';
 
 	type Props = {
@@ -17,6 +20,18 @@
 	let name = $state('');
 	let date = $state(new Date().toISOString().split('T')[0]);
 	let location = $state('');
+
+	// Suggestions from the fairs already logged: each recurring event's next
+	// edition (nearest the chosen date first), and every location used so far
+	const bookfairsQuery = createBookfairsListQuery();
+	const editions = $derived(nextEditions(bookfairsQuery.data ?? [], date));
+	const locations = $derived(distinctNames((bookfairsQuery.data ?? []).map((f) => f.location)));
+
+	/** Picking a next edition also fills in where that event was last held */
+	function handleNamePick(picked: string) {
+		const edition = editions.find((e) => e.name === picked);
+		if (edition?.location && !location.trim()) location = edition.location;
+	}
 
 	function resetForm() {
 		name = '';
@@ -67,7 +82,14 @@
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
 				<Label for="bf-name">Event Name *</Label>
-				<Input id="bf-name" bind:value={name} placeholder="e.g. Big Bad Wolf 2026" />
+				<SuggestInput
+					id="bf-name"
+					bind:value={name}
+					options={editions.map((e) => e.name)}
+					placeholder="e.g. Big Bad Wolf 2026"
+					snap={false}
+					onpick={handleNamePick}
+				/>
 			</div>
 			<div class="space-y-2">
 				<Label for="bf-date">Date *</Label>
@@ -75,7 +97,7 @@
 			</div>
 			<div class="space-y-2">
 				<Label for="bf-location">Location</Label>
-				<Input id="bf-location" bind:value={location} placeholder="Optional" />
+				<SuggestInput id="bf-location" bind:value={location} options={locations} />
 			</div>
 		</div>
 
