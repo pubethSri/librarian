@@ -453,6 +453,32 @@ describe('expandVolumeRange', () => {
 		});
 	});
 
+	it('requires a bookfair event when the source is Bookfair', () => {
+		expect(expandVolumeRange({ ...rangeInput, defaults: { source: 'bookfair' } })).toEqual({
+			ok: false,
+			error: 'Pick which bookfair'
+		});
+		const linked = expandVolumeRange({
+			...rangeInput,
+			defaults: { source: 'bookfair', sourceEventId: 5, boughtAt: '2025-10-12' }
+		});
+		expect(linked.ok).toBe(true);
+	});
+
+	it('applies form purchase fields outside a bookfair scope', () => {
+		const result = expandVolumeRange({
+			...rangeInput,
+			defaults: { source: 'bookstore', boughtAt: '2026-10-15' }
+		});
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.entries[0]).toMatchObject({
+			source: 'bookstore',
+			sourceEventId: undefined,
+			boughtAt: '2026-10-15'
+		});
+	});
+
 	it('keeps a zero price, and treats a blank or null price as untracked', () => {
 		const zero = expandVolumeRange({ ...rangeInput, price: 0 });
 		expect(zero.ok).toBe(true);

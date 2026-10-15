@@ -11,7 +11,7 @@ import {
 	type StagedBookEntry
 } from '$lib/types';
 import { applyUnifiedFilter, type UnifiedFilterState } from '$lib/components/filterEngine';
-import type { BookfairDefaults, BulkAction, Condition, PreviewRow, SeriesMeta } from './types';
+import type { BulkAction, Condition, PreviewRow, PurchaseFields, SeriesMeta } from './types';
 
 // ─── Display helpers ────────────────────────────────────────────────────────
 
@@ -219,7 +219,8 @@ export type ExpandVolumeRangeInput = {
 	volumeTo: number;
 	price: string | number | null;
 	location: BookLocation;
-	defaults: BookfairDefaults | null;
+	/** Source, event and date: the bookfair scope's defaults, or the form's own */
+	defaults: PurchaseFields | null;
 	/** Every owned book (not just the scoped ones), for duplicate detection */
 	existing: BookListItem[];
 	staged: StagedBookEntry[];
@@ -256,6 +257,10 @@ export function expandVolumeRange(input: ExpandVolumeRangeInput): ExpandVolumeRa
 	}
 	if (volumeTo < volumeFrom) return { ok: false, error: 'End volume must be ≥ start volume' };
 	if (volumeTo - volumeFrom + 1 > 50) return { ok: false, error: 'Maximum 50 volumes per batch' };
+	// A bookfair source must say which fair
+	if (defaults?.source === 'bookfair' && !defaults.sourceEventId) {
+		return { ok: false, error: 'Pick which bookfair' };
+	}
 
 	// A blank price means "not tracked"; zero is a real price (a free book)
 	const parsedPrice = price === '' || price === null ? undefined : Number(price);

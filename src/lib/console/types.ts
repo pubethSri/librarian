@@ -12,6 +12,16 @@ import type {
 export type ScopeType = 'all' | 'bookfair' | 'series';
 
 /**
+ * Where and when staged books were bought. Comes from the bookfair scope
+ * (see BookfairDefaults) or, outside it, from the Add Books form.
+ */
+export type PurchaseFields = {
+	source?: BookSource;
+	sourceEventId?: number;
+	boughtAt?: string;
+};
+
+/**
  * Field defaults derived from a bookfair-scoped Console session. Location is
  * not among them: the Add Books form owns it (defaulting to Apartment).
  */
