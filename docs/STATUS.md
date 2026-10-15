@@ -37,6 +37,19 @@
 | B6    | Deploy on the laptop (Tailscale)                             | ⬜                                  |
 | B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                  |
 
+### Insights progress (I1–I6, branch `feature/insights`)
+
+Timebox: through **Oct 17** (user's call 2026-10-16); whatever is done then ships and B3 starts. Cut order if short: I6 → I4 → I5.
+
+| #   | Item                                                    | Status                                 |
+| --- | ------------------------------------------------------- | -------------------------------------- |
+| I1  | Foundation (`/api/insights`, `$lib/insights`, overview) | ✅ Done (Claude-checked on scratch DB) |
+| I2  | Backlog (tsundoku)                                      | ⬜ Next                                |
+| I3  | Collection growth                                       | ⬜                                     |
+| I4  | Tags & completion                                       | ⬜                                     |
+| I5  | Spending                                                | ⬜                                     |
+| I6  | Reading pace & bookfair funnel                          | ⬜                                     |
+
 - **Direction reset 2026-10-13:** Activity Log dropped; old feature-brainstorm items triaged (see Direction Decisions below and `ROADMAP.md` → "Not adopted").
 
 ### Phase 3 progress
@@ -355,6 +368,15 @@ Requested while backfilling real data; each was browser-checked by Claude on the
   - **Read dates are not real.** All 241 dated reads have `finished_at` on **2026-10-15** (188 imported rows marked read during the backfill, 53 rows created that day). The per-book status control stamps "now" by design (B1), so backfilling through it dated every read to the backfill day, against the rule "backfilled reads carry no dates". Decide before any date-based reading insight (recommended: clear those dates). Purchase dates and prices are real.
 - **Extras in insights:** an extra is a real book — it counts in owned / bought / spent / read totals. It never counts as a "latest volume" or a next-volume gap (`latestVolume` in `$lib/utils/volume`).
 
+### Insights Decisions (2026-10-16)
+
+- **Backfill read dates cleared** (user's call). All 241 dated reading rows were stamped during the backfill session (2026-10-15 19:16 → 10-16 00:33 Bangkok); their `started_at` / `finished_at` were set to null in one transaction on `local`, after a backup (`temp/backups/local-before-insights-20261016-0053.dump`). There are now **0 dated reads**: every rate / pace figure shows an empty state until reads are marked through the per-book control (which dates them).
+- **Architecture:** `GET /api/insights?tz=<IANA zone>` loads five flat tables (`$lib/server/insights.ts`) and returns `computeInsights()` from the pure, tested `$lib/insights/`. Query key `['insights']` with `staleTime: 0` (refetch every visit) instead of adding `['insights']` to every mutation's invalidation. Purchase days bucket by `dayOf` (UTC calendar day); dated reads by the viewer's time zone (the `tz` param; unknown → UTC).
+- **Read state for insights:** a book is **Read** once read at least once (a re-read stays Read); otherwise its current status (Reading / Dropped / Unread). The **unread pile** = Unread books.
+- **Series status Dropped = "I dropped it"** (user's answer): counts as _abandoned_ in completion insights.
+- **"Hide ฿" (the coward toggle), flipped by the user:** money is **shown** by default; the switch hides every baht figure on the page for that visit (not remembered).
+- **Charts:** Chart.js 4 through `use:chart` (`$lib/actions/chart.ts`), configs from `$lib/components/insights/charts.ts` (thin bars, 2px stack gaps, hairline grid, legend only for ≥ 2 series, **never a second y-axis**). Colours checked with the dataviz palette validator: read states Read blue / Reading aqua / Dropped orange / Unread neutral grey (deliberately recessive), series types violet / yellow — no hue means two things. Every chart has a "Show data" table.
+
 ## Environment
 
 - **Windows 11** since 2026-10-13 (was Arch Linux). Repo at `C:\librarian`; `core.autocrlf=input` + `.gitattributes` force LF. Shell: PowerShell, Git Bash also available.
@@ -446,4 +468,5 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-16 | **Insights I1** (branch `feature/insights`): backfill read dates cleared (241 rows, backed up first); `GET /api/insights` over pure `$lib/insights` (common facts, money coverage, month/time-zone helpers); `use:chart` Chart.js action + chart builders; `/insights` overview tiles, books by type × read state, "Hide ฿". Tests 177 → 198.                                                                                                                                                                                                                                                    |
 | 2026-10-16 | Backfill done; real DB backed up (`local-end-of-backfill-20261016-0038.dump`); `bookfair-release` merged into `main` and pushed. Plan change: Insights (I1–I6) pulled forward ahead of B3–B7. Found: all 241 read dates are 2026-10-15 backfill stamps (decide before date-based insights).                                                                                                                                                                                                                                                                                                      |

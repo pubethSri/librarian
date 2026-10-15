@@ -237,3 +237,47 @@ export type StagedEdit = {
 	oldValue: unknown;
 	newValue: unknown;
 };
+
+// ─── Insights ────────────────────────────────────────────────────────────────
+// Returned by GET /api/insights; computed by the pure $lib/insights module.
+
+/**
+ * A money figure. A price is a lower bound and an unpriced book is never ฿0,
+ * so every total says how many of the books it covers.
+ */
+export type Money = {
+	/** Sum of the priced books */
+	total: number;
+	/** How many books had a price */
+	priced: number;
+	/** How many books the figure is about */
+	of: number;
+};
+
+/**
+ * Where a book stands for insights: Read once read at least once (even while
+ * being re-read), otherwise its current reading status.
+ */
+export type ReadState = 'read' | 'reading' | 'dropped' | 'unread';
+
+export type ReadStateCounts = Record<ReadState, number>;
+
+export type InsightsOverview = {
+	books: number;
+	series: number;
+	extras: number;
+	readState: ReadStateCounts;
+	byType: { type: SeriesType; counts: ReadStateCounts }[];
+	spent: Money;
+	/** Books with no purchase date — left out of every time series */
+	undatedPurchases: number;
+	/** Read rows with a finish date — the only reads rates and pace can use */
+	datedReads: number;
+};
+
+export type Insights = {
+	generatedAt: string;
+	/** The time zone dated reads were bucketed in */
+	timeZone: string;
+	overview: InsightsOverview;
+};
