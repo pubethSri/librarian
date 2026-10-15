@@ -12,7 +12,7 @@
 //   means two things on one page.
 
 import type { ChartConfiguration, TooltipItem } from 'chart.js';
-import type { ReadState, SeriesType } from '$lib/types';
+import type { CompletionState, ReadState, SeriesType } from '$lib/types';
 
 export const INK = '#0a0a0a';
 export const MUTED = '#737373';
@@ -27,6 +27,26 @@ export const READ_STATE_COLORS: Record<ReadState, string> = {
 	unread: '#d4d4d8',
 	dropped: '#eb6834'
 };
+
+/** Series completion reuses the read-state hues: same meaning, same colour */
+export const COMPLETION_COLORS: Record<CompletionState, string> = {
+	finished: READ_STATE_COLORS.read,
+	inProgress: READ_STATE_COLORS.reading,
+	notStarted: READ_STATE_COLORS.unread,
+	abandoned: READ_STATE_COLORS.dropped
+};
+
+export const COMPLETION_LABELS: Record<CompletionState, string> = {
+	finished: 'Finished',
+	inProgress: 'In progress',
+	notStarted: 'Not started',
+	abandoned: 'Abandoned'
+};
+
+/** Height for a horizontal bar chart with n rows */
+export function rowsHeight(rows: number): number {
+	return Math.max(120, rows * 26 + 64);
+}
 
 export const TYPE_COLORS: Record<SeriesType, string> = {
 	light_novel: '#4a3aa7',

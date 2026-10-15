@@ -327,6 +327,35 @@ export type InsightsGrowth = {
 	undated: number;
 };
 
+/**
+ * Where a series stands: Abandoned when its status is Dropped (the user
+ * dropped it); otherwise Finished when every owned book is read, In progress
+ * when any is read / reading / dropped, else Not started.
+ */
+export type CompletionState = 'finished' | 'inProgress' | 'notStarted' | 'abandoned';
+
+export type CompletionCounts = Record<CompletionState, number>;
+
+/** One tag or publisher */
+export type GroupStats = {
+	name: string;
+	series: number;
+	books: number;
+	/** Books read at least once */
+	readBooks: number;
+	/** Series per completion state */
+	completion: CompletionCounts;
+};
+
+export type InsightsTags = {
+	/** Most books first */
+	tags: GroupStats[];
+	/** Series without any tag */
+	untaggedSeries: number;
+	/** Most books first; one-series publishers fold into "Other" (last) */
+	publishers: GroupStats[];
+};
+
 export type Insights = {
 	generatedAt: string;
 	/** The time zone dated reads were bucketed in */
@@ -334,4 +363,5 @@ export type Insights = {
 	overview: InsightsOverview;
 	backlog: InsightsBacklog;
 	growth: InsightsGrowth;
+	tags: InsightsTags;
 };

@@ -11,9 +11,12 @@
 	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import {
 		barChart,
+		COMPLETION_COLORS,
+		COMPLETION_LABELS,
 		lineChart,
 		NEUTRAL,
 		READ_STATE_COLORS,
+		rowsHeight,
 		TYPE_COLORS
 	} from '$lib/components/insights/charts';
 	import {
@@ -30,6 +33,8 @@
 	import {
 		READING_STATUS_LABELS,
 		SERIES_TYPE_LABELS,
+		type CompletionState,
+		type GroupStats,
 		type InsightsBacklog,
 		type ReadState
 	} from '$lib/types';
@@ -42,8 +47,35 @@
 
 	const sections = [
 		{ id: 'backlog', label: 'Backlog' },
-		{ id: 'growth', label: 'Growth' }
+		{ id: 'growth', label: 'Growth' },
+		{ id: 'tags', label: 'Tags & completion' }
 	];
+
+	const COMPLETION_STACK: readonly CompletionState[] = [
+		'finished',
+		'inProgress',
+		'notStarted',
+		'abandoned'
+	];
+
+	const percentOf = (part: number, whole: number) =>
+		whole > 0 ? Math.round((part / whole) * 1000) / 10 : 0;
+
+	/** Each group's series split by completion, as % of its series */
+	function completionChart(groups: readonly GroupStats[]) {
+		return barChart({
+			labels: groups.map((g) => `${g.name} (${g.series})`),
+			series: COMPLETION_STACK.map((state) => ({
+				label: COMPLETION_LABELS[state],
+				data: groups.map((g) => percentOf(g.completion[state], g.series)),
+				color: COMPLETION_COLORS[state]
+			})),
+			stacked: true,
+			horizontal: true,
+			max: 100,
+			format: (v) => `${v}%`
+		});
+	}
 
 	// Stacking order: the finished part first, the pile last
 	const STACK: readonly ReadState[] = ['read', 'reading', 'dropped', 'unread'];
@@ -107,6 +139,31 @@
 				})
 			: null
 	);
+
+	const tagReadChart = $derived(
+		data
+			? barChart({
+					labels: data.tags.tags.map((t) => t.name),
+					series: [
+						{
+							label: 'Read',
+							data: data.tags.tags.map((t) => t.readBooks),
+							color: READ_STATE_COLORS.read
+						},
+						{
+							label: 'Not read yet',
+							data: data.tags.tags.map((t) => t.books - t.readBooks),
+							color: READ_STATE_COLORS.unread
+						}
+					],
+					stacked: true,
+					horizontal: true
+				})
+			: null
+	);
+
+	const tagCompletionChart = $derived(data ? completionChart(data.tags.tags) : null);
+	const publisherCompletionChart = $derived(data ? completionChart(data.tags.publishers) : null);
 
 	function clearText(b: InsightsBacklog): { value: string; sub: string } {
 		switch (b.clear.kind) {
@@ -337,6 +394,45 @@
 			{:else}
 				<p class="text-sm text-muted-foreground">No dated purchases yet.</p>
 			{/if}
+		</InsightSection>
+
+		<InsightSection
+			id="tags"
+			title="Tags & completion"
+			description="What the collection is made of, how much of each kind gets read, and how series end up. A series counts under every tag it has."
+		>
+			{@const t = data.tags}
+			{#if tagReadChart && t.tags.length > 0}
+				<ChartCard
+					title="Books per tag, read vs not yet"
+					config={tagReadChart}
+					height={rowsHeight(t.tags.length)}
+					note={t.untaggedSeries > 0
+						? `${plural(t.untaggedSeries, 'series', 'series')} without a tag not shown.`
+						: null}
+				/>
+			{:else}
+				<p class="text-sm text-muted-foreground">No tagged series yet.</p>
+			{/if}
+
+			<div class="grid gap-10 xl:grid-cols-2">
+				{#if tagCompletionChart && t.tags.length > 0}
+					<ChartCard
+						title="Series completion by tag"
+						description="Share of each tag's series (count in brackets). Abandoned = series you dropped."
+						config={tagCompletionChart}
+						height={rowsHeight(t.tags.length)}
+					/>
+				{/if}
+				{#if publisherCompletionChart && t.publishers.length > 0}
+					<ChartCard
+						title="Series completion by publisher"
+						description="Publishers with a single series are grouped under Other."
+						config={publisherCompletionChart}
+						height={rowsHeight(t.publishers.length)}
+					/>
+				{/if}
+			</div>
 		</InsightSection>
 	{/if}
 </div>
