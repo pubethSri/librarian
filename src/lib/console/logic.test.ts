@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
 	buildPreviewRows,
 	bulkConfirmText,
+	dayOf,
+	formatDay,
+	pendingPurchaseDay,
+	UNKNOWN_DATE,
 	expandVolumeRange,
 	filterPreviewRows,
 	formatPrice,
@@ -232,6 +236,36 @@ describe('bulk edit — reading status and price (B2)', () => {
 		).toBe(
 			'Apply "Link to bookfair" (มหกรรมหนังสือระดับชาติ 30) to 3 books? Purchase dates will be set to 2025-10-12. This cannot be undone.'
 		);
+	});
+
+	it('Set purchase date: a day, or Unknown to clear', () => {
+		expect(toBulkUpdates('boughtAt', '2025-10-12')).toEqual({ boughtAt: '2025-10-12' });
+		expect(toBulkUpdates('boughtAt', UNKNOWN_DATE)).toEqual({ boughtAt: null });
+		expect(getActionLabel('boughtAt', '2025-10-12')).toBe('Oct 12, 2025');
+		expect(getActionLabel('boughtAt', UNKNOWN_DATE)).toBe('Unknown');
+	});
+
+	it('pendingPurchaseDay: which day an edit sets, undefined when dates are untouched', () => {
+		expect(pendingPurchaseDay('boughtAt', '2025-10-12')).toBe('2025-10-12');
+		expect(pendingPurchaseDay('boughtAt', UNKNOWN_DATE)).toBeNull();
+		expect(pendingPurchaseDay('bookfair', '5', { fairDate: '2025-10-12' })).toBe('2025-10-12');
+		expect(pendingPurchaseDay('bookfair', '5', { fairDate: null })).toBeUndefined();
+		expect(pendingPurchaseDay('price', '175')).toBeUndefined();
+	});
+
+	it('formats purchase days by calendar day, never shifted by a timezone', () => {
+		expect(formatDay('2023-12-10T00:00:00.000Z')).toBe('Dec 10, 2023');
+		expect(formatDay('2025-10-12')).toBe('Oct 12, 2025');
+		expect(formatDay(null)).toBe('—');
+		expect(dayOf('2023-12-10T00:00:00.000Z')).toBe('2023-12-10');
+	});
+
+	it('carries the purchase date onto preview rows', () => {
+		const rows = buildPreviewRows(
+			[book({ boughtAt: '2023-12-10T00:00:00.000Z' })],
+			[staged({ volumeNumber: 2, boughtAt: '2025-10-12' })]
+		);
+		expect(rows.map((r) => r.boughtAt)).toEqual(['2023-12-10T00:00:00.000Z', '2025-10-12']);
 	});
 
 	it('only "Link to bookfair" refuses to default to every book in scope', () => {

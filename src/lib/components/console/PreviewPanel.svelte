@@ -11,8 +11,11 @@
 	import {
 		buildPreviewRows,
 		filterPreviewRows,
+		formatDay,
 		formatPrice,
 		getActionLabel,
+		dayOf,
+		pendingPurchaseDay,
 		isFilterActive,
 		rangeIds
 	} from '$lib/console/logic';
@@ -74,6 +77,12 @@
 		bulk.action === 'bookfair'
 			? bookfairsQuery.data?.find((bf) => String(bf.id) === bulk.value)
 			: undefined
+	);
+	/** The purchase day a pending edit would set (undefined: dates untouched) */
+	const newDay = $derived(
+		pendingPurchaseDay(bulk.action, bulk.value, {
+			fairDate: bulk.setFairDate ? linkFair?.date : null
+		})
 	);
 	const valueSuggestions = $derived<Record<string, string[]>>({
 		'tag:': (tagsQuery.data ?? []).map((t) => t.name),
@@ -173,6 +182,7 @@
 						<Table.Head class="w-16 text-center">Vol.</Table.Head>
 						<Table.Head class="w-24">Location</Table.Head>
 						<Table.Head class="w-24">Reading</Table.Head>
+						<Table.Head class="w-28">Purchased</Table.Head>
 						<Table.Head class="w-24 text-right">Price</Table.Head>
 						<Table.Head class="w-10"></Table.Head>
 					</Table.Row>
@@ -258,6 +268,16 @@
 										<ArrowRight class="h-2.5 w-2.5" />
 										<span class="text-xs font-medium"
 											>{getActionLabel('readingStatus', bulk.value)}</span
+										>
+									</span>
+								{/if}
+							</Table.Cell>
+							<Table.Cell class="py-2 text-sm whitespace-nowrap text-muted-foreground tabular-nums">
+								{formatDay(row.boughtAt)}
+								{#if isAffected && newDay !== undefined && dayOf(row.boughtAt) !== newDay}
+									<span class="ml-1 inline-flex items-center gap-0.5 text-amber-600">
+										<ArrowRight class="h-2.5 w-2.5" />
+										<span class="text-xs font-medium">{newDay ? formatDay(newDay) : 'Unknown'}</span
 										>
 									</span>
 								{/if}

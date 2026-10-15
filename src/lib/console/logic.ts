@@ -20,6 +20,45 @@ export function formatPrice(price: string | number | null | undefined): string {
 	return `฿${Number(price).toLocaleString()}`;
 }
 
+/**
+ * The calendar day of a purchase date, `YYYY-MM-DD`. Dates are stored as UTC
+ * midnight, so the first ten characters of the ISO string are the day —
+ * reading them avoids a timezone shifting the display by one day.
+ */
+export function dayOf(date: string | null | undefined): string | null {
+	return date ? date.slice(0, 10) : null;
+}
+
+/** A purchase date for display, e.g. "Oct 12, 2025"; "—" when unknown */
+export function formatDay(date: string | null | undefined): string {
+	const day = dayOf(date);
+	if (!day) return '—';
+	return new Date(`${day}T00:00:00Z`).toLocaleDateString('en-US', {
+		year: 'numeric',
+		month: 'short',
+		day: 'numeric',
+		timeZone: 'UTC'
+	});
+}
+
+/** Bulk-edit value meaning "clear the purchase date" */
+export const UNKNOWN_DATE = 'unknown';
+
+/**
+ * The purchase date a pending bulk edit would set: a `YYYY-MM-DD` day, null
+ * to clear it, or undefined when the edit leaves dates alone. One source for
+ * the preview arrow, the PATCH body and the confirm text.
+ */
+export function pendingPurchaseDay(
+	action: BulkAction,
+	value: string,
+	options: { fairDate?: string | null } = {}
+): string | null | undefined {
+	if (action === 'boughtAt') return value === UNKNOWN_DATE ? null : dayOf(value);
+	if (action === 'bookfair' && options.fairDate) return dayOf(options.fairDate);
+	return undefined;
+}
+
 /** Display name of each bulk action (confirm dialog) */
 export const BULK_ACTION_LABELS: Record<Exclude<BulkAction, ''>, string> = {
 	location: 'Change location',
@@ -27,7 +66,8 @@ export const BULK_ACTION_LABELS: Record<Exclude<BulkAction, ''>, string> = {
 	isDraft: 'Set draft status',
 	readingStatus: 'Set reading status',
 	price: 'Set price',
-	bookfair: 'Link to bookfair'
+	bookfair: 'Link to bookfair',
+	boughtAt: 'Set purchase date'
 };
 
 /**
@@ -66,6 +106,7 @@ export function getActionLabel(action: BulkAction, value: string): string {
 		return READING_STATUS_LABELS[value as keyof typeof READING_STATUS_LABELS] ?? value;
 	}
 	if (action === 'price') return formatPrice(value);
+	if (action === 'boughtAt') return value === UNKNOWN_DATE ? 'Unknown' : formatDay(value);
 	return value;
 }
 
@@ -189,6 +230,7 @@ export function toBulkUpdates(
 		updates.sourceEventId = Number(value);
 		if (options.fairDate) updates.boughtAt = options.fairDate;
 	}
+	if (action === 'boughtAt') updates.boughtAt = pendingPurchaseDay(action, value);
 	return updates;
 }
 
@@ -342,6 +384,7 @@ export function buildPreviewRows(
 		source: b.source,
 		sourceEventId: b.sourceEventId,
 		price: b.price,
+		boughtAt: b.boughtAt,
 		isDraft: b.isDraft,
 		readingStatus: b.readingStatus,
 		seriesTags: b.seriesTags ?? [],
@@ -356,6 +399,7 @@ export function buildPreviewRows(
 		source: e.source ?? null,
 		sourceEventId: e.sourceEventId ?? null,
 		price: e.price != null ? String(e.price) : null,
+		boughtAt: e.boughtAt ?? null,
 		isDraft: e.isDraft,
 		readingStatus: 'unread',
 		seriesTags: seriesById.get(e.seriesId)?.tags ?? [],

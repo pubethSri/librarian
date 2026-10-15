@@ -9,7 +9,7 @@
 	import SeriesSearch from '$lib/components/forms/SeriesSearch.svelte';
 	import { Switch } from '$lib/components/ui/switch';
 	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
-	import { requiresExplicitTarget } from '$lib/console/logic';
+	import { formatDay, requiresExplicitTarget, UNKNOWN_DATE } from '$lib/console/logic';
 	import { READING_STATUS_LABELS, type ReadingStatus } from '$lib/types';
 
 	let {
@@ -71,6 +71,8 @@
 					Set price
 				{:else if bulk.action === 'bookfair'}
 					Link to bookfair
+				{:else if bulk.action === 'boughtAt'}
+					Set purchase date
 				{:else}
 					Select action...
 				{/if}
@@ -82,6 +84,7 @@
 				<Select.Item value="readingStatus" label="Set reading status" />
 				<Select.Item value="price" label="Set price" />
 				<Select.Item value="bookfair" label="Link to bookfair" />
+				<Select.Item value="boughtAt" label="Set purchase date" />
 			</Select.Content>
 		</Select.Root>
 	</div>
@@ -167,6 +170,41 @@
 				</div>
 				<p class="text-xs text-muted-foreground">
 					Sets the source to Bookfair and links the books to this fair.
+				</p>
+			{:else if bulk.action === 'boughtAt'}
+				<div class="flex items-center gap-2">
+					<Input
+						type="date"
+						class="h-9"
+						value={bulk.value === UNKNOWN_DATE ? '' : bulk.value}
+						oninput={(e) => (bulk.value = e.currentTarget.value)}
+					/>
+					<Button
+						type="button"
+						variant="outline"
+						class="h-9 shrink-0"
+						onclick={() => {
+							const d = new Date();
+							bulk.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+						}}
+					>
+						Today
+					</Button>
+					<Button
+						type="button"
+						variant={bulk.value === UNKNOWN_DATE ? 'default' : 'outline'}
+						class="h-9 shrink-0"
+						onclick={() => (bulk.value = UNKNOWN_DATE)}
+					>
+						Unknown
+					</Button>
+				</div>
+				<p class="text-xs text-muted-foreground">
+					{bulk.value === UNKNOWN_DATE
+						? 'Clears the purchase date (date unknown).'
+						: bulk.value
+							? `Sets the purchase date to ${formatDay(bulk.value)}.`
+							: 'Pick a date, or Unknown to clear it.'}
 				</p>
 			{:else if bulk.action === 'price'}
 				<Input

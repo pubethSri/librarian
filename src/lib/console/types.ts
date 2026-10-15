@@ -40,6 +40,7 @@ export type BulkAction =
 	| 'readingStatus'
 	| 'price'
 	| 'bookfair'
+	| 'boughtAt'
 	| '';
 export type ConditionColumn = 'series' | 'volume' | 'reading' | 'location' | 'source' | 'isDraft';
 /** The ordering operators apply to the numeric `volume` column only */
@@ -68,6 +69,8 @@ export type PreviewRow = {
 	/** The bookfair the book is linked to, if any */
 	sourceEventId: number | null;
 	price: string | null;
+	/** Purchase date (ISO timestamp or YYYY-MM-DD), null when unknown */
+	boughtAt: string | null;
 	isDraft: boolean;
 	/** Current reading status; staged rows are Unread */
 	readingStatus: ReadingStatus;
