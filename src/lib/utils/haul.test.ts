@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatVolumeRanges, groupHaulBySeries } from './haul';
+import { groupHaulBySeries, volumeChips } from './haul';
 import type { BookListItem } from '$lib/types';
 
 function book(overrides: Partial<BookListItem> = {}): BookListItem {
@@ -24,19 +24,22 @@ function book(overrides: Partial<BookListItem> = {}): BookListItem {
 	};
 }
 
-describe('formatVolumeRanges', () => {
-	it('collapses consecutive whole volumes into ranges', () => {
-		expect(formatVolumeRanges([3, 1, 2, 5])).toBe('1–3, 5');
-		expect(formatVolumeRanges([7])).toBe('7');
-		expect(formatVolumeRanges([])).toBe('');
+describe('volumeChips', () => {
+	it('lists each volume once, in order, half volumes included', () => {
+		expect(volumeChips([3, 1, 4.5, 2])).toEqual([
+			{ volume: 1, copies: 1 },
+			{ volume: 2, copies: 1 },
+			{ volume: 3, copies: 1 },
+			{ volume: 4.5, copies: 1 }
+		]);
+		expect(volumeChips([])).toEqual([]);
 	});
 
-	it('keeps half volumes standalone and breaks ranges around them', () => {
-		expect(formatVolumeRanges([4, 4.5, 5, 6])).toBe('4, 4.5, 5–6');
-	});
-
-	it('lists a duplicated volume once', () => {
-		expect(formatVolumeRanges([1, 1, 2])).toBe('1–2');
+	it('counts duplicate copies of a volume', () => {
+		expect(volumeChips([2, 1, 2])).toEqual([
+			{ volume: 1, copies: 1 },
+			{ volume: 2, copies: 2 }
+		]);
 	});
 });
 
@@ -52,7 +55,7 @@ describe('groupHaulBySeries', () => {
 	it('makes one group per series, sorted by name, books by volume', () => {
 		expect(groups.map((g) => g.seriesShortName)).toEqual(['Mushoku', 'Zebra']);
 		expect(groups[0].books.map((b) => b.id)).toEqual([3, 4, 2]);
-		expect(groups[0].volumes).toBe('1–3');
+		expect(groups[0].volumes.map((c) => c.volume)).toEqual([1, 2, 3]);
 	});
 
 	it('sums only priced books and reports how many were priced', () => {

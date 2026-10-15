@@ -245,7 +245,20 @@
 										{g.books.length === 1 ? 'vol' : 'vols'}
 									</Badge>
 								</div>
-								<p class="mt-3 font-mono text-sm text-foreground tabular-nums">Vol. {g.volumes}</p>
+								<div class="mt-3 flex flex-wrap gap-1.5" aria-label="Volumes bought">
+									{#each g.volumes as chip (chip.volume)}
+										<span
+											class="inline-flex h-6 min-w-7 items-center justify-center rounded-md border border-border bg-muted/50 px-1.5 font-mono text-xs text-foreground tabular-nums"
+											title={chip.copies > 1
+												? `Vol. ${chip.volume} — ${chip.copies} copies`
+												: `Vol. ${chip.volume}`}
+										>
+											{chip.volume}{#if chip.copies > 1}<span class="ml-0.5 text-muted-foreground"
+													>×{chip.copies}</span
+												>{/if}
+										</span>
+									{/each}
+								</div>
 								<div
 									class="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground"
 								>

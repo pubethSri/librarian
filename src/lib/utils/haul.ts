@@ -4,33 +4,16 @@
 
 import type { BookListItem, BookLocation } from '$lib/types';
 
-/**
- * Compact volume list: consecutive whole volumes collapse into a range.
- * [1, 2, 3, 5] → "1–3, 5"; half volumes stand alone: [4, 4.5, 5] → "4, 4.5, 5".
- * Duplicates (two copies of a volume) are listed once.
- */
-export function formatVolumeRanges(volumes: readonly number[]): string {
-	const sorted = [...new Set(volumes)].sort((a, b) => a - b);
-	const parts: string[] = [];
-	let start: number | null = null;
-	let prev: number | null = null;
+/** One chip on a series card: a volume number and how many copies were bought */
+export type VolumeChip = { volume: number; copies: number };
 
-	const flush = () => {
-		if (start === null || prev === null) return;
-		parts.push(start === prev ? String(start) : `${start}–${prev}`);
-	};
-
-	for (const v of sorted) {
-		const continues =
-			prev !== null && Number.isInteger(v) && Number.isInteger(prev) && v === prev + 1;
-		if (!continues) {
-			flush();
-			start = v;
-		}
-		prev = v;
-	}
-	flush();
-	return parts.join(', ');
+/** Volumes in order, one entry each; a volume bought twice has copies: 2 */
+export function volumeChips(volumes: readonly number[]): VolumeChip[] {
+	const counts = new Map<number, number>();
+	for (const v of volumes) counts.set(v, (counts.get(v) ?? 0) + 1);
+	return [...counts.entries()]
+		.sort(([a], [b]) => a - b)
+		.map(([volume, copies]) => ({ volume, copies }));
 }
 
 export type HaulSeries = {
@@ -38,8 +21,7 @@ export type HaulSeries = {
 	seriesShortName: string;
 	seriesFullName: string;
 	books: BookListItem[];
-	/** e.g. "1–3, 5" */
-	volumes: string;
+	volumes: VolumeChip[];
 	/** Sum of the priced books — a lower bound when some are unpriced */
 	spent: number;
 	pricedCount: number;
@@ -67,7 +49,7 @@ export function groupHaulBySeries(books: readonly BookListItem[]): HaulSeries[] 
 				seriesShortName: sorted[0].seriesShortName,
 				seriesFullName: sorted[0].seriesFullName,
 				books: sorted,
-				volumes: formatVolumeRanges(sorted.map((b) => Number(b.volumeNumber))),
+				volumes: volumeChips(sorted.map((b) => Number(b.volumeNumber))),
 				spent: priced.reduce((sum, b) => sum + Number(b.price), 0),
 				pricedCount: priced.length,
 				locations
