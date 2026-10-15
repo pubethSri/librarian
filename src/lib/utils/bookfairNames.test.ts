@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextEditions, splitEdition } from './bookfairNames';
+import { fairNameSuggestions, splitEdition } from './bookfairNames';
 
 const WEEK = 'สัปดาห์หนังสือแห่งชาติ';
 const FEST = 'มหกรรมหนังสือระดับชาติ';
@@ -23,25 +23,24 @@ describe('splitEdition', () => {
 	});
 });
 
-describe('nextEditions', () => {
-	it('suggests one past the highest edition of each numbered event, with its last location', () => {
-		const names = nextEditions(fairs).map((e) => e.name);
-		expect(names).toContain(`${WEEK} 55`);
-		expect(names).toContain(`${FEST} 31`);
-		expect(names).toHaveLength(2); // "Comic Day" has no edition
-		expect(nextEditions(fairs).every((e) => e.location === 'QSNCC')).toBe(true);
+describe('fairNameSuggestions', () => {
+	it('suggests each event once, without its edition number, with its last location', () => {
+		const suggestions = fairNameSuggestions(fairs);
+		expect(suggestions.map((s) => s.name).sort()).toEqual(['Comic Day', FEST, WEEK].sort());
+		expect(suggestions.find((s) => s.name === WEEK)?.location).toBe('QSNCC');
+		expect(suggestions.find((s) => s.name === 'Comic Day')?.location).toBeNull();
 	});
 
 	it('puts the event usually held nearest the chosen month first', () => {
-		expect(nextEditions(fairs, '2026-10-20')[0].name).toBe(`${FEST} 31`);
-		expect(nextEditions(fairs, '2027-03-25')[0].name).toBe(`${WEEK} 55`);
+		expect(fairNameSuggestions(fairs, '2026-10-20')[0].name).toBe(FEST);
+		expect(fairNameSuggestions(fairs, '2027-03-25')[0].name).toBe(WEEK);
 	});
 
 	it('falls back to most recently held first without a date', () => {
-		expect(nextEditions(fairs)[0].name).toBe(`${WEEK} 55`);
+		expect(fairNameSuggestions(fairs)[0].name).toBe('Comic Day');
 	});
 
-	it('suggests nothing when no fair is numbered', () => {
-		expect(nextEditions([{ name: 'Comic Day', date: '2026-06-01', location: null }])).toEqual([]);
+	it('suggests nothing when no fair is logged', () => {
+		expect(fairNameSuggestions([])).toEqual([]);
 	});
 });

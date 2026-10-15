@@ -5,7 +5,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import SuggestInput from '$lib/components/forms/SuggestInput.svelte';
 	import { createBookfairMutation, createBookfairsListQuery } from '$lib/queries/bookfairs';
-	import { nextEditions } from '$lib/utils/bookfairNames';
+	import { fairNameSuggestions } from '$lib/utils/bookfairNames';
 	import { distinctNames } from '$lib/utils/suggest';
 	import { toast } from 'svelte-sonner';
 
@@ -21,16 +21,21 @@
 	let date = $state(new Date().toISOString().split('T')[0]);
 	let location = $state('');
 
-	// Suggestions from the fairs already logged: each recurring event's next
-	// edition (nearest the chosen date first), and every location used so far
+	// Suggestions from the fairs already logged: each event's name without its
+	// edition number (nearest the chosen date first), and every location used
 	const bookfairsQuery = createBookfairsListQuery();
-	const editions = $derived(nextEditions(bookfairsQuery.data ?? [], date));
+	const fairNames = $derived(fairNameSuggestions(bookfairsQuery.data ?? [], date));
 	const locations = $derived(distinctNames((bookfairsQuery.data ?? []).map((f) => f.location)));
 
-	/** Picking a next edition also fills in where that event was last held */
+	/**
+	 * Picking an event fills its name plus a space — focus stays in the field,
+	 * so the edition number is typed straight after — and, if Location is
+	 * empty, where that event was last held.
+	 */
 	function handleNamePick(picked: string) {
-		const edition = editions.find((e) => e.name === picked);
-		if (edition?.location && !location.trim()) location = edition.location;
+		name = `${picked} `;
+		const fair = fairNames.find((f) => f.name === picked);
+		if (fair?.location && !location.trim()) location = fair.location;
 	}
 
 	function resetForm() {
@@ -85,7 +90,7 @@
 				<SuggestInput
 					id="bf-name"
 					bind:value={name}
-					options={editions.map((e) => e.name)}
+					options={fairNames.map((f) => f.name)}
 					placeholder="e.g. Big Bad Wolf 2026"
 					snap={false}
 					onpick={handleNamePick}
