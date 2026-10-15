@@ -7,8 +7,18 @@
 
 - **Current version:** v0.3 — **in progress**, re-scoped as the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**; plan B1–B7 in `ROADMAP.md`.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** **Real-data backfill in progress** (you, on `localhost:5173`, also from a second PC over the LAN). It drove a round of Console / dialog improvements, each browser-checked by Claude on the scratch DB and used in the backfill: LAN fix, publisher + bookfair-name suggestions, New Series "Add volumes", app-wide Switch/tab state fix, Link to bookfair, Add Books Source + Purchase Date, Purchased column + bulk Set purchase date (details: Backfill-session Decisions 2026-10-15). Branch `bookfair-release` (`main` has everything up to B1).
-- **Next:** finish the backfill → B3/B4 Field Mode → B5 Hitlist → B6 deploy + hardening (hosting choice open: laptop + Tailscale vs Vercel + Neon) → B7 trial run → tag `v0.3`. `drizzle-zod` after the fair.
+- **Latest:** **Real-data backfill in progress** (you, on `localhost:5173`, also from a second PC over the LAN). It drove a round of Console / dialog / bookfair-page improvements, each browser-checked by Claude on the scratch DB and in use during the backfill — details in Backfill-session Decisions 2026-10-15 and the changelog.
+- **Branches:** `main` = everything up to **B1** (`87384cd`). `bookfair-release` = B2 + all backfill-session work (20 commits, not merged, not pushed). Merge it once you're happy with the backfill.
+- **Next:** finish the backfill → **B3/B4 Field Mode** → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. **Analytics/Insights is v0.4, after the fair** — the backfill is what makes it meaningful later.
+
+### Next session — start here
+
+1. **Read** this file's state block + Bookfair release progress, then `ROADMAP.md` → "Now — Bookfair release" and its **LAN / deploy audit** table. `CLAUDE.md` has the conventions (state variants, `newId()`, `SuggestInput`, purchase-date display, reading rules).
+2. **Ask first:** how did the backfill go — any friction? It decides the **spreadsheet-style preview editing** idea (ROADMAP → After the fair) and may add small Console fixes.
+3. **Then build B3** — Field Mode 1, "Do I own this?": mobile `/field`, type 2–3 letters → series → owned volumes with location, next volume highlighted. Then **B4** (quick add, choose the fair once, undo, minimal new series) **with audit #9** (cross-device staleness: refetch on focus and/or a server-side duplicate check — the phone and laptop will both be in use at the fair).
+4. **Open decisions:** (a) **B6 hosting** — laptop + Tailscale (decided 2026-10-13) vs Vercel Hobby + Neon Free (recommended 2026-10-15); decide before B6. (b) Spreadsheet-style preview editing — after the backfill.
+5. **Timeline:** fair opens **Oct 23** (attending 24–26); deploy by **Oct 20**; bookstore trial run Oct 21–22.
+6. **Working agreement:** Claude runs build / check / lint / tests and browser pre-checks on the **scratch DB only** (`librarian_test`, test server on port 5174 — see Environment); you do the visual pass. Back up the real DB before risky work (`temp/backups/`).
 
 ### Bookfair release progress (v0.3)
 
@@ -17,7 +27,7 @@
 | B1  | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13) |
 | B2  | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)     |
 | B2+ | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)     |
-| B2+ | Backfill-session additions (2026-10-15, list below)          | ✅ Done (Claude-checked, in use) |
+| B2+ | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use) |
 | B3  | Field Mode 1 — "Do I own this?"                              | ⬜ Next                          |
 | B4  | Field Mode 2 — quick add                                     | ⬜                               |
 | B5  | Bookfair Hitlist (simple)                                    | ⬜                               |
@@ -338,7 +348,8 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 - **Node v24.18 / npm 12** here; Linux had Node v26.11. Everything passes on 24 — install 26 only if the machines should match.
 - **Database:** Docker container `librarian-db-1` (Postgres 16, volume `librarian_pgdata`, port 5432), restored from the Linux dump. Row counts matched at migration (bookfairs 1 · books 310 · reading 300 · series 46 · series_tags 188 · tags 20). Data entered on Linux after 2026-10-13 18:15 is not included; the Linux copy is the fallback.
 - **LAN dev:** `npm run dev -- --host`, then `http://<laptop-IP>:5173` from another device (allow Node.js through Windows Firewall on private networks). Home network only.
-- **Backups / scratch DB:** `temp/backups/*.dump` (untracked `temp/`). A scratch database `librarian_test` in the same container is used for browser testing; drop it any time (`DROP DATABASE librarian_test`).
+- **Backups / scratch DB:** `temp/backups/*.dump` (untracked `temp/`). A scratch database `librarian_test` in the same container is used for browser testing; drop it any time (`DROP DATABASE librarian_test`). Re-clone from the real DB: `pg_dump -Fc` of `local` → `CREATE DATABASE librarian_test` → `pg_restore --no-owner`.
+- **Scratch test server:** `.claude/launch.json` config `dev-test-db` runs `.claude/dev-test-db.mjs` — the Vite dev server on **port 5174** with `DATABASE_URL` swapped to `librarian_test` (reads `.env`, changes only the DB name). Both files are local (untracked). Sign in once in the browser pane; the password is never entered by Claude.
 - **npm install** blocks esbuild's install scripts; harmless, the build works.
 - **`npm audit`:** 18 advisories (1 low, 11 moderate, 6 high), all dev tooling — not yet triaged (Tier 2 in `ROADMAP.md`).
 
