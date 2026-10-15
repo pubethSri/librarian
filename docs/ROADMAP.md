@@ -15,8 +15,8 @@
 | v0.2     | Desktop core (tables, CRUD, data entry)         |
 | v0.2.x   | Unified search & filter                         |
 | v0.3.x   | Consolidation / debt paydown (mostly done)      |
-| **v0.3** | **Bookfair release — current focus (Oct 20)**   |
-| v0.4     | Reading queue + Analytics & insights            |
+| **v0.3** | **Insights + Bookfair release — current focus** |
+| v0.4     | Reading queue + insights polish                 |
 | v0.5     | Mobile Field Mode, full (PWA, offline)          |
 | v0.6     | Social & playful features                       |
 | v0.7     | Polish, decorative design, production hardening |
@@ -25,7 +25,24 @@
 
 Phases 0–2, unified search/filter (2C), and most of Phase 3 (bookfairs CRUD + detail, source/event linking, Console _Add Books_ + _Bulk Edit_) are shipped, along with most of the Consolidation milestone. `STATUS.md` has the authoritative breakdown and the decisions log.
 
-## Now — Bookfair release (→ v0.3), deadline 2026-10-20
+## Now — Insights, then the Bookfair release (→ v0.3), deadline 2026-10-20
+
+### Insights (pulled forward from v0.4 on 2026-10-16)
+
+The backfill is done, so the data is worth charting. Insights comes first (user's call); B3–B7 follow in the time left before the Oct 20 deploy. Read-only — no new tables. Data facts and caveats (read dates are backfill stamps) are in `STATUS.md` → Handoff Decisions 2026-10-16.
+
+| #   | Sub-feature                        | Notes                                                                                                                                                                                                         |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I1  | **Insights foundation**            | `GET /api/insights` → pure, unit-tested `src/lib/insights/` module. Chart action + stat tiles; `/insights` page in the sidebar.                                                                               |
+| I2  | **Backlog (tsundoku)**             | Unread pile, oldest unread, buy rate vs read rate, time to clear the pile, series owned but never started. Reads with no date are excluded from rates.                                                        |
+| I3  | **Collection growth**              | Books per month + cumulative.                                                                                                                                                                                 |
+| I4  | **Tags & completion**              | Tag distribution; buy vs read by tag; completion vs drop by tag and publisher.                                                                                                                                |
+| I5  | **Spending**                       | By month / source, money sitting unread, cost per book read; "coward toggle". Price rules in `STATUS.md`: a price is a lower bound, unpriced books are never ฿0, figures show coverage ("from N of M books"). |
+| I6  | **Reading pace & bookfair funnel** | Purchase → finish time (dated reads only); per-event purchased vs read.                                                                                                                                       |
+
+**Charts:** Chart.js through a thin Svelte action (`use:chart`) rather than a wrapper library — `svelte-chartjs` predates Svelte 5 runes. LayerChart (Svelte-native) is the alternative.
+
+### Bookfair release
 
 The next bookfair opens **2026-10-23** (attending 24–26 Oct). Everything below exists to make the app usable from a phone at that fair; the rest of the old plan moves after it. Target: deployed by **Oct 20**, a trial run at a bookstore on **Oct 21–22**. One sub-feature per step, verified before the next.
 
@@ -69,20 +86,14 @@ Found while checking for other secure-context problems after the `crypto.randomU
 - Optional Console polish: series-grouping toggle. (Row selection from the preview shipped 2026-10-13.)
 - **Spreadsheet-style inline editing of the Console preview** (cell edits become staged rows, committed together) — proposed 2026-10-13. Decide after the backfill shows how often per-book edits are needed; a lighter "click a price cell, save immediately" variant is an hour or two.
 
-### v0.4 — Reading queue + Analytics & insights
+### v0.4 — Reading queue + insights polish
 
-| #   | Sub-feature                        | Notes                                                                                                                                                                                                                                                                                                   |
-| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.1 | **Reading queue**                  | Separate `reading_queue` table (book, position, added at; a book at most once). Behaves as a **pool**: order is a preference, finishing _any_ queued book removes it, so skipping needs no rule. A Read book in the queue means a planned re-read. `/queue` page with location badges; drag to reorder. |
-| 4.2 | **Insights foundation**            | `GET /api/insights` → pure, unit-tested `src/lib/insights/` module. Chart wrapper + stat tiles.                                                                                                                                                                                                         |
-| 4.3 | **Backlog (tsundoku)**             | Unread pile, oldest unread, buy rate vs read rate, time to clear the pile, series owned but never started. Reads with no date are excluded from rates.                                                                                                                                                  |
-| 4.4 | **Collection growth**              | Books per month + cumulative.                                                                                                                                                                                                                                                                           |
-| 4.5 | **Tags & completion**              | Tag distribution; buy vs read by tag; completion vs drop by tag and publisher.                                                                                                                                                                                                                          |
-| 4.6 | **Spending**                       | By month / source, money sitting unread, cost per book read; "coward toggle". Price rules in `STATUS.md`: a price is a lower bound, unpriced books are never ฿0, figures show coverage ("from N of M books").                                                                                           |
-| 4.7 | **Reading pace & bookfair funnel** | Purchase → finish time (dated reads only); per-event purchased vs read.                                                                                                                                                                                                                                 |
-| 4.8 | **Polish → tag v0.4**              |                                                                                                                                                                                                                                                                                                         |
+Insights items 4.2–4.7 moved to "Now" as I1–I6 on 2026-10-16.
 
-**Charts:** Chart.js through a thin Svelte action (`use:chart`) rather than a wrapper library — `svelte-chartjs` predates Svelte 5 runes. LayerChart (Svelte-native) is the alternative.
+| #   | Sub-feature           | Notes                                                                                                                                                                                                                                                                                                   |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1 | **Reading queue**     | Separate `reading_queue` table (book, position, added at; a book at most once). Behaves as a **pool**: order is a preference, finishing _any_ queued book removes it, so skipping needs no rule. A Read book in the queue means a planned re-read. `/queue` page with location badges; drag to reorder. |
+| 4.8 | **Polish → tag v0.4** |                                                                                                                                                                                                                                                                                                         |
 
 ## v0.5 — Field Mode, full (PWA)
 
@@ -106,21 +117,21 @@ From the old feature brainstorm (`temp/additional-context.md`): ISBN barcode sca
 
 ## Dependencies
 
-The Bookfair release adds no tables, so it does not wait for `drizzle-zod`; the reading-queue table (4.1) does. v0.5 builds on the B3/B4 Field Mode MVP. Phase 6 depends on 3 + 4; Phase 7 depends on 5 + 6.
+Insights and the Bookfair release add no tables, so they do not wait for `drizzle-zod`; the reading-queue table (4.1) does. v0.5 builds on the B3/B4 Field Mode MVP. Phase 6 depends on 3 + 4; Phase 7 depends on 5 + 6.
 
 ## Open-item recommendations (decide closer to implementation)
 
-- **Charts (Phase 4):** see the Charts note in Phase 4.
+- **Charts (Insights):** see the Charts note under "Now" → Insights.
 - **Aesthetic Receipt (Phase 6):** start client-side (`html2canvas` → PNG); upgrade to server-rendered (Satori + Sharp) only if shareable URLs are wanted.
 - **Auth (only if multi-user is ever needed):** the hooks-based middleware pattern stays; swap the single password gate for a real user/session store. Not needed for single-user.
 
 ## Verification per phase
 
-| Phase         | Verification                                                                                                                              |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Consolidation | Types derive from schema; build + tests + `svelte-check` green                                                                            |
-| v0.3          | Phone reaches the app over Tailscale; own-check + quick add work in a bookstore trial; reading status + prices backfilled; Hitlist prints |
-| v0.4          | Queue reorders and persists; insight calculations unit-tested; charts render real data                                                    |
-| v0.5          | PWA installs on mobile; offline mutations queue and retry; forms are fast                                                                 |
-| v0.6          | Receipt image generates and downloads; milestones trigger                                                                                 |
-| v0.7          | Lighthouse PWA ≥ 90; accessibility audit passes; production Docker works                                                                  |
+| Phase         | Verification                                                                                                                                                                                   |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Consolidation | Types derive from schema; build + tests + `svelte-check` green                                                                                                                                 |
+| v0.3          | Insight calculations unit-tested, charts render real data; phone reaches the deployed app; own-check + quick add work in a bookstore trial; reading status + prices backfilled; Hitlist prints |
+| v0.4          | Queue reorders and persists                                                                                                                                                                    |
+| v0.5          | PWA installs on mobile; offline mutations queue and retry; forms are fast                                                                                                                      |
+| v0.6          | Receipt image generates and downloads; milestones trigger                                                                                                                                      |
+| v0.7          | Lighthouse PWA ≥ 90; accessibility audit passes; production Docker works                                                                                                                       |

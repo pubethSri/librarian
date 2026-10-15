@@ -3,36 +3,39 @@
 > **This file is the single source of truth for "where the project is now."**
 > Roadmap / future scope lives in [`ROADMAP.md`](./ROADMAP.md); how to work in the repo lives in [`../CLAUDE.md`](../CLAUDE.md); product vision in [`context.md`](./context.md); design in [`design_direction.md`](./design_direction.md). Update _this_ file at every version bump.
 
-## State as of 2026-10-15
+## State as of 2026-10-16
 
-- **Current version:** v0.3 — **in progress**, re-scoped as the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**; plan B1–B7 in `ROADMAP.md`.
+- **Current version:** v0.3 — **in progress**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**. **Plan changed 2026-10-16:** Insights (old v0.4 items 4.2–4.7) is pulled forward and comes **first**, then B3–B7 in the time left — see Handoff Decisions 2026-10-16 and `ROADMAP.md` → "Now".
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** **Real-data backfill in progress** (you, on `localhost:5173`, also from a second PC over the LAN). It drove a round of Console / dialog / bookfair-page improvements, each browser-checked by Claude on the scratch DB and in use during the backfill — details in Backfill-session Decisions 2026-10-15 and the changelog.
-- **Branches:** `main` = everything up to **B1** (`87384cd`). `bookfair-release` = B2 + all backfill-session work (20 commits, not merged, not pushed). Merge it once you're happy with the backfill.
-- **Next:** finish the backfill → **B3/B4 Field Mode** → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. **Analytics/Insights is v0.4, after the fair** — the backfill is what makes it meaningful later.
+- **Latest:** **Real-data backfill done** (2026-10-16). Final round: **extra volumes** are a flag (`books.is_extra`, Extra chip, order unchanged), Edit Book volume-number save fixed, Add Volume / Edit Book date follows the picked fair, Add Volume / New Series default to Apartment. Real DB backed up after the backfill: `temp/backups/local-end-of-backfill-20261016-0038.dump`.
+- **Branches:** `main` = everything (`bookfair-release` fast-forwarded into it and pushed 2026-10-16). Start new work on a branch from `main`.
+- **Next:** **Insights I1–I6** (own session) → B3/B4 Field Mode → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 keeps the Reading queue + insights polish.
 
-### Next session — start here
+### Next session — start here (Insights)
 
-1. **Read** this file's state block + Bookfair release progress, then `ROADMAP.md` → "Now — Bookfair release" and its **LAN / deploy audit** table. `CLAUDE.md` has the conventions (state variants, `newId()`, `SuggestInput`, purchase-date display, reading rules).
-2. **Ask first:** how did the backfill go — any friction? It decides the **spreadsheet-style preview editing** idea (ROADMAP → After the fair) and may add small Console fixes.
-3. **Then build B3** — Field Mode 1, "Do I own this?": mobile `/field`, type 2–3 letters → series → owned volumes with location, next volume highlighted. Then **B4** (quick add, choose the fair once, undo, minimal new series) **with audit #9** (cross-device staleness: refetch on focus and/or a server-side duplicate check — the phone and laptop will both be in use at the fair).
-4. **Open decisions:** (a) **B6 hosting** — laptop + Tailscale (decided 2026-10-13) vs Vercel Hobby + Neon Free (recommended 2026-10-15); decide before B6. (b) Spreadsheet-style preview editing — after the backfill.
-5. **Timeline:** fair opens **Oct 23** (attending 24–26); deploy by **Oct 20**; bookstore trial run Oct 21–22.
-6. **Working agreement:** Claude runs build / check / lint / tests and browser pre-checks on the **scratch DB only** (`librarian_test`, test server on port 5174 — see Environment); you do the visual pass. Back up the real DB before risky work (`temp/backups/`).
+1. **Read** this file's state block + **Handoff Decisions (2026-10-16)** (data facts for the charts), then `ROADMAP.md` → "Now" → **Insights** (I1–I6, chart choice). `CLAUDE.md` has the conventions; reading rules live in `src/lib/reading.ts`, price rules in Bookfair-release Decisions 2026-10-13, extras in Backfill-session Decisions 2026-10-15.
+2. **Decide first — read dates:** all 241 dated reads carry a backfill stamp of **2026-10-15**, not a real date (see Handoff Decisions). Recommended: clear `started_at` / `finished_at` on those rows (back up first), which matches the existing rule "backfilled reads carry no dates". Until then any date-based reading insight (pace, read rate, reads per month) is wrong.
+3. **Then build I1** — insights foundation: `GET /api/insights` over a pure, unit-tested `src/lib/insights/` module, a chart action + stat tiles, an `/insights` page in the sidebar. Then I2–I6, one per step, each verified before the next. Load the `dataviz` skill before writing chart code.
+4. **Timebox:** the fair work (B3–B7) still targets a **deploy by Oct 20** (fair opens Oct 23). Agree with the user up front how many days Insights gets; if it runs over, ship what's done and move to B3.
+5. **Still open:** your visual pass of the **extra volumes** change (committed before it at your request): Silent Witch reads 1–4, Extra, 5–9, Extra (hover: "Extra (after vol. 4)"), Latest Volume 9; editing an extra shows the switch on and "Sort position"; the Console suggests vol. 10 for Silent Witch; no "4.5" anywhere outside the edit dialog. **B6 hosting** — laptop + Tailscale vs Vercel Hobby + Neon Free; decide before B6.
+6. **Working agreement:** Claude runs build / check / lint / tests and browser pre-checks on the **scratch DB only** (`librarian_test`, test server on port 5174 — see Environment); you do the visual pass. Back up the real DB before risky work (`temp/backups/`). Insights is read-only, so the scratch DB is safe to use for every chart check — re-clone it from `local` first so it has the real data.
 
 ### Bookfair release progress (v0.3)
 
-| #   | Item                                                         | Status                           |
-| --- | ------------------------------------------------------------ | -------------------------------- |
-| B1  | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13) |
-| B2  | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)     |
-| B2+ | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)     |
-| B2+ | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use) |
-| B3  | Field Mode 1 — "Do I own this?"                              | ⬜ Next                          |
-| B4  | Field Mode 2 — quick add                                     | ⬜                               |
-| B5  | Bookfair Hitlist (simple)                                    | ⬜                               |
-| B6  | Deploy on the laptop (Tailscale)                             | ⬜                               |
-| B7  | Trial run + fixes → tag `v0.3`                               | ⬜                               |
+| #     | Item                                                         | Status                              |
+| ----- | ------------------------------------------------------------ | ----------------------------------- |
+| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)    |
+| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)        |
+| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)        |
+| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)    |
+| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                  |
+| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass) |
+| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ⬜ **Next** (own session)           |
+| B3    | Field Mode 1 — "Do I own this?"                              | ⬜ After Insights                   |
+| B4    | Field Mode 2 — quick add                                     | ⬜                                  |
+| B5    | Bookfair Hitlist (simple)                                    | ⬜                                  |
+| B6    | Deploy on the laptop (Tailscale)                             | ⬜                                  |
+| B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                  |
 
 - **Direction reset 2026-10-13:** Activity Log dropped; old feature-brainstorm items triaged (see Direction Decisions below and `ROADMAP.md` → "Not adopted").
 
@@ -341,6 +344,16 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 - **Purchase dates** are stored as UTC midnight and displayed by calendar day (`dayOf` / `formatDay`), never via the browser timezone. Bulk **Set purchase date** takes a day, Today, or Unknown (clears). `pendingPurchaseDay()` is the one source for the preview arrow, the PATCH body and the confirm text.
 - **Bulk endpoint:** accepts `boughtAt` (validated) and returns 400 "Bookfair not found" for a missing event (was an FK 500). **Batch endpoint:** price 0 is stored as 0 (`|| null` had nulled it, undoing the Console's price-0 fix).
 - **Editing a bookfair's date does not touch its books by itself.** Edit Bookfair offers "Also move N linked books dated <old> → <new>" only when the date changes and some linked books sit exactly on the old day; **on by default** (the user is correcting the fair's date). Books with any other purchase date never move. Done server-side in the same transaction (`PATCH /api/bookfairs/[id]` `moveBookDates`), matched on the UTC calendar day; the response's `movedBooks` drives the toast and a `['books']` refresh.
+- **Extra volumes are a flag, not a decimal** (user's call: a `.5` number claimed a position the book doesn't really have). `books.is_extra` (migration `0001_extra_volumes`, which also flagged every existing fractional volume — 5 on the real DB). `volume_number` stays the **sort position**, so ordering is unchanged (4.5 still sits between 4 and 5); an extra is shown as an **Extra** chip (`ExtraBadge`, hover "Extra (after vol. 4)") instead of its number. Labels come from `$lib/utils/volume` (`volumeLabel` / `volumeText`); **extras don't count toward Latest Volume or the Console's next-volume suggestion** (`latestVolume`). Add Volume / Edit Book have an "Extra volume" switch; with it on, the number field reads "Sort position". The Airtable export still writes the raw number (re-import fidelity). Edit Book also stopped silently failing on any volume-number change (a number input binds a number; the old code called `.trim()` on it).
+
+### Handoff Decisions (2026-10-16)
+
+- **Insights pulled forward** (user's call): the next session builds the insights items (old v0.4 4.2–4.7, now **I1–I6** in `ROADMAP.md` → "Now") **before** Field Mode; B3–B7 follow in the time left, Oct 20 deploy target kept. The **Reading queue** (4.1) stays in v0.4 — Insights adds no tables, so it still doesn't wait for `drizzle-zod`.
+- **Data at the end of the backfill** (real DB, 2026-10-16): 58 series (26 LN, 32 manga; 43 ongoing, 8 ended, 7 dropped; 5 on the watchlist), **385 books** (5 extras, 0 drafts), 7 bookfairs, 22 tags / 244 series-tag links, 356 reading rows.
+  - **Prices:** 369 / 385 books priced. **Purchase dates:** 381 / 385, spanning 2020-12 → 2026-10. **Source:** bookfair 190, online 68, bookstore 3, unknown 124.
+  - **Reading:** 269 Read rows, 87 Unread rows (Airtable import), 35 books with no row (= Unread). Current status = newest row (`src/lib/reading.ts`).
+  - **Read dates are not real.** All 241 dated reads have `finished_at` on **2026-10-15** (188 imported rows marked read during the backfill, 53 rows created that day). The per-book status control stamps "now" by design (B1), so backfilling through it dated every read to the backfill day, against the rule "backfilled reads carry no dates". Decide before any date-based reading insight (recommended: clear those dates). Purchase dates and prices are real.
+- **Extras in insights:** an extra is a real book — it counts in owned / bought / spent / read totals. It never counts as a "latest volume" or a next-volume gap (`latestVolume` in `$lib/utils/volume`).
 
 ## Environment
 
@@ -432,3 +445,5 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 | 2026-10-15 | Volume counts derived from owned books: manual Total Volumes removed from Edit Series; series list shows owned count; series page shows Volumes Owned / Latest Volume / Read / Unread; `ProgressBar` deleted (`svelte-check` warnings 29 → 20).                                                                                                                                                                                                                                                                                                                                                  |
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-16 | Backfill done; real DB backed up (`local-end-of-backfill-20261016-0038.dump`); `bookfair-release` merged into `main` and pushed. Plan change: Insights (I1–I6) pulled forward ahead of B3–B7. Found: all 241 read dates are 2026-10-15 backfill stamps (decide before date-based insights).                                                                                                                                                                                                                                                                                                      |

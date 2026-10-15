@@ -54,7 +54,7 @@ SvelteKit 2 + **Svelte 5 runes** (runes mode is forced in `svelte.config.js` for
 
 **Request flow:** Client component → TanStack Query hook (`src/lib/queries/<entity>.ts`) → `fetch` → SvelteKit API route (`src/routes/api/**/+server.ts`) → Drizzle → Postgres. There is no server `load`-based data fetching for entity data; the client owns it via Query. `QueryClientProvider` is set up in the root `src/routes/+layout.svelte` (staleTime 5min, no refetch on focus). Mutations call `queryClient.invalidateQueries` on the relevant keys (`['books']`, `['series']`, `['bookfairs']`, …) to keep the cache consistent — follow this pattern when adding mutations.
 
-**Data model** (`src/lib/server/db/schema.ts`): `series` 1→many `books`; `books` 1→many `reading` (a separate row per read/re-read, so reading history is decoupled from the physical book); `bookfairs` 1→many `books` (via `books.sourceEventId`); `tags` ↔ `series` many-to-many through `seriesTags`. The DB client is exported as `db` from `src/lib/server/db/index.ts`.
+**Data model** (`src/lib/server/db/schema.ts`): `series` 1→many `books`; `books` 1→many `reading` (a separate row per read/re-read, so reading history is decoupled from the physical book); `bookfairs` 1→many `books` (via `books.sourceEventId`); `tags` ↔ `series` many-to-many through `seriesTags`. `books.isExtra` marks an extra volume (side story…): its `volumeNumber` is then only a sort position (4.5 sits between 4 and 5) and it is shown as an Extra chip — use `volumeLabel` / `volumeText` / `latestVolume` from `$lib/utils/volume`, never print the raw number. The DB client is exported as `db` from `src/lib/server/db/index.ts`.
 
 **Types:** All client-facing types and enum label maps live in `src/lib/types.ts`, hand-kept in sync with the Drizzle schema — API response shapes must match these. Update both when the schema changes.
 
@@ -92,6 +92,6 @@ This project follows a strict phased workflow (plan the phase → get approval �
 - **The build must pass after every change** (`npm run build`, 0 errors) and tests must pass.
 - **Update `docs/STATUS.md` at each version bump** — it is the _only_ file that tracks current state (record decisions there; `ROADMAP.md` changes only when the plan itself changes).
 
-> Currently mid-`v0.3`. The Consolidation milestone is nearly done (remaining: derive types via `drizzle-zod`); then the Phase 3 remainder (Bookfair Hitlist, polish). See `docs/STATUS.md` for the live state.
+> Currently mid-`v0.3`. Backfill done; next is **Insights** (I1–I6, pulled forward from v0.4), then the Bookfair release items B3–B7 (deploy target Oct 20). See `docs/STATUS.md` for the live state.
 
 A design-reference skill is available at `.agent/skills/ui-ux-pro-max/` for UI/UX work (invoke its `scripts/search.py` from that directory).
