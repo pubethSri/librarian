@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PublisherInput from '$lib/components/forms/PublisherInput.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -109,7 +110,7 @@
 			</div>
 			<div class="space-y-2">
 				<Label for="edit-publisher">Publisher</Label>
-				<Input id="edit-publisher" bind:value={publisher} placeholder="Optional" />
+				<PublisherInput id="edit-publisher" bind:value={publisher} />
 			</div>
 			<div class="space-y-2">
 				<Label for="edit-total">Total Volumes</Label>
