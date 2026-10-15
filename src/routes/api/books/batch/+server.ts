@@ -36,7 +36,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		volumeNumber: Number(b.volumeNumber).toFixed(1),
 		location: (b.location as string) || 'home',
 		boughtAt: b.boughtAt ? new Date(b.boughtAt as string) : null,
-		price: (b.price as string) || null,
+		// 0 is a real price (a free book); only a missing/blank price is untracked
+		price: b.price === undefined || b.price === null || b.price === '' ? null : String(b.price),
 		source: (b.source as string) || null,
 		sourceEventId: (b.sourceEventId as number) || null,
 		isDraft: (b.isDraft as boolean) || false

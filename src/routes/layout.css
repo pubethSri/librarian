@@ -3,6 +3,22 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The nova-style shadcn-svelte components style state with attribute variants
+ * (data-checked:, data-open:, data-active:, data-horizontal: …), but bits-ui
+ * 2.18 reports state as data-state="checked|open|active…" and orientation as
+ * data-orientation. Without this mapping those styles never apply — e.g. every
+ * Switch looked the same on and off. Each variant also accepts the bare
+ * attribute, so a bits-ui upgrade that emits it keeps working.
+ */
+@custom-variant data-checked (&:is([data-state='checked'], [data-checked]));
+@custom-variant data-unchecked (&:is([data-state='unchecked'], [data-unchecked]));
+@custom-variant data-open (&:is([data-state='open'], [data-open]));
+@custom-variant data-closed (&:is([data-state='closed'], [data-closed]));
+@custom-variant data-active (&:is([data-state='active'], [data-active]));
+@custom-variant data-horizontal (&:is([data-orientation='horizontal'], [data-horizontal]));
+@custom-variant data-vertical (&:is([data-orientation='vertical'], [data-vertical]));
+
 :root {
 	--radius: 0.625rem;
 	--background: oklch(1 0 0);
