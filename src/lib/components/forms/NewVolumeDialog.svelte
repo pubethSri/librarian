@@ -24,7 +24,7 @@
 
 	let selectedSeriesId = $state<number | null>(preselectedSeriesId);
 	let volumeNumber = $state<number>(1);
-	let location = $state<BookLocation>('home');
+	let location = $state<BookLocation>('apartment');
 	let source = $state<BookSource | ''>('');
 	let sourceEventId = $state<number | null>(null);
 	let boughtAt = $state(new Date().toISOString().split('T')[0]);
@@ -39,7 +39,7 @@
 	function resetForm() {
 		selectedSeriesId = preselectedSeriesId;
 		volumeNumber = 1;
-		location = 'home';
+		location = 'apartment';
 		source = '';
 		sourceEventId = null;
 		boughtAt = new Date().toISOString().split('T')[0];
