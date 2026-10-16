@@ -7,9 +7,9 @@
 
 - **Current version:** v0.3 — **in progress**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**. **Plan changed 2026-10-16:** Insights (old v0.4 items 4.2–4.7) was pulled forward and is **built**, as is B3; B4–B7 remain — see the schedule below.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** **Insights I1–I6 and B3 Field Mode "Do I own this?" merged into `main`** (2026-10-16) after your **PC visual pass** (both passed). Field Mode's **phone pass is still open** (your phone was charging) — run it before B4 starts. The 241 backfill read dates were cleared on the real DB before Insights (backup `temp/backups/local-before-insights-20261016-0053.dump`).
+- **Latest:** **Insights I1–I6 and B3 Field Mode "Do I own this?" merged into `main`** (2026-10-16) after your **PC visual pass** (both passed); Field Mode's **phone pass passed** too (2026-10-16). The 241 backfill read dates were cleared on the real DB before Insights (backup `temp/backups/local-before-insights-20261016-0053.dump`).
 - **Branches:** `main` = everything (fast-forwarded from `feature/field-mode`, which contains `feature/insights`). Start B4 on a new branch from `main`.
-- **Next:** Field Mode phone pass → **B4 Field Mode 2 — quick add** → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 = Reading log flow (redesigned 2026-10-16) + Reading queue + insights polish.
+- **Next:** **B4 Field Mode 2 — quick add** → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 = Reading log flow (redesigned 2026-10-16) + Reading queue + insights polish.
 
 ### Next session — start here (B4 phone shell + quick add)
 
@@ -17,7 +17,7 @@
 
 | Day       | Work                                                                                                                                                                   |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Oct 16–17 | ~~PC visual passes → merge~~ ✅. **Field Mode phone pass.** **Decide B6 hosting.** Create the Oct 2026 fair.                                                           |
+| Oct 16–17 | ~~PC + phone visual passes → merge~~ ✅. **Decide B6 hosting.** Create the Oct 2026 fair.                                                                              |
 | Oct 17–18 | **B4** phone shell + quick add (the biggest remaining item: own phone layout with Find · Add · Hitlist tabs, writes from the phone, undo, duplicate guard, new series) |
 | Oct 18    | **B5** Hitlist as the shell's third tab (small: watchlist → next volume, print, copy with fallback)                                                                    |
 | Oct 19–20 | **B6** deploy + hardening (audit 🔴 #4, 🟠 #5–7, #10–11; daily `pg_dump`) → **deployed by Oct 20**                                                                     |
@@ -25,7 +25,7 @@
 
 If B4 runs long, cut B5 to "print the watchlist with next volumes" — B6 is the one that can't slip (no deploy = no phone at the fair).
 
-1. **Merged** (2026-10-16): `main` has Insights + B3. Branch B4 from `main`. Your **phone pass** of Field Mode (the B3 script, steps 1–7, on the phone over the LAN) can happen in parallel — **B4 does not wait for it**; anything it turns up gets fixed on the B4 branch afterwards (B4.1 rebuilds the Field shell anyway).
+1. **Merged** (2026-10-16): `main` has Insights + B3. Branch B4 from `main`. Field Mode's phone pass passed (2026-10-16).
 2. **Before B4: the fair must exist.** The newest bookfair in the DB is สัปดาห์หนังสือแห่งชาติ 54 (2026-03-28); the Oct 23 fair (presumably มหกรรมหนังสือระดับชาติ 31) isn't created yet. You create the real one on the Bookfairs page whenever convenient; **B4 does not wait for it** — B4.0 makes a stand-in on the scratch DB.
 3. **Build B4 from the checklist below** — sub-steps B4.0–B4.6, decisions pre-made, written to run **unattended**.
 4. **Cross-device staleness (audit #9)** — refetch-on-focus is done (B3); the save-time duplicate guard is B4.3.
@@ -35,7 +35,7 @@ If B4 runs long, cut B5 to "print the watchlist with next volumes" — B6 is the
 
 ### B4 checklist — phone shell + quick add (pre-approved for an unattended run)
 
-**Run rules.** The user approved this plan on 2026-10-16 and may be away: work through B4.0 → B4.6 in order **without waiting for approval**, one commit per sub-step on branch `feature/b4-quick-add` (**never merge, never push**). After each sub-step: `npm test`, `npm run check` (0 errors), `npm run lint`, `npm run build` must pass before committing. Write data **only to the scratch DB** (`librarian_test`, dev server config `dev-test-db` on port 5174); the real DB (`local`) is only ever backed up. If the browser pane shows the login page, skip browser checks (Claude never types the password), note it in STATUS and keep going with tests + API checks. If a sub-step is truly blocked, record why under it in STATUS and move on to the next one that doesn't depend on it. Before ending, update this checklist's boxes, the progress table and the changelog, and leave a visual-pass script for the user. Conventions: `CLAUDE.md` (runes, `newId()`, `resolve()`, `dayOf`/`formatDay`, invalidate query keys on mutations).
+**Run rules.** **Ask first, then build.** Before B4.0, read this whole checklist (and the code it touches) and collect **every** question that needs the user's decision before building — anything unclear, missing or in conflict, including the pre-made decisions below if one looks wrong. Ask them **all at once, in a single batch** (one AskUserQuestion call, up to 4 questions; a second batch only if there are more), record the answers here under "Pre-made decisions", then build. If there is nothing to ask, say so and start. The user approved this plan on 2026-10-16 and may be away once the build starts: from then on work through B4.0 → B4.6 in order **without waiting for approval**, one commit per sub-step on branch `feature/b4-quick-add` (**never merge, never push**). After each sub-step: `npm test`, `npm run check` (0 errors), `npm run lint`, `npm run build` must pass before committing. Write data **only to the scratch DB** (`librarian_test`, dev server config `dev-test-db` on port 5174); the real DB (`local`) is only ever backed up. If the browser pane shows the login page, skip browser checks (Claude never types the password), note it in STATUS and keep going with tests + API checks. A blocker or a new question found **while building** is not asked: record it (and the choice you made, if any) under that sub-step in STATUS and move on to the next one that doesn't depend on it. Before ending, update this checklist's boxes, the progress table and the changelog, and leave a visual-pass script for the user. Conventions: `CLAUDE.md` (runes, `newId()`, `resolve()`, `dayOf`/`formatDay`, invalidate query keys on mutations).
 
 - [ ] **B4.0 Setup.** Branch `feature/b4-quick-add` from `main`. Back up `local` to `temp/backups/local-before-b4-<stamp>.dump`. Re-clone `librarian_test` from `local`. If the Oct 2026 fair doesn't exist there, create a stand-in **on the scratch DB only**: "มหกรรมหนังสือระดับชาติ 31", 2026-10-23 (location left empty). Start `dev-test-db`.
 - [ ] **B4.1 Phone shell.** Move Field Mode out of the sidebar shell: a `src/routes/(field)/field/` route group with its own `+layout.svelte` (auth still via `hooks.server.ts`; it still needs the root `QueryClientProvider`, which lives in `src/routes/+layout.svelte`, so nothing to add). Full-screen, no sidebar / breadcrumb; a fixed **bottom tab bar** with three tabs: **Find** (`/field` — today's B3 screen, unchanged behaviour incl. `?series=`), **Add** (`/field/add`), **Hitlist** (`/field/hitlist`, placeholder "Coming in B5"). Tabs ≥ 56px tall, icons + labels, active tab marked, `padding-bottom: env(safe-area-inset-bottom)` (add `viewport-fit=cover` to the viewport meta in `src/app.html`). A small **Desktop** link (top corner) back to `/`. On the desktop shell, a phone-width visitor (`matchMedia('(max-width: 640px)')`) sees a dismissible banner "Open Field Mode" on `/` (no auto-redirect). The sidebar's Field Mode link stays. Design with `.agent/skills/ui-ux-pro-max/` (monochrome zinc, big type, thumb reach). **Done when:** at 375×812, `/field` shows no sidebar or breadcrumb, the three tabs switch routes, B3 search / series view / back button still work, nothing scrolls sideways.
@@ -49,20 +49,20 @@ If B4 runs long, cut B5 to "print the watchlist with next volumes" — B6 is the
 
 ### Bookfair release progress (v0.3)
 
-| #     | Item                                                         | Status                              |
-| ----- | ------------------------------------------------------------ | ----------------------------------- |
-| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)    |
-| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)        |
-| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)        |
-| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)    |
-| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                  |
-| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass) |
-| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16) |
-| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done on PC (phone pass open)     |
-| B4    | Field Mode 2 — quick add                                     | ⬜ **Next**                         |
-| B5    | Bookfair Hitlist (simple)                                    | ⬜                                  |
-| B6    | Deploy on the laptop (Tailscale)                             | ⬜                                  |
-| B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                  |
+| #     | Item                                                         | Status                               |
+| ----- | ------------------------------------------------------------ | ------------------------------------ |
+| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)     |
+| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)         |
+| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)         |
+| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)     |
+| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                   |
+| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)  |
+| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16)  |
+| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done (PC + phone pass 2026-10-16) |
+| B4    | Field Mode 2 — quick add                                     | ⬜ **Next**                          |
+| B5    | Bookfair Hitlist (simple)                                    | ⬜                                   |
+| B6    | Deploy on the laptop (Tailscale)                             | ⬜                                   |
+| B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                   |
 
 ### Insights progress (I1–I6, merged 2026-10-16)
 
@@ -434,7 +434,7 @@ Requested while backfilling real data; each was browser-checked by Claude on the
 - **The phone gets its own design, not a responsive desktop** (user's call). The desktop pages (Console, tables, Insights) stay desktop tools that only need to not break on a phone; everything meant for the phone lives in the **Field Mode shell**.
 - **Before the fair, folded into B4:** a minimal shell — own layout (no sidebar / breadcrumb), bottom tabs **Find · Add · Hitlist**, full-screen, thumb-reach controls; a phone opening `/` is offered Field Mode. B4 quick add and B5 Hitlist are built inside it rather than in the desktop shell, so nothing is built twice. Not a separate pre-fair item: it would push B6, and no deploy means no phone at the fair.
 - **After the fair, v0.5 = the "Phone app" phase:** PWA install + offline, the reading-log tile actions / "Currently reading" strip (v0.4 item 4.2), maybe a small Insights summary, a full phone design pass.
-- **Field Mode's real-phone pass is still open** (B3 was only checked in a 375px emulated viewport); run it before B4 so the shell starts from what the phone actually shows.
+- **Field Mode's real-phone pass passed** (2026-10-16), so the B4 shell starts from a B3 screen that works on the phone.
 
 ### Reading-flow Decisions (2026-10-16) — build after the fair (v0.4, item 4.2)
 
@@ -557,6 +557,7 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-16 | B3 **phone pass passed**. B4 run rules: ask every pre-build question in one batch first, then build unattended (questions found mid-build are noted, not asked).                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 2026-10-16 | **Phone shell folded into B4** (docs): Field Mode gets its own phone layout with Find · Add · Hitlist tabs before the fair; v0.5 becomes the "Phone app" phase. `main` pushed.                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | 2026-10-16 | **Insights + B3 merged into `main`** after the user's PC visual pass; Field Mode phone pass still open.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | 2026-10-16 | **Reading flow redesigned (docs only, build in v0.4):** log a read once, when you remember, with a picked finish day (optional start); a re-read in one step; reading dates as calendar days; reading-history editor; Field Mode tile actions + "Currently reading" strip. `ROADMAP.md` v0.4 gains item 4.2.                                                                                                                                                                                                                                                                                     |
