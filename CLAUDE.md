@@ -60,7 +60,7 @@ SvelteKit 2 + **Svelte 5 runes** (runes mode is forced in `svelte.config.js` for
 
 **Auth:** Single-user password gate. `src/hooks.server.ts` redirects any request without a valid session cookie to `/login`, except `PUBLIC_PATHS` (`/login`, `/api/health`) and static assets. The cookie (`librarian_session`) is an HMAC-SHA256-signed timestamp verified in `src/lib/server/auth.ts`; `AUTH_PASSWORD` / `AUTH_SECRET` come from env. `event.locals.authenticated` is set for downstream code.
 
-**Routing:** Everything under the `src/routes/(app)/` group shares the authenticated sidebar shell (`+layout.svelte`). `/login` sits outside the group. API routes are under `src/routes/api/`.
+**Routing:** Everything under the `src/routes/(app)/` group shares the authenticated sidebar shell (`+layout.svelte`). Field Mode (`/field`, `/field/add`, `/field/hitlist`) lives in `src/routes/(field)/field/` — its own phone shell with a bottom tab bar and no sidebar; its per-device settings (fair chip, location) come from `getFieldSettings()` (`$lib/field/settings.svelte`), set in that layout. `/login` sits outside both groups. API routes are under `src/routes/api/`.
 
 **Filtering (two layers — don't conflate them):**
 
@@ -92,6 +92,6 @@ This project follows a strict phased workflow (plan the phase → get approval �
 - **The build must pass after every change** (`npm run build`, 0 errors) and tests must pass.
 - **Update `docs/STATUS.md` at each version bump** — it is the _only_ file that tracks current state (record decisions there; `ROADMAP.md` changes only when the plan itself changes).
 
-> Currently mid-`v0.3`. **Insights** (I1–I6; pure `src/lib/insights/` behind `GET /api/insights`, charts via the `use:chart` Chart.js action) and **B3 Field Mode "Do I own this?"** (`/field`, pure `src/lib/field/logic.ts`) are merged into `main` (PC + phone visual passes done). Next is B4 — a phone shell for Field Mode (own layout, Find · Add · Hitlist tabs) + quick add — then B5–B7 (deploy target Oct 20). See `docs/STATUS.md` for the live state.
+> Currently mid-`v0.3`. **Insights** (I1–I6; pure `src/lib/insights/` behind `GET /api/insights`, charts via the `use:chart` Chart.js action) and **B3 Field Mode "Do I own this?"** (`/field`, pure `src/lib/field/logic.ts`) are merged into `main` (PC + phone visual passes done). **B4** — the Field Mode phone shell + quick add (`onlyIfMissing` duplicate guard on `POST /api/books`) + new series from the phone — is built on `feature/b4-quick-add`, awaiting the user's visual pass. Next is B5 (Hitlist, the shell's third tab), then B6–B7 (deploy target Oct 20). See `docs/STATUS.md` for the live state.
 
 A design-reference skill is available at `.agent/skills/ui-ux-pro-max/` for UI/UX work (invoke its `scripts/search.py` from that directory).
