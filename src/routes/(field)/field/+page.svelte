@@ -90,9 +90,7 @@
 <div class="mx-auto max-w-md">
 	{#if selectedId === null}
 		<!-- ─── Search ─────────────────────────────────────────────────────── -->
-		<div
-			class="sticky top-12 z-20 -mx-6 bg-background/95 px-6 pt-1 pb-3 backdrop-blur md:-mx-8 md:px-8"
-		>
+		<div class="sticky top-12 z-20 -mx-4 bg-background/95 px-4 pt-1 pb-3 backdrop-blur">
 			<h1 class="sr-only">Field Mode</h1>
 			<label class="relative block">
 				<span class="sr-only">Find a series</span>

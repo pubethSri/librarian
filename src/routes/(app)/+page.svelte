@@ -4,16 +4,29 @@
 	import { createBooksListQuery } from '$lib/queries/books';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { BookOpen, Library, BookCopy, AlertCircle, Plus } from '@lucide/svelte';
+	import { BookOpen, Library, BookCopy, AlertCircle, Plus, Smartphone, X } from '@lucide/svelte';
 	import NewVolumeDialog from '$lib/components/forms/NewVolumeDialog.svelte';
 	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import NewSeriesDialog from '$lib/components/forms/NewSeriesDialog.svelte';
+	import { readField, writeField } from '$lib/field/storage';
 
 	const seriesQuery = createSeriesListQuery();
 	const booksQuery = createBooksListQuery();
 
 	let showAddVolume = $state(false);
 	let showAddSeries = $state(false);
+
+	// A phone visitor is offered Field Mode (never redirected); dismissing is remembered
+	let offerFieldMode = $state(false);
+	$effect(() => {
+		offerFieldMode =
+			window.matchMedia('(max-width: 640px)').matches && readField('bannerDismissed') !== '1';
+	});
+
+	function dismissFieldOffer() {
+		offerFieldMode = false;
+		writeField('bannerDismissed', '1');
+	}
 
 	const stats = $derived(() => {
 		const seriesData = seriesQuery.data || [];
@@ -40,6 +53,24 @@
 </svelte:head>
 
 <div class="space-y-8">
+	{#if offerFieldMode}
+		<div class="flex items-center gap-2 rounded-xl border border-border bg-card p-2 pl-4">
+			<Smartphone class="h-5 w-5 shrink-0 text-muted-foreground" />
+			<a href={resolve('/field')} class="min-w-0 flex-1 py-2 text-sm font-medium text-foreground">
+				Open Field Mode
+				<span class="block text-xs font-normal text-muted-foreground">Made for the phone</span>
+			</a>
+			<button
+				type="button"
+				onclick={dismissFieldOffer}
+				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent"
+				aria-label="Dismiss"
+			>
+				<X class="h-4 w-4" />
+			</button>
+		</div>
+	{/if}
+
 	<div>
 		<h1 class="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
 		<p class="mt-1 text-sm text-muted-foreground">Overview of your book collection.</p>
