@@ -16,7 +16,7 @@
 | v0.2.x   | Unified search & filter                         |
 | v0.3.x   | Consolidation / debt paydown (mostly done)      |
 | **v0.3** | **Insights + Bookfair release — current focus** |
-| v0.4     | Reading queue + insights polish                 |
+| v0.4     | Reading log flow + reading queue + polish       |
 | v0.5     | Mobile Field Mode, full (PWA, offline)          |
 | v0.6     | Social & playful features                       |
 | v0.7     | Polish, decorative design, production hardening |
@@ -62,20 +62,20 @@ The **Activity Log** was dropped on 2026-10-13 (single user; low value). See `ST
 
 Found while checking for other secure-context problems after the `crypto.randomUUID` LAN bug (fixed). Severities as agreed.
 
-| #   | Finding                                                                                                                                                                                                               | Severity / slot     |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| 2   | `navigator.clipboard` is HTTPS-only — the Hitlist's copy button needs a fallback.                                                                                                                                     | B5                  |
-| 3   | Service worker / PWA install need HTTPS.                                                                                                                                                                              | v0.5                |
-| 4   | **Login redirect loop:** `/login`'s `load` redirects to `/` whenever _any_ session cookie exists, unverified; `/` sends an invalid cookie back to `/login`. Will trigger once tokens expire or `AUTH_SECRET` changes. | 🔴 B6               |
-| 5   | Expired session mid-use: API calls get the login page's HTML, surfacing as a cryptic JSON-parse toast instead of "sign in again".                                                                                     | 🟠 B6               |
-| 6   | Production `ORIGIN` must match the address used (IP / Tailscale name / Vercel URL) or adapter-node rejects the login form.                                                                                            | 🟠 B6               |
-| 7   | Cookie `secure` follows `NODE_ENV`, not the request: plain-HTTP production silently fails login; HTTPS without `NODE_ENV` sends a non-secure cookie. Decide from the request protocol.                                | 🟠 B6               |
-| 8   | The Vite dev server blocks hostnames (`laptop.local`, Tailscale names) by default; IPs work.                                                                                                                          | 🟢 if needed        |
-| 9   | **Cross-device staleness:** 5-min `staleTime`, no refetch on focus — another device's changes stay invisible, and the Console/Field Mode duplicate check runs on stale data → duplicate volumes possible.             | 🟠 before fair (B4) |
-| 10  | **Open redirect:** login follows `redirectTo` unchecked (`?redirectTo=https://evil…`). Accept same-origin paths only.                                                                                                 | 🟠 B6               |
-| 11  | Missing `AUTH_PASSWORD` / `AUTH_SECRET` silently fall back to `librarian` / a known secret. Refuse to start instead.                                                                                                  | 🟠 B6               |
-| 12  | No login rate limiting; session tokens never expire.                                                                                                                                                                  | B6                  |
-| 13  | `manifest.json` isn't linked, its icons are missing from `static/`, and it sits behind auth.                                                                                                                          | v0.5                |
+| #   | Finding                                                                                                                                                                                                               | Severity / slot                                                     |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 2   | `navigator.clipboard` is HTTPS-only — the Hitlist's copy button needs a fallback.                                                                                                                                     | B5                                                                  |
+| 3   | Service worker / PWA install need HTTPS.                                                                                                                                                                              | v0.5                                                                |
+| 4   | **Login redirect loop:** `/login`'s `load` redirects to `/` whenever _any_ session cookie exists, unverified; `/` sends an invalid cookie back to `/login`. Will trigger once tokens expire or `AUTH_SECRET` changes. | 🔴 B6                                                               |
+| 5   | Expired session mid-use: API calls get the login page's HTML, surfacing as a cryptic JSON-parse toast instead of "sign in again".                                                                                     | 🟠 B6                                                               |
+| 6   | Production `ORIGIN` must match the address used (IP / Tailscale name / Vercel URL) or adapter-node rejects the login form.                                                                                            | 🟠 B6                                                               |
+| 7   | Cookie `secure` follows `NODE_ENV`, not the request: plain-HTTP production silently fails login; HTTPS without `NODE_ENV` sends a non-secure cookie. Decide from the request protocol.                                | 🟠 B6                                                               |
+| 8   | The Vite dev server blocks hostnames (`laptop.local`, Tailscale names) by default; IPs work.                                                                                                                          | 🟢 if needed                                                        |
+| 9   | **Cross-device staleness:** 5-min `staleTime`, no refetch on focus — another device's changes stay invisible, and the Console/Field Mode duplicate check runs on stale data → duplicate volumes possible.             | 🟠 B4 (refetch-on-focus done in B3; save-time duplicate guard left) |
+| 10  | **Open redirect:** login follows `redirectTo` unchecked (`?redirectTo=https://evil…`). Accept same-origin paths only.                                                                                                 | 🟠 B6                                                               |
+| 11  | Missing `AUTH_PASSWORD` / `AUTH_SECRET` silently fall back to `librarian` / a known secret. Refuse to start instead.                                                                                                  | 🟠 B6                                                               |
+| 12  | No login rate limiting; session tokens never expire.                                                                                                                                                                  | B6                                                                  |
+| 13  | `manifest.json` isn't linked, its icons are missing from `static/`, and it sits behind auth.                                                                                                                          | v0.5                                                                |
 
 ## After the fair
 
@@ -86,14 +86,15 @@ Found while checking for other secure-context problems after the `crypto.randomU
 - Optional Console polish: series-grouping toggle. (Row selection from the preview shipped 2026-10-13.)
 - **Spreadsheet-style inline editing of the Console preview** (cell edits become staged rows, committed together) — proposed 2026-10-13. Decide after the backfill shows how often per-book edits are needed; a lighter "click a price cell, save immediately" variant is an hour or two.
 
-### v0.4 — Reading queue + insights polish
+### v0.4 — Reading log flow + reading queue + insights polish
 
 Insights items 4.2–4.7 moved to "Now" as I1–I6 on 2026-10-16.
 
-| #   | Sub-feature           | Notes                                                                                                                                                                                                                                                                                                   |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.1 | **Reading queue**     | Separate `reading_queue` table (book, position, added at; a book at most once). Behaves as a **pool**: order is a preference, finishing _any_ queued book removes it, so skipping needs no rule. A Read book in the queue means a planned re-read. `/queue` page with location badges; drag to reorder. |
-| 4.8 | **Polish → tag v0.4** |                                                                                                                                                                                                                                                                                                         |
+| #   | Sub-feature           | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1 | **Reading queue**     | Separate `reading_queue` table (book, position, added at; a book at most once). Behaves as a **pool**: order is a preference, finishing _any_ queued book removes it, so skipping needs no rule. A Read book in the queue means a planned re-read. `/queue` page with location badges; drag to reorder.                                                                                                                                             |
+| 4.2 | **Reading log flow**  | Log a read **after the fact**, whenever you remember, with the date you pick (rules in `STATUS.md` → Reading-flow Decisions 2026-10-16): one "I read this" action (finish _Today · Yesterday · Pick a day · Don't know_, optional start), a re-read logged in one step, reading dates as calendar days, a per-book **reading-history editor**, and in **Field Mode** volume-tile actions + a "Currently reading" strip with a one-tap **Finished**. |
+| 4.8 | **Polish → tag v0.4** |                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## v0.5 — Field Mode, full (PWA)
 
@@ -131,7 +132,7 @@ Insights and the Bookfair release add no tables, so they do not wait for `drizzl
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Consolidation | Types derive from schema; build + tests + `svelte-check` green                                                                                                                                 |
 | v0.3          | Insight calculations unit-tested, charts render real data; phone reaches the deployed app; own-check + quick add work in a bookstore trial; reading status + prices backfilled; Hitlist prints |
-| v0.4          | Queue reorders and persists                                                                                                                                                                    |
+| v0.4          | A read (and a re-read) can be logged days later with a picked date, from the phone; history dates editable; queue reorders and persists                                                        |
 | v0.5          | PWA installs on mobile; offline mutations queue and retry; forms are fast                                                                                                                      |
 | v0.6          | Receipt image generates and downloads; milestones trigger                                                                                                                                      |
 | v0.7          | Lighthouse PWA ≥ 90; accessibility audit passes; production Docker works                                                                                                                       |
