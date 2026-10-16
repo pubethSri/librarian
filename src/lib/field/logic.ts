@@ -282,3 +282,11 @@ export function parsePrice(text: string): number | undefined | null {
 	if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
 	return Number(t);
 }
+
+/** A typed volume number: 1, 12, 4.5 (fits the 0.1-precision column); else null */
+export function parseVolume(text: string): number | null {
+	const t = text.trim();
+	if (!/^\d{1,3}(\.\d)?$/.test(t)) return null;
+	const n = Number(t);
+	return n > 0 ? n : null;
+}

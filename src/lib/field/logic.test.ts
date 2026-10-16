@@ -3,6 +3,7 @@ import {
 	currentFairId,
 	lastPrice,
 	parsePrice,
+	parseVolume,
 	daysBetween,
 	fairsNewestFirst,
 	localDay,
@@ -295,5 +296,17 @@ describe('quick add helpers', () => {
 		expect(parsePrice('-5')).toBeNull();
 		expect(parsePrice('abc')).toBeNull();
 		expect(parsePrice('1.234')).toBeNull();
+	});
+});
+
+describe('parseVolume', () => {
+	it('accepts whole and one-decimal volume numbers', () => {
+		expect(parseVolume('1')).toBe(1);
+		expect(parseVolume(' 12 ')).toBe(12);
+		expect(parseVolume('4.5')).toBe(4.5);
+	});
+
+	it('rejects zero, blanks, junk and numbers the column cannot hold', () => {
+		for (const t of ['', '0', '-1', 'abc', '1.25', '1000']) expect(parseVolume(t)).toBeNull();
 	});
 });

@@ -6,6 +6,7 @@
 	import { createBooksListQuery } from '$lib/queries/books';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
+	import LocationToggle from '$lib/components/field/LocationToggle.svelte';
 	import { toast } from 'svelte-sonner';
 	import { ArrowLeft, Check, LoaderCircle, Plus, Search, Star, X } from '@lucide/svelte';
 	import {
@@ -53,7 +54,6 @@
 	const loading = $derived(seriesQuery.isPending || booksQuery.isPending);
 
 	// ─── Quick add ──────────────────────────────────────────────────────────
-	const LOCATIONS = ['apartment', 'home'] as const;
 	const settings = getFieldSettings();
 	const quickAdd = createQuickAddMutation();
 	const undoAdd = createUndoAddMutation();
@@ -347,26 +347,7 @@
 						class="h-12 w-full rounded-xl border border-input bg-background px-3 font-mono text-lg tabular-nums outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
 					/>
 				</label>
-				<div
-					role="radiogroup"
-					aria-label="Location"
-					class="flex h-12 shrink-0 gap-1 rounded-xl border border-input p-1"
-				>
-					{#each LOCATIONS as loc (loc)}
-						<button
-							type="button"
-							role="radio"
-							aria-checked={settings.location === loc}
-							onclick={() => (settings.location = loc)}
-							class="rounded-lg px-3 text-sm font-medium transition-colors {settings.location ===
-							loc
-								? 'bg-primary text-primary-foreground'
-								: 'text-muted-foreground active:bg-accent'}"
-						>
-							{BOOK_LOCATION_LABELS[loc]}
-						</button>
-					{/each}
-				</div>
+				<LocationToggle {settings} />
 			</div>
 			<p class="mt-2 text-xs text-muted-foreground">
 				{#if price === null}
