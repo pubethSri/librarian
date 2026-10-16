@@ -290,3 +290,77 @@ export function parseVolume(text: string): number | null {
 	const n = Number(t);
 	return n > 0 ? n : null;
 }
+
+// ─── Hitlist (B5) ────────────────────────────────────────────────────────────
+// The watchlist as a shopping list: each series' next volume (and the gaps
+// below it), grouped by publisher. Also the text that Copy / print give.
+
+export type HitlistSeriesLike = SearchableSeries & {
+	type: SeriesListItem['type'];
+	status: SeriesListItem['status'];
+	publisher: string | null;
+	watchlist: boolean;
+	tags: { id: number; name: string }[];
+};
+
+export type HitlistItem<T extends HitlistSeriesLike = HitlistSeriesLike> = {
+	series: T;
+	next: number;
+	missing: number[];
+	/** Books owned (extras and copies included) */
+	owned: number;
+};
+
+export type HitlistGroup<T extends HitlistSeriesLike = HitlistSeriesLike> = {
+	/** null = no publisher recorded */
+	publisher: string | null;
+	items: HitlistItem<T>[];
+};
+
+/** Tags used by the watchlist, by name — the Hitlist's filter chips */
+export function hitlistTags(series: readonly HitlistSeriesLike[]): { id: number; name: string }[] {
+	const tags = new Map<number, string>();
+	for (const s of series) if (s.watchlist) for (const t of s.tags) tags.set(t.id, t.name);
+	return [...tags].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Watchlist series that carry every selected tag, grouped by publisher
+ * (A→Z, unknown publisher last), each group sorted by name.
+ */
+export function buildHitlist<T extends HitlistSeriesLike>(
+	series: readonly T[],
+	booksBySeries: ReadonlyMap<number, readonly OwnedBookLike[]>,
+	tagIds: readonly number[] = []
+): HitlistGroup<T>[] {
+	const groups = new Map<string | null, HitlistItem<T>[]>();
+	for (const s of series) {
+		if (!s.watchlist) continue;
+		if (!tagIds.every((id) => s.tags.some((t) => t.id === id))) continue;
+		const owned = ownedVolumes(booksBySeries.get(s.id) ?? []);
+		const publisher = s.publisher?.trim() || null;
+		const list = groups.get(publisher) ?? [];
+		list.push({ series: s, next: owned.next, missing: owned.missing, owned: owned.total });
+		groups.set(publisher, list);
+	}
+	return [...groups]
+		.sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : a.localeCompare(b)))
+		.map(([publisher, items]) => ({
+			publisher,
+			items: items.sort((a, b) => a.series.shortName.localeCompare(b.series.shortName))
+		}));
+}
+
+/** Plain text for Copy: one line per series, publishers as headings */
+export function hitlistText(groups: readonly HitlistGroup[]): string {
+	const count = groups.reduce((n, g) => n + g.items.length, 0);
+	const lines = [`Hitlist — ${count} series`];
+	for (const g of groups) {
+		lines.push('', g.publisher ?? 'Unknown publisher');
+		for (const i of g.items) {
+			const missing = i.missing.length > 0 ? ` (missing ${i.missing.join(', ')})` : '';
+			lines.push(`- ${i.series.shortName} — vol. ${i.next}${missing}`);
+		}
+	}
+	return lines.join('\n');
+}

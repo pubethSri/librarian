@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+	buildHitlist,
+	hitlistTags,
+	hitlistText,
 	currentFairId,
 	lastPrice,
 	parsePrice,
@@ -308,5 +311,88 @@ describe('parseVolume', () => {
 
 	it('rejects zero, blanks, junk and numbers the column cannot hold', () => {
 		for (const t of ['', '0', '-1', 'abc', '1.25', '1000']) expect(parseVolume(t)).toBeNull();
+	});
+});
+
+describe('hitlist', () => {
+	const s = (
+		id: number,
+		shortName: string,
+		publisher: string | null,
+		tags: { id: number; name: string }[] = [],
+		watchlist = true
+	) => ({
+		id,
+		shortName,
+		fullName: shortName,
+		type: 'light_novel' as const,
+		status: 'ongoing' as const,
+		publisher,
+		watchlist,
+		tags
+	});
+	const isekai = { id: 1, name: 'isekai' };
+	const romance = { id: 2, name: 'romance' };
+	const series = [
+		s(1, 'Silent Witch', 'Phoenix Next', [isekai]),
+		s(2, 'Frieren', 'Siam Inter', [isekai, romance]),
+		s(3, 'Ougon', null, [romance]),
+		s(4, 'Alya', 'Phoenix Next'),
+		s(5, 'Not watched', 'Phoenix Next', [isekai], false)
+	];
+	const vol = (id: number, volumeNumber: number) => ({
+		id,
+		volumeNumber,
+		isExtra: false,
+		location: 'apartment' as const,
+		readingStatus: 'unread' as const,
+		timesRead: 0
+	});
+	const books = new Map([
+		[1, [vol(10, 1), vol(11, 2), vol(12, 4)]],
+		[2, [vol(20, 1)]]
+	]);
+
+	it('groups watchlist series by publisher, unknown last, names A→Z', () => {
+		const groups = buildHitlist(series, books);
+		expect(groups.map((g) => g.publisher)).toEqual(['Phoenix Next', 'Siam Inter', null]);
+		expect(groups[0].items.map((i) => i.series.shortName)).toEqual(['Alya', 'Silent Witch']);
+	});
+
+	it('gives the next volume and the gaps; nothing owned = vol. 1', () => {
+		const items = buildHitlist(series, books).flatMap((g) => g.items);
+		const witch = items.find((i) => i.series.id === 1);
+		expect(witch).toMatchObject({ next: 5, missing: [3], owned: 3 });
+		expect(items.find((i) => i.series.id === 4)).toMatchObject({ next: 1, missing: [], owned: 0 });
+	});
+
+	it('keeps only series with every selected tag', () => {
+		const ids = (tags: number[]) =>
+			buildHitlist(series, books, tags).flatMap((g) => g.items.map((i) => i.series.id));
+		expect(ids([1])).toEqual([1, 2]);
+		expect(ids([1, 2])).toEqual([2]);
+		expect(ids([])).toHaveLength(4);
+	});
+
+	it('lists the watchlist tags by name', () => {
+		expect(hitlistTags(series)).toEqual([isekai, romance]);
+	});
+
+	it('treats a blank publisher as unknown', () => {
+		expect(buildHitlist([s(9, 'X', '  ')], new Map())[0].publisher).toBeNull();
+	});
+
+	it('writes the copy text', () => {
+		expect(hitlistText(buildHitlist(series, books, [1]))).toBe(
+			[
+				'Hitlist — 2 series',
+				'',
+				'Phoenix Next',
+				'- Silent Witch — vol. 5 (missing 3)',
+				'',
+				'Siam Inter',
+				'- Frieren — vol. 2'
+			].join('\n')
+		);
 	});
 });
