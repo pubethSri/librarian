@@ -25,3 +25,20 @@ export function latestVolume(books: readonly VolumeLike[]): number {
 	const regular = books.filter((b) => !b.isExtra).map((b) => Number(b.volumeNumber));
 	return regular.length > 0 ? Math.max(...regular) : 0;
 }
+
+/**
+ * The book already standing in for `target`: same volume number (to the
+ * stored 0.1 precision) and the same extra flag. Field Mode's quick add
+ * refuses to insert a second one (`onlyIfMissing`); a real second copy is
+ * added on purpose from the desktop.
+ */
+export function findSameVolume<T extends VolumeLike>(
+	books: readonly T[],
+	target: VolumeLike
+): T | null {
+	const n = Number(target.volumeNumber).toFixed(1);
+	return (
+		books.find((b) => b.isExtra === target.isExtra && Number(b.volumeNumber).toFixed(1) === n) ??
+		null
+	);
+}

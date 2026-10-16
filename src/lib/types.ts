@@ -182,10 +182,14 @@ export type CreateBookPayload = {
 	source?: BookSource;
 	sourceEventId?: number;
 	isDraft?: boolean;
+	/** Field Mode quick add: 409 (with the existing book) instead of a second copy */
+	onlyIfMissing?: boolean;
 };
 
 /** `sourceEventId: null` clears the link (sent when source moves off bookfair) */
-export type UpdateBookPayload = Partial<Omit<CreateBookPayload, 'seriesId' | 'sourceEventId'>> & {
+export type UpdateBookPayload = Partial<
+	Omit<CreateBookPayload, 'seriesId' | 'sourceEventId' | 'onlyIfMissing'>
+> & {
 	sourceEventId?: number | null;
 };
 

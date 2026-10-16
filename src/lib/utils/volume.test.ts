@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { latestVolume, volumeLabel, volumeText } from './volume';
+import { findSameVolume, latestVolume, volumeLabel, volumeText } from './volume';
 
 describe('volumeLabel', () => {
 	it('shows a regular volume as its number, without the stored decimal', () => {
@@ -41,5 +41,28 @@ describe('latestVolume', () => {
 	it('is 0 when there are no regular volumes', () => {
 		expect(latestVolume([])).toBe(0);
 		expect(latestVolume([{ volumeNumber: '0.5', isExtra: true }])).toBe(0);
+	});
+});
+
+describe('findSameVolume', () => {
+	const books = [
+		{ id: 1, volumeNumber: '3.0', isExtra: false },
+		{ id: 2, volumeNumber: '4.5', isExtra: true },
+		{ id: 3, volumeNumber: '5.0', isExtra: false }
+	];
+
+	it('matches a stored "3.0" against a typed 3', () => {
+		expect(findSameVolume(books, { volumeNumber: 3, isExtra: false })?.id).toBe(1);
+	});
+
+	it('needs the same extra flag', () => {
+		expect(findSameVolume(books, { volumeNumber: 4.5, isExtra: false })).toBeNull();
+		expect(findSameVolume(books, { volumeNumber: '4.5', isExtra: true })?.id).toBe(2);
+		expect(findSameVolume(books, { volumeNumber: 5, isExtra: true })).toBeNull();
+	});
+
+	it('finds nothing for a new volume or an empty series', () => {
+		expect(findSameVolume(books, { volumeNumber: 6, isExtra: false })).toBeNull();
+		expect(findSameVolume([], { volumeNumber: 1, isExtra: false })).toBeNull();
 	});
 });

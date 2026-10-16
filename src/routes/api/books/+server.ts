@@ -4,6 +4,7 @@ import { db } from '$lib/server/db';
 import { books, reading, series, seriesTags, tags } from '$lib/server/db/schema';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { currentStatus, timesRead } from '$lib/reading';
+import { findSameVolume } from '$lib/utils/volume';
 
 // GET /api/books — List all books with optional filters
 export const GET: RequestHandler = async ({ url }) => {
@@ -118,7 +119,10 @@ export const GET: RequestHandler = async ({ url }) => {
 	return json(result);
 };
 
-// POST /api/books — Create a new book
+/** Advisory-lock namespace for "one insert per series at a time" */
+const LOCK_NAMESPACE = 4201;
+
+// POST /api/books — Create a new book (`onlyIfMissing: true` → 409 if the volume exists)
 export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.json();
 
@@ -132,20 +136,43 @@ export const POST: RequestHandler = async ({ request }) => {
 	});
 	if (!seriesExists) throw error(400, 'Series not found');
 
-	const [created] = await db
-		.insert(books)
-		.values({
-			seriesId: body.seriesId,
-			volumeNumber: Number(body.volumeNumber).toFixed(1),
-			isExtra: body.isExtra === true,
-			location: body.location || 'home',
-			boughtAt: body.boughtAt ? new Date(body.boughtAt) : null,
-			price: body.price || null,
-			source: body.source || null,
-			sourceEventId: body.sourceEventId || null,
-			isDraft: body.isDraft || false
-		})
-		.returning();
+	const values = {
+		seriesId: body.seriesId,
+		volumeNumber: Number(body.volumeNumber).toFixed(1),
+		isExtra: body.isExtra === true,
+		location: body.location || 'home',
+		boughtAt: body.boughtAt ? new Date(body.boughtAt) : null,
+		price: body.price === '' || body.price == null ? null : body.price,
+		source: body.source || null,
+		sourceEventId: body.sourceEventId || null,
+		isDraft: body.isDraft || false
+	};
+
+	// Opt-in duplicate guard (Field Mode quick add): another device may have
+	// added this volume since the phone loaded. The per-series advisory lock
+	// makes two simultaneous taps wait for each other instead of both passing.
+	// The desktop Add Volume dialog doesn't opt in — it may add a real copy.
+	if (body.onlyIfMissing === true) {
+		const result = await db.transaction(async (tx) => {
+			await tx.execute(sql`SELECT pg_advisory_xact_lock(${LOCK_NAMESPACE}, ${values.seriesId})`);
+			const existing = findSameVolume(
+				await tx.select().from(books).where(eq(books.seriesId, values.seriesId)),
+				values
+			);
+			if (existing) return { existing };
+			const [created] = await tx.insert(books).values(values).returning();
+			return { created };
+		});
+		if (result.existing) {
+			return json(
+				{ message: 'This volume is already in the collection', book: result.existing },
+				{ status: 409 }
+			);
+		}
+		return json(result.created, { status: 201 });
+	}
+
+	const [created] = await db.insert(books).values(values).returning();
 
 	return json(created, { status: 201 });
 };
