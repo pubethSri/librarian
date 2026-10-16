@@ -7,29 +7,29 @@
 
 - **Current version:** v0.3 — **in progress**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**. **Plan changed 2026-10-16:** Insights (old v0.4 items 4.2–4.7) was pulled forward and is **built**, as is B3; B4–B7 remain — see the schedule below.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** **B4 built** (2026-10-16, unattended run) on `feature/b4-quick-add` — Field Mode's own phone shell (Find · Add · Hitlist tabs), the where-am-I-buying chip, the server duplicate guard, quick add with Undo, and the Add tab for new series. Claude's pre-check on the scratch DB passed every "done when"; **awaiting your phone visual pass** (script below). Before that: Insights I1–I6 and B3 merged into `main` after your PC + phone passes.
-- **Branches:** `main` = Insights + B3. **`feature/b4-quick-add`** = `main` + B4 (B4.0–B4.5 + the wrap-up commit; **not merged, not pushed**).
-- **Next:** your **B4 visual pass** → merge → **B5 Hitlist** (the shell's third tab) → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 = Reading log flow (redesigned 2026-10-16) + Reading queue + insights polish.
+- **Latest:** **B4 + B5 built** (2026-10-16): B4 (unattended run) = Field Mode's own phone shell (Find · Add · Hitlist tabs), the where-am-I-buying chip, the server duplicate guard, quick add with Undo, the Add tab for new series; **B5** = the Hitlist tab (watchlist next volumes by publisher, tag filter, copy with fallback, print). Claude's pre-checks on the scratch DB passed; **awaiting your visual pass of both, bundled** (script below — planned for Oct 17). Before that: Insights I1–I6 and B3 merged into `main` after your PC + phone passes.
+- **Branches:** `main` = Insights + B3. **`feature/b4-quick-add`** = `main` + B4. **`feature/b5-hitlist`** = `feature/b4-quick-add` + B5 (stacked, so merging it brings both). **Not merged, not pushed.**
+- **Next:** your **B4 + B5 visual pass** → merge `feature/b5-hitlist` into `main` → **B6 deploy + hardening** → B7 trial run → tag `v0.3`. v0.4 = Reading log flow (redesigned 2026-10-16) + Reading queue + insights polish.
 
-### Next session — start here (B4 visual pass → B5 Hitlist)
+### Next session — start here (B4 + B5 visual pass → B6 deploy)
 
 **Schedule to the fair** (today is 2026-10-16; fair opens Oct 23, you attend 24–26):
 
-| Day       | Work                                                                                                                                          |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Oct 16–17 | ~~PC + phone visual passes → merge~~ ✅. ~~B4 built~~ ✅ (16th). **B4 visual pass → merge.** **Decide B6 hosting.** Create the Oct 2026 fair. |
-| Oct 17–18 | **B5** Hitlist as the shell's third tab (small: watchlist → next volume, print, copy with fallback)                                           |
-| Oct 19–20 | **B6** deploy + hardening (audit 🔴 #4, 🟠 #5–7, #10–11; daily `pg_dump`) → **deployed by Oct 20**                                            |
-| Oct 21–22 | **B7** trial run at a bookstore, fix what hurts → tag `v0.3`                                                                                  |
+| Day       | Work                                                                                                                      |
+| --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Oct 16    | ~~B4 built~~ ✅ · ~~B5 built~~ ✅ (both a day or two early)                                                               |
+| Oct 17    | **B4 + B5 visual pass → merge.** **Decide B6 hosting.** Create the Oct 2026 fair.                                         |
+| Oct 18–20 | **B6** deploy + hardening (audit 🔴 #4, 🟠 #5–7, #10–11; daily `pg_dump`) → **deployed by Oct 20** — now with a spare day |
+| Oct 21–22 | **B7** trial run at a bookstore, fix what hurts → tag `v0.3`                                                              |
 
-B4 finished a day early, so B5 has slack; B6 is still the one that can't slip (no deploy = no phone at the fair).
+B6 is still the one that can't slip (no deploy = no phone at the fair). With B4 + B5 done early, B6 can start as soon as hosting is decided.
 
-1. **B4 visual pass** — run the "Field Mode (B4) visual-pass script" below. Pass → merge `feature/b4-quick-add` into `main`. Fixes go on the branch first.
+1. **B4 + B5 visual pass** — run the "Field Mode (B4 + B5) visual-pass script" below. Pass → merge **`feature/b5-hitlist`** into `main` (it contains B4). Fixes go on that branch first.
 2. **Create the real fair** (มหกรรมหนังสือระดับชาติ 31, 2026-10-23) on the Bookfairs page of the real app before the fair. The chip suggests it automatically **from Oct 23 through Nov 2**; before the 23rd it says Not at a fair (right for the Oct 21–22 bookstore trial).
-3. **Build B5** in the shell's third tab, `src/routes/(field)/field/hitlist/+page.svelte` (a placeholder today): watchlist series with the next unowned volume (`ownedVolumes` in `$lib/field/logic`), grouped by publisher; tag filter; print-friendly; copy with a fallback (`navigator.clipboard` is HTTPS-only — audit #2). The shell (`(field)/field/+layout.svelte`) and `getFieldSettings()` are ready to reuse; a hitlist row can open the series in Find (`/field?series=<id>`) for a one-tap add.
+3. **B6 deploy + hardening** — decide hosting first (item 4). Then the hardening list in `ROADMAP.md` (LAN / deploy audit #4–7, #10–12) and a daily `pg_dump`. Note for the deploy: Copy on the Hitlist works over plain HTTP through its fallback, but a real HTTPS origin (Tailscale `serve` or Vercel) gives the clean clipboard path and is needed later for the PWA (audit #3).
 4. **Still open:** your visual pass of the **extra volumes** change (Silent Witch reads 1–4, Extra, 5–9, Extra; Latest Volume 9; Console suggests vol. 10). **B6 hosting** — laptop + Tailscale vs Vercel Hobby + Neon Free (`ROADMAP.md` B6 has both); **decide by Oct 18** so B6 can start on the 19th.
 5. **Reading flow is being redesigned — but after the fair** (Reading-flow Decisions 2026-10-16; `ROADMAP.md` v0.4 item 4.2). Until then: missed backfill reads go through Console → Bulk Edit → Set reading status → Read (undated); per-book Mark read stamps _now_ (finish only). Field Mode has **no reading actions**: owned tiles are inert, kept free for the v0.4 tile actions.
-6. **Found during B4 (not fixed — outside B4):** the desktop **Books table prints regular volumes raw** ("10.0", `BooksTable.svelte:298`) since the extra-volumes change — a one-line `volumeLabel(row)` fix. The Books table also has no price / fair column; a phone-added book's price and fair show on the fair page (By series) and in Edit Book.
+6. **Found during B4 (not fixed — outside B4/B5):** the desktop **Books table prints regular volumes raw** ("10.0", `BooksTable.svelte:298`) since the extra-volumes change — a one-line `volumeLabel(row)` fix. The Books table also has no price / fair column; a phone-added book's price and fair show on the fair page (By series) and in Edit Book.
 7. **Working agreement:** Claude runs build / check / lint / tests and browser pre-checks on the **scratch DB only** (`librarian_test`, test server on port 5174 — see Environment); you do the visual pass. Back up the real DB before risky work (`temp/backups/`). Field Mode writes data: test it on 5174 only.
 
 ### B4 checklist — phone shell + quick add (pre-approved for an unattended run)
@@ -60,13 +60,29 @@ B4 finished a day early, so B5 has slack; B6 is still the one that can't slip (n
 - **Fair suggestion window = from the fair's day through +10 days** (never before it opens), replacing ±3 days — so the Oct 21–22 bookstore trial doesn't default to the fair.
 - **A picked fair / Not at a fair is remembered for the rest of that day**; the next day the chip re-suggests from the dates. Location is remembered until changed.
 
-### Field Mode (B4) visual-pass script
+### B5 — Hitlist (built 2026-10-16, in this session on the user's request)
+
+- [x] **B5 Hitlist** in the shell's third tab (`src/routes/(field)/field/hitlist/+page.svelte`): every watchlist series with its **next volume** and gaps, **grouped by publisher** (A→Z, "Unknown publisher" last), names A→Z; **tag chips** in one horizontally scrolling row (AND, like the rest of the app; Clear); a row **opens the series in Find** for a one-tap quick add; **Copy** (plain text, publishers as headings) via `navigator.clipboard` → textarea + `execCommand` → a manual-copy panel (audit #2); **Print** hides the shell and prints a compact dated list (the offline fallback). Pure `buildHitlist` / `hitlistTags` / `hitlistText` in `$lib/field/logic` (tested); copy in `$lib/field/clipboard.ts`.
+  - _Pre-check (scratch, 375×812):_ 14 watchlist series in 3 publisher groups (Animag 2 · Phoenix Next 11 · Siam Inter Comic 1), gaps shown (สัมพันธ์ลับสัปดาห์ละครั้ง: missing 4, 5); Romance → 9 of 14, Romance + Yuri → 5; chip row 40 px and scrolls, no page sideways scroll; a real tap on Copy copied ("Copied 14 series"); with the clipboard API removed and `execCommand` failing, the manual-copy panel showed the right text; Silent Witch row → `/field?series=18` with + Vol. 10. Print CSS is generated (`print:hidden` etc.); the print preview itself is for your pass.
+  - _Decisions:_ a series' status is shown when not Ongoing (an Ended series still lists next = latest + 1 — there is no published count); the filter isn't remembered; the Hitlist reads the fresh queries, so it reflects adds from Find immediately.
+
+### Field Mode (B4 + B5) visual-pass script
+
+Planned for Oct 17 — one run covers both. Where:
+
+- **Phone, scratch data (recommended):** run `node .claude/dev-test-db.mjs --host` in a terminal (the scratch server on port 5174, now also on the LAN), then open `http://<laptop-IP>:5174/field` on the phone and sign in. Test adds stay out of the real collection.
+- **Or** the Claude browser pane / desktop Chrome device mode at 375×812 on `http://localhost:5174` (the `dev-test-db` launch config).
+- Over `npm run dev -- --host` (port **5173**) you are on the **real DB**: every add is real (Undo removes it).
+
+Scratch has a fair dated Oct 16, "B4 test fair (scratch only)" — still inside its +10-day window on the 17th, so the chip suggests it.
 
 Where: the **scratch server** keeps test adds out of real data — start `dev-test-db` (port 5174) and use the Claude browser pane or desktop Chrome device mode at 375×812. On the real phone over LAN (`npm run dev -- --host`, port 5173) you are on the **real DB**: every add is real (Undo removes it). Scratch has a fair dated today, "B4 test fair (scratch only)", so the chip has something to suggest.
 
+**B4 — shell, chip, quick add, Add tab**
+
 1. **Banner** — `/` at phone width → "Open Field Mode" banner on the dashboard. ✕ hides it; it stays hidden after a reload. At desktop width: no banner. _Red flag:_ a redirect, or the banner back after reload.
-2. **Shell** — tap the banner → `/field`: no sidebar / breadcrumb; top = fair chip + "Desktop"; bottom = Find · Add · Hitlist with Find marked. Tap each tab (Hitlist says "Coming in B5"); Desktop → dashboard. Nothing scrolls sideways; the tab bar clears the phone's home indicator. _Red flag:_ the end of a long list hidden under the tab bar.
-3. **Fair chip** — shows "B4 test fair (scratch only)" (suggested). Tap → sheet: Not at a fair + fairs newest first (มหกรรม 31 on top). Pick **Not at a fair** → chip changes; reload → still Not at a fair. Pick the test fair again.
+2. **Shell** — tap the banner → `/field`: no sidebar / breadcrumb; top = fair chip + "Desktop"; bottom = Find · Add · Hitlist with Find marked. Tap each tab; Desktop → dashboard. Nothing scrolls sideways; the tab bar clears the phone's home indicator. _Red flag:_ the end of a long list hidden under the tab bar.
+3. **Fair chip** — shows "B4 test fair (scratch only)" (suggested; a pick from today is forgotten tomorrow, by design). Tap → sheet: Not at a fair + fairs newest first (มหกรรม 31 on top). Pick **Not at a fair** → chip changes; reload → still Not at a fair. Pick the test fair again.
 4. **Find still works** — type `sw` / `silent` → Silent Witch; open it; the phone's back button returns to the results with the query kept.
 5. **Quick add** — in Silent Witch: price pre-filled (510), Apartment selected. Tap **+ Vol. 10** → spinner, then tile 10 shows **A**, the next tile becomes **+ Vol. 11**, toast "Added Vol. 10 · Silent Witch · Undo" under the header. Tap **Undo** within 6 s → "Removed Vol. 10", tile 10 gone, + Vol. 10 back. _Red flag:_ the tile flickers back to missing, the toast covers the chip, no Undo.
 6. **Owned tiles are inert** — tapping vols. 1–9 does nothing.
@@ -75,6 +91,15 @@ Where: the **scratch server** keeps test adds out of real data — start `dev-te
 9. **Desktop check** — `/bookfairs/13` (the test fair) lists the added books with price and location; the Books table shows Source Bookfair and today's date. Remove the test books afterwards (Undo, or delete on desktop).
 10. **Add tab** — type `silent witch` → Silent Witch under "Already in the collection" with the "already exists" hint; tap it → opens in Find. Back to Add, type a new name → **Create "…"** → Save says "Pick a type" (disabled) → **Manga**, vol. 1 (−/+ work), optional price → **Save** → toast "Created … · saved as a draft"; the new series opens in Find with vol. 1. Desktop: listed on the Series page; dashboard **Drafts** = 1. Delete the test series afterwards.
 11. **Private window** (optional) — Field Mode works; choices just aren't remembered.
+
+**B5 — Hitlist**
+
+12. **List** — Hitlist tab: "14 watchlist series · next volume to buy"; groups **Animag · 2**, **Phoenix Next · 11**, **Siam Inter Comic · 1**, names A→Z; each row shows **VOL. N** big on the right, gaps underneath (สัมพันธ์ลับสัปดาห์ละครั้ง: "missing 4, 5"). The last row clears the tab bar. _Red flag:_ a non-watchlist series, a wrong next volume (compare 2–3 with Find).
+13. **Tag filter** — the chip row scrolls sideways on its own (the page doesn't). Tap **Romance** → "9 of 14"; add **Yuri** → 5 (only series with both); **Clear** → 14.
+14. **Row → Find** — tap Silent Witch → Find opens it with **+ Vol. 10**; add it (step 5), go back to Hitlist → Silent Witch now says **VOL. 11**. Undo / delete afterwards.
+15. **Copy** — on the phone over `http://<IP>:5174` (not HTTPS) tap **Copy** → either "Copied 14 series" (paste into Notes/LINE to check: title line, publishers as headings, "- Name — vol. N (missing …)") or a panel "This browser won't copy here" with the text to select. Both are OK; nothing at all is the red flag.
+16. **Print** — tap the printer (phone: Print / Save as PDF; desktop: Ctrl+P) → only the list: title with today's date, publisher headings, compact rows; **no** header chip, tab bar, chips or buttons. Save it as a PDF — that's the offline fallback for the fair.
+17. **Empty states** (optional, desktop) — un-star every watchlist series on scratch → "The watchlist is empty" with the hint; re-star after.
 
 ### Bookfair release progress (v0.3)
 
@@ -89,7 +114,7 @@ Where: the **scratch server** keeps test adds out of real data — start `dev-te
 | I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16)  |
 | B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done (PC + phone pass 2026-10-16) |
 | B4    | Field Mode 2 — phone shell + quick add                       | ✅ Built (awaiting visual pass)      |
-| B5    | Bookfair Hitlist (simple)                                    | ⬜                                   |
+| B5    | Bookfair Hitlist (simple)                                    | ✅ Built (awaiting visual pass)      |
 | B6    | Deploy on the laptop (Tailscale)                             | ⬜                                   |
 | B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                   |
 
@@ -505,7 +530,7 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 - **Database:** Docker container `librarian-db-1` (Postgres 16, volume `librarian_pgdata`, port 5432), restored from the Linux dump. Row counts matched at migration (bookfairs 1 · books 310 · reading 300 · series 46 · series_tags 188 · tags 20). Data entered on Linux after 2026-10-13 18:15 is not included; the Linux copy is the fallback.
 - **LAN dev:** `npm run dev -- --host`, then `http://<laptop-IP>:5173` from another device (allow Node.js through Windows Firewall on private networks). Home network only.
 - **Backups / scratch DB:** `temp/backups/*.dump` (untracked `temp/`). A scratch database `librarian_test` in the same container is used for browser testing; drop it any time (`DROP DATABASE librarian_test`). Re-clone from the real DB: `pg_dump -Fc` of `local` → `CREATE DATABASE librarian_test` → `pg_restore --no-owner`.
-- **Scratch test server:** `.claude/launch.json` config `dev-test-db` runs `.claude/dev-test-db.mjs` — the Vite dev server on **port 5174** with `DATABASE_URL` swapped to `librarian_test` (reads `.env`, changes only the DB name). Both files are local (untracked). Sign in once in the browser pane; the password is never entered by Claude.
+- **Scratch test server:** `.claude/launch.json` config `dev-test-db` runs `.claude/dev-test-db.mjs` — the Vite dev server on **port 5174** with `DATABASE_URL` swapped to `librarian_test` (reads `.env`, changes only the DB name). Both files are local (untracked). Extra arguments go to Vite: `node .claude/dev-test-db.mjs --host` also serves the scratch server to the LAN (`http://<laptop-IP>:5174`) for phone tests. Sign in once in the browser pane; the password is never entered by Claude.
 - **npm install** blocks esbuild's install scripts; harmless, the build works.
 - **`npm audit`:** 18 advisories (1 low, 11 moderate, 6 high), all dev tooling — not yet triaged (Tier 2 in `ROADMAP.md`).
 
@@ -537,6 +562,7 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 | `src/lib/field/{settings.svelte,storage}.ts`           | Field Mode per-device settings (fair chip, location; via context) + safe `localStorage`      |
 | `src/routes/(field)/field/*`                           | Field Mode phone shell (layout + bottom tabs) · Find · Add · Hitlist                         |
 | `src/lib/components/field/*`                           | `FairPicker` (header chip + sheet), `LocationToggle`                                         |
+| `src/lib/field/clipboard.ts`                           | `copyText()` — clipboard API, then textarea + `execCommand` (plain HTTP)                     |
 | `src/lib/queries/field.ts`                             | Quick add (409 → `AlreadyAddedError`), undo, new series + first volume                       |
 | `src/lib/server/reading.ts`                            | `applyReadingStatus(tx, bookIds, status, now)` — applies the rules for one or many books     |
 | `src/lib/utils/{id,suggest,bookfairNames}.ts`          | `newId()` (LAN-safe ids); suggestion helpers; fair-name suggestions — all unit-tested        |
@@ -599,6 +625,7 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-16 | **B5 Hitlist built** (branch `feature/b5-hitlist`, stacked on B4): watchlist next volumes + gaps by publisher, AND tag filter, row → Find, Copy with HTTP fallback, print-only list. Visual-pass script bundled with B4's for Oct 17. `.claude/dev-test-db.mjs` passes extra args (`--host` → scratch server on the LAN for phone tests). Tests 266 → 272.                                                                                                                                                                                                                                       |
 | 2026-10-16 | **B4 Field Mode 2 built** (branch `feature/b4-quick-add`, unattended run): phone shell `(field)` with Find · Add · Hitlist tabs + dashboard banner; where-am-I-buying chip (fair from its day → +10, remembered for the day, purchases dated today); `POST /api/books` `onlyIfMissing` → 409 under an advisory lock; quick add on next / missing tiles with price pre-fill, location toggle, 6 s Undo and the 409 message; Add tab creates a series + draft first volume. Tests 246 → 266. Awaiting visual pass.                                                                                 |
 | 2026-10-16 | B3 **phone pass passed**. B4 run rules: ask every pre-build question in one batch first, then build unattended (questions found mid-build are noted, not asked).                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 2026-10-16 | **Phone shell folded into B4** (docs): Field Mode gets its own phone layout with Find · Add · Hitlist tabs before the fair; v0.5 becomes the "Phone app" phase. `main` pushed.                                                                                                                                                                                                                                                                                                                                                                                                                   |
