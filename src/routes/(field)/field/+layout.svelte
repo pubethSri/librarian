@@ -4,10 +4,26 @@
 	// the QueryClientProvider from the root layout.
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import { Toaster } from '$lib/components/ui/sonner';
+	import FairPicker from '$lib/components/field/FairPicker.svelte';
+	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
+	import { createFieldSettings, setFieldSettings } from '$lib/field/settings.svelte';
 	import { CirclePlus, ListChecks, Monitor, Search } from '@lucide/svelte';
 
 	let { children } = $props();
+
+	const bookfairsQuery = createBookfairsListQuery();
+	const settings = setFieldSettings(createFieldSettings(() => bookfairsQuery.data));
+
+	onMount(() => {
+		settings.load();
+		const onVisible = () => {
+			if (document.visibilityState === 'visible') settings.refreshDay();
+		};
+		document.addEventListener('visibilitychange', onVisible);
+		return () => document.removeEventListener('visibilitychange', onVisible);
+	});
 
 	const tabs = [
 		{ href: resolve('/field'), label: 'Find', icon: Search },
@@ -22,10 +38,11 @@
 	<header
 		class="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80"
 	>
-		<span class="text-sm font-semibold tracking-tight text-foreground">Field Mode</span>
+		<span class="sr-only">Field Mode</span>
+		<FairPicker {settings} fairs={bookfairsQuery.data} />
 		<a
 			href={resolve('/')}
-			class="ml-auto flex h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+			class="ml-auto flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
 		>
 			<Monitor class="h-3.5 w-3.5" /> Desktop
 		</a>

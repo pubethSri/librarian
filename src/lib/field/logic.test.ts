@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
+	currentFairId,
+	daysBetween,
+	fairsNewestFirst,
+	localDay,
+	parseFairChoice,
+	purchaseFields,
+	suggestFair,
 	groupBySeries,
 	initials,
 	matchScore,
@@ -150,5 +157,91 @@ describe('groupBySeries', () => {
 			],
 			[8, [{ id: 2, seriesId: 8 }]]
 		]);
+	});
+});
+
+describe('where am I buying', () => {
+	const fairs = [
+		{ id: 4, date: '2026-03-28' },
+		{ id: 12, date: '2026-10-23' },
+		{ id: 5, date: '2025-10-12' }
+	];
+
+	it('formats the local day', () => {
+		expect(localDay(new Date(2026, 9, 5, 23, 59))).toBe('2026-10-05');
+	});
+
+	it('counts days between calendar days', () => {
+		expect(daysBetween('2026-10-23', '2026-11-02')).toBe(10);
+		expect(daysBetween('2026-10-23', '2026-10-20')).toBe(-3);
+		expect(daysBetween('2026-10-23T00:00:00.000Z', '2026-10-23')).toBe(0);
+	});
+
+	it('sorts fairs newest first', () => {
+		expect(fairsNewestFirst(fairs).map((f) => f.id)).toEqual([12, 4, 5]);
+	});
+
+	it('suggests a fair from its day through 10 days later', () => {
+		expect(suggestFair(fairs, '2026-10-23')?.id).toBe(12);
+		expect(suggestFair(fairs, '2026-10-26')?.id).toBe(12);
+		expect(suggestFair(fairs, '2026-11-02')?.id).toBe(12);
+		expect(suggestFair(fairs, '2026-11-03')).toBeNull();
+	});
+
+	it('never suggests a fair before it opens (the bookstore trial)', () => {
+		expect(suggestFair(fairs, '2026-10-21')).toBeNull();
+		expect(suggestFair(fairs, '2026-10-22')).toBeNull();
+	});
+
+	it('picks the most recently opened of two overlapping fairs', () => {
+		const two = [...fairs, { id: 13, date: '2026-10-25' }];
+		expect(suggestFair(two, '2026-10-26')?.id).toBe(13);
+	});
+
+	it('parses a stored choice and rejects junk', () => {
+		expect(parseFairChoice('{"day":"2026-10-24","fairId":12}')).toEqual({
+			day: '2026-10-24',
+			fairId: 12
+		});
+		expect(parseFairChoice('{"day":"2026-10-24","fairId":null}')?.fairId).toBeNull();
+		expect(parseFairChoice('nope')).toBeNull();
+		expect(parseFairChoice('{"fairId":12}')).toBeNull();
+		expect(parseFairChoice('{"day":"2026-10-24","fairId":"12"}')).toBeNull();
+		expect(parseFairChoice(null)).toBeNull();
+	});
+
+	it("keeps today's choice, including Not at a fair during a fair", () => {
+		expect(currentFairId({ day: '2026-10-24', fairId: 4 }, fairs, '2026-10-24')).toEqual({
+			fairId: 4,
+			suggested: false
+		});
+		expect(currentFairId({ day: '2026-10-24', fairId: null }, fairs, '2026-10-24')).toEqual({
+			fairId: null,
+			suggested: false
+		});
+	});
+
+	it('re-suggests on a new day or when the chosen fair is gone', () => {
+		expect(currentFairId({ day: '2026-10-23', fairId: null }, fairs, '2026-10-24').fairId).toBe(12);
+		expect(currentFairId({ day: '2026-10-24', fairId: 99 }, fairs, '2026-10-24').fairId).toBe(12);
+		expect(currentFairId(null, fairs, '2026-10-21')).toEqual({ fairId: null, suggested: true });
+	});
+
+	it('trusts a remembered fair until the fair list loads', () => {
+		expect(currentFairId({ day: '2026-10-24', fairId: 99 }, undefined, '2026-10-24').fairId).toBe(
+			99
+		);
+	});
+
+	it('dates a purchase today, at a fair or a bookstore', () => {
+		expect(purchaseFields(12, '2026-10-24')).toEqual({
+			source: 'bookfair',
+			sourceEventId: 12,
+			boughtAt: '2026-10-24'
+		});
+		expect(purchaseFields(null, '2026-10-21')).toEqual({
+			source: 'bookstore',
+			boughtAt: '2026-10-21'
+		});
 	});
 });

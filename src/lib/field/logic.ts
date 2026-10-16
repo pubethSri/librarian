@@ -157,3 +157,93 @@ export function groupBySeries<T extends { seriesId: number }>(
 	}
 	return map;
 }
+
+// ─── Where am I buying (B4) ──────────────────────────────────────────────────
+// The phone remembers one choice per day — a bookfair, or "not at a fair"
+// (a bookstore). A new day re-suggests from the dates, so yesterday's choice
+// can't mis-tag today's purchases.
+
+/** Days a fair stays suggested after its (opening) day — fairs run ~10 days */
+export const FAIR_SUGGEST_DAYS = 10;
+
+/** The local calendar day, `YYYY-MM-DD` */
+export function localDay(now: Date): string {
+	const m = String(now.getMonth() + 1).padStart(2, '0');
+	const d = String(now.getDate()).padStart(2, '0');
+	return `${now.getFullYear()}-${m}-${d}`;
+}
+
+/** Today on this device, `YYYY-MM-DD` */
+export function todayLocal(): string {
+	return localDay(new Date());
+}
+
+/** Whole days from `from` to `to`, both `YYYY-MM-DD` */
+export function daysBetween(from: string, to: string): number {
+	const ms =
+		Date.parse(`${to.slice(0, 10)}T00:00:00Z`) - Date.parse(`${from.slice(0, 10)}T00:00:00Z`);
+	return Math.round(ms / 86_400_000);
+}
+
+export type FairLike = { id: number; date: string };
+
+/** Fairs newest first (by date, then newest id) */
+export function fairsNewestFirst<T extends FairLike>(fairs: readonly T[]): T[] {
+	return [...fairs].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+}
+
+/**
+ * The fair you are probably at: one whose day is today or up to
+ * `FAIR_SUGGEST_DAYS` before it (never one that hasn't opened yet); the most
+ * recently opened wins. Null = not at a fair.
+ */
+export function suggestFair<T extends FairLike>(fairs: readonly T[], today: string): T | null {
+	return (
+		fairsNewestFirst(fairs).find((f) => {
+			const since = daysBetween(f.date, today);
+			return since >= 0 && since <= FAIR_SUGGEST_DAYS;
+		}) ?? null
+	);
+}
+
+/** What the phone remembers: the choice and the day it was made */
+export type StoredFairChoice = { day: string; fairId: number | null };
+
+export function parseFairChoice(raw: string | null): StoredFairChoice | null {
+	if (!raw) return null;
+	try {
+		const v = JSON.parse(raw);
+		if (typeof v?.day !== 'string') return null;
+		if (v.fairId !== null && typeof v.fairId !== 'number') return null;
+		return { day: v.day, fairId: v.fairId };
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * The fair in effect today: today's remembered choice (while that fair still
+ * exists), else the suggestion. `fairs` undefined = not loaded yet, so a
+ * remembered fair is trusted until the list arrives.
+ */
+export function currentFairId(
+	stored: StoredFairChoice | null,
+	fairs: readonly FairLike[] | undefined,
+	today: string
+): { fairId: number | null; suggested: boolean } {
+	if (stored && stored.day === today) {
+		const exists = stored.fairId === null || !fairs || fairs.some((f) => f.id === stored.fairId);
+		if (exists) return { fairId: stored.fairId, suggested: false };
+	}
+	return { fairId: fairs ? (suggestFair(fairs, today)?.id ?? null) : null, suggested: true };
+}
+
+/** Source, fair and purchase day for a book bought from the phone today */
+export function purchaseFields(
+	fairId: number | null,
+	today: string
+): { source: 'bookfair' | 'bookstore'; sourceEventId?: number; boughtAt: string } {
+	return fairId === null
+		? { source: 'bookstore', boughtAt: today }
+		: { source: 'bookfair', sourceEventId: fairId, boughtAt: today };
+}
