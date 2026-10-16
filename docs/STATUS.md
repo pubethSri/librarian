@@ -7,25 +7,25 @@
 
 - **Current version:** v0.3 — **in progress**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**. **Plan changed 2026-10-16:** Insights (old v0.4 items 4.2–4.7) was pulled forward and is **built**, as is B3; B4–B7 remain — see the schedule below.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** **B3 Field Mode 1 "Do I own this?" built** (2026-10-16, branch `feature/field-mode`) and **Insights I1–I6 built** (branch `feature/insights`). Neither is merged; both are Claude-checked on the scratch DB and **await your visual pass** (scripts below). The 241 backfill read dates were cleared on the real DB before Insights (backup `temp/backups/local-before-insights-20261016-0053.dump`).
-- **Branches:** `main` = everything up to the backfill. `feature/insights` (6 commits) → `feature/field-mode` (branched from it, + B3). Merging `feature/field-mode` into `main` brings both — a fast-forward, since `main` hasn't moved.
-- **Next:** your visual passes (Insights, Field Mode) → merge → **B4 Field Mode 2 — quick add** → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 = Reading log flow (redesigned 2026-10-16) + Reading queue + insights polish.
+- **Latest:** **Insights I1–I6 and B3 Field Mode "Do I own this?" merged into `main`** (2026-10-16) after your **PC visual pass** (both passed). Field Mode's **phone pass is still open** (your phone was charging) — run it before B4 starts. The 241 backfill read dates were cleared on the real DB before Insights (backup `temp/backups/local-before-insights-20261016-0053.dump`).
+- **Branches:** `main` = everything (fast-forwarded from `feature/field-mode`, which contains `feature/insights`). Start B4 on a new branch from `main`.
+- **Next:** Field Mode phone pass → **B4 Field Mode 2 — quick add** → B5 Hitlist → B6 deploy + hardening → B7 trial run → tag `v0.3`. v0.4 = Reading log flow (redesigned 2026-10-16) + Reading queue + insights polish.
 
 ### Next session — start here (B4 quick add)
 
 **Schedule to the fair** (today is 2026-10-16; fair opens Oct 23, you attend 24–26):
 
-| Day       | Work                                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------------------- |
-| Oct 16–17 | Your visual passes (Insights, Field Mode) → merge. **Decide B6 hosting.** Create the Oct 2026 fair.     |
-| Oct 17    | **B4** quick add (the biggest remaining item: writes from the phone, undo, duplicate guard, new series) |
-| Oct 18    | **B5** Hitlist (small: watchlist → next volume, print, copy with fallback)                              |
-| Oct 19–20 | **B6** deploy + hardening (audit 🔴 #4, 🟠 #5–7, #10–11; daily `pg_dump`) → **deployed by Oct 20**      |
-| Oct 21–22 | **B7** trial run at a bookstore, fix what hurts → tag `v0.3`                                            |
+| Day       | Work                                                                                                         |
+| --------- | ------------------------------------------------------------------------------------------------------------ |
+| Oct 16–17 | ~~PC visual passes → merge~~ ✅. **Field Mode phone pass.** **Decide B6 hosting.** Create the Oct 2026 fair. |
+| Oct 17    | **B4** quick add (the biggest remaining item: writes from the phone, undo, duplicate guard, new series)      |
+| Oct 18    | **B5** Hitlist (small: watchlist → next volume, print, copy with fallback)                                   |
+| Oct 19–20 | **B6** deploy + hardening (audit 🔴 #4, 🟠 #5–7, #10–11; daily `pg_dump`) → **deployed by Oct 20**           |
+| Oct 21–22 | **B7** trial run at a bookstore, fix what hurts → tag `v0.3`                                                 |
 
 If B4 runs long, cut B5 to "print the watchlist with next volumes" — B6 is the one that can't slip (no deploy = no phone at the fair).
 
-1. **Merge first.** If your visual passes are done, fast-forward `main` to `feature/field-mode` (`git switch main`, then `git merge --ff-only feature/field-mode`), push, and branch B4 from `main`. If a pass turned something up, fix it on `feature/field-mode` first.
+1. **Merged** (2026-10-16): `main` has Insights + B3. Branch B4 from `main`. First, your **phone pass** of Field Mode (the B3 script, steps 1–7, on the phone over the LAN); anything it turns up gets fixed before B4.
 2. **Before B4: the fair must exist.** The newest bookfair in the DB is สัปดาห์หนังสือแห่งชาติ 54 (2026-03-28); the Oct 23 fair (presumably มหกรรมหนังสือระดับชาติ 31) isn't created yet. You create it on the Bookfairs page (real DB); Claude re-clones the scratch DB from `local` afterwards so B4 tests against it.
 3. **Build B4 — Field Mode 2, quick add** (`ROADMAP.md` → Bookfair release B4) on top of `/field`: choose the bookfair once (remembered on the device), then from a series' Field view tap **+ Vol. N** (the "next" tile already exists in `src/routes/(app)/field/+page.svelte`) → saved immediately with an **Undo** toast; optional price; location defaults to Apartment; source = bookfair + the fair's event + the fair's date. A minimal **new series** (name + type, saved as a draft to finish on desktop). Reuse `createBookMutation` / the batch endpoint, `newId()` (never `crypto.randomUUID` — the phone uses plain HTTP over the LAN) and the `SuggestInput` patterns.
 4. **Cross-device staleness (audit #9) — half done.** Field Mode's series/books queries already use `{ fresh: true }` (refetch on mount + tab focus). B4 still needs the **save-time duplicate guard**: before adding vol. N, refetch (or have the server check) so the phone and the laptop can't both add the same volume; a true second copy should need an explicit "add another copy".
@@ -35,22 +35,22 @@ If B4 runs long, cut B5 to "print the watchlist with next volumes" — B6 is the
 
 ### Bookfair release progress (v0.3)
 
-| #     | Item                                                         | Status                               |
-| ----- | ------------------------------------------------------------ | ------------------------------------ |
-| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)     |
-| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)         |
-| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)         |
-| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)     |
-| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                   |
-| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)  |
-| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Built (awaiting your visual pass) |
-| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Built (awaiting your visual pass) |
-| B4    | Field Mode 2 — quick add                                     | ⬜ **Next**                          |
-| B5    | Bookfair Hitlist (simple)                                    | ⬜                                   |
-| B6    | Deploy on the laptop (Tailscale)                             | ⬜                                   |
-| B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                   |
+| #     | Item                                                         | Status                              |
+| ----- | ------------------------------------------------------------ | ----------------------------------- |
+| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)    |
+| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)        |
+| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)        |
+| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)    |
+| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                  |
+| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass) |
+| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16) |
+| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done on PC (phone pass open)     |
+| B4    | Field Mode 2 — quick add                                     | ⬜ **Next**                         |
+| B5    | Bookfair Hitlist (simple)                                    | ⬜                                  |
+| B6    | Deploy on the laptop (Tailscale)                             | ⬜                                  |
+| B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                  |
 
-### Insights progress (I1–I6, branch `feature/insights`)
+### Insights progress (I1–I6, merged 2026-10-16)
 
 Timebox: through **Oct 17** (user's call 2026-10-16); whatever is done then ships and B3 starts. Cut order if short: I6 → I4 → I5.
 
@@ -536,6 +536,7 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-16 | **Insights + B3 merged into `main`** after the user's PC visual pass; Field Mode phone pass still open.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | 2026-10-16 | **Reading flow redesigned (docs only, build in v0.4):** log a read once, when you remember, with a picked finish day (optional start); a re-read in one step; reading dates as calendar days; reading-history editor; Field Mode tile actions + "Currently reading" strip. `ROADMAP.md` v0.4 gains item 4.2.                                                                                                                                                                                                                                                                                     |
 | 2026-10-16 | **B3 Field Mode 1 — "Do I own this?"** (branch `feature/field-mode`): `/field` search (prefix / word / initials / anywhere, Thai OK, watchlist when empty) → series view with Next to buy, volume tiles 1…latest (missing gaps, copies, A/H location, ✓ read), extras; `?series=` URL for the back button; fresh queries (refetch on focus); sidebar link. Pure `$lib/field/logic`. Tests 231 → 246.                                                                                                                                                                                             |
 | 2026-10-16 | **Insights I6 — Pace & bookfair funnel:** purchase → finish median + banded histogram (dated reads only; empty state until 5+), per-fair haul by reading state with read % and spend. **Insights I1–I6 built** inside the timebox. Tests 226 → 231.                                                                                                                                                                                                                                                                                                                                              |
