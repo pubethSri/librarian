@@ -82,5 +82,5 @@
 	</nav>
 </div>
 
-<!-- Top: the bottom of the screen belongs to the tab bar -->
-<Toaster position="top-center" />
+<!-- Top, under the header: the bottom of the screen belongs to the tab bar -->
+<Toaster position="top-center" offset={{ top: 56 }} mobileOffset={{ top: 56 }} />

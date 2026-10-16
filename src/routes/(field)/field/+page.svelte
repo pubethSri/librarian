@@ -6,15 +6,25 @@
 	import { createBooksListQuery } from '$lib/queries/books';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
-	import { ArrowLeft, Check, Search, Star, X } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
+	import { ArrowLeft, Check, LoaderCircle, Plus, Search, Star, X } from '@lucide/svelte';
 	import {
 		groupBySeries,
+		lastPrice,
 		ownedVolumes,
+		parsePrice,
+		purchaseFields,
 		searchSeries,
 		type OwnedVolumes,
 		type VolumeSlot
 	} from '$lib/field/logic';
 	import { volumeText } from '$lib/utils/volume';
+	import { getFieldSettings } from '$lib/field/settings.svelte';
+	import {
+		AlreadyAddedError,
+		createQuickAddMutation,
+		createUndoAddMutation
+	} from '$lib/queries/field';
 	import { BOOK_LOCATION_LABELS, SERIES_STATUS_LABELS, type BookLocation } from '$lib/types';
 
 	// Fresh: a phone at the fair must see what the laptop added a minute ago
@@ -41,6 +51,69 @@
 	const owned = $derived(selected ? ownedVolumes(booksBySeries.get(selected.id) ?? []) : null);
 
 	const loading = $derived(seriesQuery.isPending || booksQuery.isPending);
+
+	// ─── Quick add ──────────────────────────────────────────────────────────
+	const LOCATIONS = ['apartment', 'home'] as const;
+	const settings = getFieldSettings();
+	const quickAdd = createQuickAddMutation();
+	const undoAdd = createUndoAddMutation();
+
+	let priceText = $state('');
+	let pricedFor = $state<number | null>(null);
+	/** The volume being saved; one add at a time */
+	let pending = $state<number | null>(null);
+
+	const price = $derived(parsePrice(priceText));
+	const canAdd = $derived(settings.ready && pending === null && price !== null);
+
+	// Pre-fill the price once per opened series — a typed price survives refetches
+	$effect(() => {
+		if (!selected || loading || pricedFor === selected.id) return;
+		pricedFor = selected.id;
+		const p = lastPrice(booksBySeries.get(selected.id) ?? []);
+		priceText = p === null ? '' : String(p);
+	});
+
+	async function add(volume: number) {
+		if (!selected || !canAdd || price === null) return;
+		const series = selected;
+		pending = volume;
+		try {
+			const book = await quickAdd.mutateAsync({
+				seriesId: series.id,
+				volumeNumber: volume,
+				isExtra: false,
+				location: settings.location,
+				price,
+				...purchaseFields(settings.fairId, settings.today),
+				isDraft: false
+			});
+			toast.success(`Added Vol. ${volume}`, {
+				description: series.shortName,
+				duration: 6000,
+				action: { label: 'Undo', onClick: () => undo(book.id, volume) }
+			});
+		} catch (err) {
+			if (err instanceof AlreadyAddedError) {
+				toast.warning(`Vol. ${volume} was just added on another device`, {
+					description: series.shortName
+				});
+			} else {
+				toast.error(err instanceof Error ? err.message : 'Failed to add the book');
+			}
+		} finally {
+			pending = null;
+		}
+	}
+
+	async function undo(bookId: number, volume: number) {
+		try {
+			await undoAdd.mutateAsync(bookId);
+			toast(`Removed Vol. ${volume}`);
+		} catch {
+			toast.error(`Couldn't undo Vol. ${volume} — remove it on the desktop`);
+		}
+	}
 
 	function ownedOf(seriesId: number): OwnedVolumes {
 		return ownedVolumes(booksBySeries.get(seriesId) ?? []);
@@ -260,38 +333,103 @@
 				</p>
 			{/if}
 
-			{#if owned.volumes.length > 0}
-				<ol class="mt-5 grid grid-cols-5 gap-2 sm:grid-cols-6">
-					{#each owned.volumes as slot (slot.volume)}
+			<!-- Quick add: price + location for the next tap -->
+			<div class="mt-5 flex items-end gap-2">
+				<label class="min-w-0 flex-1">
+					<span class="mb-1 block text-xs font-medium text-muted-foreground">Price ฿</span>
+					<input
+						bind:value={priceText}
+						type="text"
+						inputmode="decimal"
+						autocomplete="off"
+						placeholder="none"
+						aria-invalid={price === null}
+						class="h-12 w-full rounded-xl border border-input bg-background px-3 font-mono text-lg tabular-nums outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
+					/>
+				</label>
+				<div
+					role="radiogroup"
+					aria-label="Location"
+					class="flex h-12 shrink-0 gap-1 rounded-xl border border-input p-1"
+				>
+					{#each LOCATIONS as loc (loc)}
+						<button
+							type="button"
+							role="radio"
+							aria-checked={settings.location === loc}
+							onclick={() => (settings.location = loc)}
+							class="rounded-lg px-3 text-sm font-medium transition-colors {settings.location ===
+							loc
+								? 'bg-primary text-primary-foreground'
+								: 'text-muted-foreground active:bg-accent'}"
+						>
+							{BOOK_LOCATION_LABELS[loc]}
+						</button>
+					{/each}
+				</div>
+			</div>
+			<p class="mt-2 text-xs text-muted-foreground">
+				{#if price === null}
+					<span class="text-destructive">Price: digits only, e.g. 175 or 89.50</span>
+				{:else}
+					Tap <span class="font-semibold text-foreground">+</span> to add — saved at once, dated today.
+				{/if}
+			</p>
+
+			<ol class="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-6">
+				{#each owned.volumes as slot (slot.volume)}
+					{#if slot.copies > 0}
+						<!-- Owned tiles stay inert: reserved for the v0.4 reading actions -->
 						<li
 							title={slotTitle(slot)}
-							class="relative flex aspect-square flex-col items-center justify-center rounded-xl border {slot.copies >
-							0
-								? 'border-border bg-card'
-								: 'border-dashed border-border/80 text-muted-foreground/60'}"
+							class="relative flex aspect-square flex-col items-center justify-center rounded-xl border border-border bg-card"
 						>
 							<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
-							{#if slot.copies > 0}
-								<span class="text-[10px] font-medium text-muted-foreground">
-									{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
-								</span>
-							{:else}
-								<span class="text-[10px]">missing</span>
-							{/if}
+							<span class="text-[10px] font-medium text-muted-foreground">
+								{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
+							</span>
 							{#if slot.read}
 								<Check class="absolute top-1 right-1 h-3 w-3 text-muted-foreground" />
 							{/if}
 						</li>
-					{/each}
-					<li
-						class="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-primary text-primary"
-						title="Vol. {owned.next}: next to buy"
+					{:else}
+						<li>
+							<button
+								type="button"
+								onclick={() => add(slot.volume)}
+								disabled={!canAdd}
+								aria-label="Add vol. {slot.volume} (missing)"
+								class="flex aspect-square w-full flex-col items-center justify-center rounded-xl border border-dashed border-foreground/30 text-muted-foreground transition-colors active:bg-accent disabled:opacity-50"
+							>
+								{#if pending === slot.volume}
+									<LoaderCircle class="h-5 w-5 animate-spin" />
+								{:else}
+									<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
+									<span class="flex items-center gap-0.5 text-[10px]">
+										<Plus class="h-2.5 w-2.5" />missing
+									</span>
+								{/if}
+							</button>
+						</li>
+					{/if}
+				{/each}
+				<li class="col-span-2">
+					<button
+						type="button"
+						onclick={() => add(owned.next)}
+						disabled={!canAdd}
+						aria-label="Add vol. {owned.next} (next)"
+						class="flex aspect-[2/1] w-full items-center justify-center gap-1 rounded-xl border-2 border-primary bg-primary/5 font-semibold text-primary transition-colors active:bg-primary active:text-primary-foreground disabled:opacity-50"
 					>
-						<span class="font-mono text-lg font-bold tabular-nums">{owned.next}</span>
-						<span class="text-[10px] font-semibold">next</span>
-					</li>
-				</ol>
-			{/if}
+						{#if pending === owned.next}
+							<LoaderCircle class="h-5 w-5 animate-spin" />
+						{:else}
+							<Plus class="h-5 w-5" />
+							<span class="font-mono text-lg tabular-nums">Vol. {owned.next}</span>
+						{/if}
+					</button>
+				</li>
+			</ol>
 
 			{#if owned.extras.length > 0}
 				<p class="mt-5 mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">

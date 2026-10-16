@@ -29,7 +29,9 @@
 		class="flex h-9 min-w-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-medium text-foreground active:bg-accent"
 		aria-label="Where am I buying"
 	>
-		{#if settings.fairId === null}
+		{#if !settings.ready}
+			<span class="w-24 truncate text-muted-foreground">…</span>
+		{:else if settings.fairId === null}
 			<Store class="h-4 w-4 shrink-0 text-muted-foreground" />
 			<span class="truncate">Not at a fair</span>
 		{:else}

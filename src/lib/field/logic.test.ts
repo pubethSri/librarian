@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
 	currentFairId,
+	lastPrice,
+	parsePrice,
 	daysBetween,
 	fairsNewestFirst,
 	localDay,
@@ -243,5 +245,55 @@ describe('where am I buying', () => {
 			source: 'bookstore',
 			boughtAt: '2026-10-21'
 		});
+	});
+});
+
+describe('quick add helpers', () => {
+	const book = (
+		price: string | null,
+		boughtAt: string | null,
+		createdAt = '2026-01-01T00:00:00Z'
+	) => ({
+		price,
+		boughtAt,
+		createdAt
+	});
+
+	it('pre-fills the price of the most recently bought priced book', () => {
+		expect(
+			lastPrice([
+				book('150.00', '2025-10-12T00:00:00.000Z'),
+				book('175.00', '2026-03-28T00:00:00.000Z'),
+				book(null, '2026-10-01T00:00:00.000Z')
+			])
+		).toBe(175);
+	});
+
+	it('breaks a same-day tie by entry time, and dated beats undated', () => {
+		expect(
+			lastPrice([
+				book('160.00', '2026-03-28T00:00:00.000Z', '2026-03-28T10:00:00Z'),
+				book('165.00', '2026-03-28T00:00:00.000Z', '2026-03-28T11:00:00Z'),
+				book('99.00', null, '2026-10-01T00:00:00Z')
+			])
+		).toBe(165);
+	});
+
+	it('keeps a price of 0 and has nothing for an unpriced series', () => {
+		expect(lastPrice([book('0.00', '2026-03-28T00:00:00.000Z')])).toBe(0);
+		expect(lastPrice([book(null, null)])).toBeNull();
+		expect(lastPrice([])).toBeNull();
+	});
+
+	it('parses typed prices', () => {
+		expect(parsePrice('')).toBeUndefined();
+		expect(parsePrice('  ')).toBeUndefined();
+		expect(parsePrice('175')).toBe(175);
+		expect(parsePrice('฿1,200')).toBe(1200);
+		expect(parsePrice('89.50')).toBe(89.5);
+		expect(parsePrice('0')).toBe(0);
+		expect(parsePrice('-5')).toBeNull();
+		expect(parsePrice('abc')).toBeNull();
+		expect(parsePrice('1.234')).toBeNull();
 	});
 });

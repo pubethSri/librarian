@@ -247,3 +247,38 @@ export function purchaseFields(
 		? { source: 'bookstore', boughtAt: today }
 		: { source: 'bookfair', sourceEventId: fairId, boughtAt: today };
 }
+
+// ─── Quick add (B4) ──────────────────────────────────────────────────────────
+
+type PricedBookLike = {
+	price: string | null;
+	boughtAt: string | null;
+	createdAt: string;
+};
+
+/**
+ * The price to pre-fill for a series: its most recently bought priced book
+ * (purchase day, then when it was entered); null when none is priced.
+ */
+export function lastPrice(books: readonly PricedBookLike[]): number | null {
+	const priced = books.filter((b) => b.price !== null && b.price !== '');
+	if (priced.length === 0) return null;
+	const newest = priced.reduce((best, b) => {
+		const day = (b.boughtAt ?? '').slice(0, 10);
+		const bestDay = (best.boughtAt ?? '').slice(0, 10);
+		if (day !== bestDay) return day > bestDay ? b : best;
+		return b.createdAt > best.createdAt ? b : best;
+	});
+	return Number(newest.price);
+}
+
+/**
+ * A typed price: blank = no price (undefined), "฿175" / "175.50" / "1,200" →
+ * the number, anything else (or negative) = invalid (null).
+ */
+export function parsePrice(text: string): number | undefined | null {
+	const t = text.replace(/[฿,\s]/g, '');
+	if (t === '') return undefined;
+	if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
+	return Number(t);
+}

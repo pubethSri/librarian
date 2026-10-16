@@ -15,6 +15,7 @@ export function createFieldSettings(getFairs: () => readonly FairLike[] | undefi
 	let today = $state(todayLocal());
 	let stored = $state(parseFairChoice(null));
 	let location = $state<BookLocation>('apartment');
+	let loaded = $state(false);
 
 	const current = $derived(currentFairId(stored, getFairs(), today));
 
@@ -24,6 +25,14 @@ export function createFieldSettings(getFairs: () => readonly FairLike[] | undefi
 			today = todayLocal();
 			stored = parseFairChoice(readField('purchase'));
 			location = readField('location') === 'home' ? 'home' : 'apartment';
+			loaded = true;
+		},
+		/**
+		 * The remembered choice and the fair list are both in: until then the
+		 * fair in effect isn't known, so nothing may be saved with it.
+		 */
+		get ready() {
+			return loaded && getFairs() !== undefined;
 		},
 		/** A phone left open overnight: pick up the new day when it comes back */
 		refreshDay() {
