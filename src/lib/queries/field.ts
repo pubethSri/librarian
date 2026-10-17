@@ -86,36 +86,96 @@ export function createQuickAddMutation() {
 	}));
 }
 
-/** Mutation: undo a quick add (deletes the book; patched out of the cache) */
+type BatchResult = {
+	books: BookRow[];
+	skipped: { seriesId: number; volumeNumber: string }[];
+};
+
+async function postBatch(books: Omit<CreateBookPayload, 'onlyIfMissing'>[]): Promise<BatchResult> {
+	const res = await fetch('/api/books/batch', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ onlyIfMissing: true, books })
+	});
+	if (!res.ok) {
+		const err = await res.json().catch(() => ({}));
+		throw new Error(err.message || 'Failed to add the books');
+	}
+	return res.json();
+}
+
+/** Fold created rows into the cached lists (one series) */
+function patchAdded(queryClient: QueryClient, series: SeriesListItem, rows: readonly BookRow[]) {
+	queryClient.setQueryData<BookListItem[]>(['books'], (list) =>
+		rows.reduce((acc, row) => withBook(acc, toBookListItem(row, series)), list)
+	);
+	queryClient.setQueryData<SeriesListItem[]>(['series'], (list) =>
+		withBookCount(list, series.id, rows.length)
+	);
+	markStale(queryClient);
+}
+
+/**
+ * Mutation: Field Mode multi-add — several volumes of one series in one
+ * request; volumes already owned (e.g. added on another device) are
+ * skipped and reported, not added twice.
+ */
+export function createMultiAddMutation() {
+	const queryClient = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: ({
+			books
+		}: {
+			books: Omit<CreateBookPayload, 'onlyIfMissing'>[];
+			series: SeriesListItem;
+		}) => postBatch(books),
+		onSuccess: (result: BatchResult, { series }) => {
+			patchAdded(queryClient, series, result.books);
+			// Something was skipped: this device's lists are behind
+			if (result.skipped.length > 0) refetchLists(queryClient);
+		}
+	}));
+}
+
+/**
+ * Mutation: undo a quick add or a multi-add — deletes the books in one
+ * request and patches them out of the cache.
+ */
 export function createUndoAddMutation() {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: async ({ bookId }: { bookId: number; seriesId: number }) => {
-			const res = await fetch(`/api/books/${bookId}`, { method: 'DELETE' });
-			// 404: already gone (deleted elsewhere) — the same outcome
-			if (!res.ok && res.status !== 404) throw new Error('Failed to undo');
+		mutationFn: async ({ bookIds }: { bookIds: number[]; seriesId: number }) => {
+			const res = await fetch('/api/books/batch', {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ ids: bookIds })
+			});
+			// Ids already gone (deleted elsewhere) are ignored by the server
+			if (!res.ok) throw new Error('Failed to undo');
 		},
-		onSuccess: (_: void, { bookId, seriesId }) => {
-			queryClient.setQueryData<BookListItem[]>(['books'], (list) => withoutBook(list, bookId));
+		onSuccess: (_: void, { bookIds, seriesId }) => {
+			queryClient.setQueryData<BookListItem[]>(['books'], (list) =>
+				bookIds.reduce((acc, id) => withoutBook(acc, id), list)
+			);
 			queryClient.setQueryData<SeriesListItem[]>(['series'], (list) =>
-				withBookCount(list, seriesId, -1)
+				withBookCount(list, seriesId, -bookIds.length)
 			);
 			markStale(queryClient);
 		}
 	}));
 }
 
-/** Mutation: Add tab — a new series with its first volume as a draft */
-export function createSeriesWithFirstVolumeMutation() {
+/** Mutation: Add tab — a new series with its chosen volumes as drafts */
+export function createSeriesWithVolumesMutation() {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
 		mutationFn: async ({
 			series,
-			book
+			books
 		}: {
 			series: CreateSeriesPayload;
-			book: Omit<CreateBookPayload, 'seriesId'>;
-		}): Promise<{ series: Pick<SeriesListItem, 'id' | 'shortName'>; book: BookRow }> => {
+			books: Omit<CreateBookPayload, 'seriesId' | 'onlyIfMissing'>[];
+		}): Promise<{ series: Pick<SeriesListItem, 'id' | 'shortName'>; books: BookRow[] }> => {
 			const res = await fetch('/api/series', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -127,8 +187,8 @@ export function createSeriesWithFirstVolumeMutation() {
 			}
 			const created: Pick<SeriesListItem, 'id' | 'shortName'> = await res.json();
 			try {
-				const createdBook = await postBook({ ...book, seriesId: created.id });
-				return { series: created, book: createdBook };
+				const result = await postBatch(books.map((b) => ({ ...b, seriesId: created.id })));
+				return { series: created, books: result.books };
 			} catch (err) {
 				// Don't leave an empty series behind
 				await fetch(`/api/series/${created.id}`, { method: 'DELETE' }).catch(() => {});

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
+	addVolumes,
+	nextRun,
+	pickableVolumes,
+	toggleVolume,
+	volumeRanges,
 	toBookListItem,
 	withBook,
 	withBookCount,
@@ -449,5 +454,31 @@ describe('cache patches', () => {
 	it("moves one series' book count, never below 0", () => {
 		expect(withBookCount(seriesList, 3, 1)?.map((s) => s.bookCount)).toEqual([10, 0]);
 		expect(withBookCount(seriesList, 4, -1)?.map((s) => s.bookCount)).toEqual([9, 0]);
+	});
+});
+
+describe('multi-add helpers', () => {
+	const owned = { missing: [3, 4], next: 8 };
+
+	it('offers the gaps, then volumes from the next one on', () => {
+		expect(pickableVolumes(owned, 3)).toEqual([3, 4, 8, 9, 10]);
+		expect(pickableVolumes({ missing: [], next: 1 }, 2)).toEqual([1, 2]);
+	});
+
+	it('takes a run from the next volume', () => {
+		expect(nextRun(owned, 5)).toEqual([8, 9, 10, 11, 12]);
+		expect(nextRun(owned, 0)).toEqual([]);
+	});
+
+	it('toggles and merges selections, sorted', () => {
+		expect(toggleVolume([5, 9], 7)).toEqual([5, 7, 9]);
+		expect(toggleVolume([5, 7, 9], 7)).toEqual([5, 9]);
+		expect(addVolumes([9, 3], [8, 9, 10])).toEqual([3, 8, 9, 10]);
+	});
+
+	it('writes volumes as compact ranges', () => {
+		expect(volumeRanges([7, 1, 2, 5, 6, 9])).toBe('1–2, 5–7, 9');
+		expect(volumeRanges([4])).toBe('4');
+		expect(volumeRanges([])).toBe('');
 	});
 });

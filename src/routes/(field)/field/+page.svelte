@@ -8,14 +8,28 @@
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import LocationToggle from '$lib/components/field/LocationToggle.svelte';
 	import { toast } from 'svelte-sonner';
-	import { ArrowLeft, Check, LoaderCircle, Plus, Search, Star, X } from '@lucide/svelte';
 	import {
+		ArrowLeft,
+		Check,
+		ListChecks,
+		LoaderCircle,
+		Plus,
+		Search,
+		Star,
+		X
+	} from '@lucide/svelte';
+	import {
+		addVolumes,
 		groupBySeries,
 		lastPrice,
+		nextRun,
 		ownedVolumes,
 		parsePrice,
+		pickableVolumes,
 		purchaseFields,
 		searchSeries,
+		toggleVolume,
+		volumeRanges,
 		type OwnedVolumes,
 		type VolumeSlot
 	} from '$lib/field/logic';
@@ -23,6 +37,7 @@
 	import { getFieldSettings } from '$lib/field/settings.svelte';
 	import {
 		AlreadyAddedError,
+		createMultiAddMutation,
 		createQuickAddMutation,
 		createUndoAddMutation
 	} from '$lib/queries/field';
@@ -56,12 +71,23 @@
 	// ─── Quick add ──────────────────────────────────────────────────────────
 	const settings = getFieldSettings();
 	const quickAdd = createQuickAddMutation();
+	const multiAdd = createMultiAddMutation();
 	const undoAdd = createUndoAddMutation();
 
 	let priceText = $state('');
 	let pricedFor = $state<number | null>(null);
-	/** The volume being saved; one add at a time */
+	/** The volume being saved (BATCH for a multi-add); one add at a time */
 	let pending = $state<number | null>(null);
+	const BATCH = -1;
+
+	// Select several: gaps + volumes ahead, added in one request
+	let selecting = $state(false);
+	let selection = $state<number[]>([]);
+	let ahead = $state(12);
+	const RUNS = [3, 5, 10];
+	const futureVolumes = $derived(
+		owned ? pickableVolumes(owned, ahead).filter((v) => v >= owned.next) : []
+	);
 
 	const price = $derived(parsePrice(priceText));
 	const canAdd = $derived(settings.ready && pending === null && price !== null);
@@ -70,6 +96,9 @@
 	$effect(() => {
 		if (!selected || loading || pricedFor === selected.id) return;
 		pricedFor = selected.id;
+		selecting = false;
+		selection = [];
+		ahead = 12;
 		const p = lastPrice(booksBySeries.get(selected.id) ?? []);
 		priceText = p === null ? '' : String(p);
 	});
@@ -94,7 +123,7 @@
 			toast.success(`Added Vol. ${volume}`, {
 				description: series.shortName,
 				duration: 6000,
-				action: { label: 'Undo', onClick: () => undo(book.id, series.id, volume) }
+				action: { label: 'Undo', onClick: () => undo([book.id], series.id, [volume]) }
 			});
 		} catch (err) {
 			if (err instanceof AlreadyAddedError) {
@@ -109,12 +138,59 @@
 		}
 	}
 
-	async function undo(bookId: number, seriesId: number, volume: number) {
+	async function addSelected() {
+		if (!selected || !canAdd || price === null || selection.length === 0) return;
+		const series = selected;
+		const volumes = [...selection];
+		pending = BATCH;
 		try {
-			await undoAdd.mutateAsync({ bookId, seriesId });
-			toast(`Removed Vol. ${volume}`);
+			const result = await multiAdd.mutateAsync({
+				series,
+				books: volumes.map((volumeNumber) => ({
+					seriesId: series.id,
+					volumeNumber,
+					isExtra: false,
+					location: settings.location,
+					price,
+					...purchaseFields(settings.fairId, settings.today),
+					isDraft: false
+				}))
+			});
+			const added = result.books.map((b) => Number(b.volumeNumber));
+			const skipped = result.skipped.map((b) => Number(b.volumeNumber));
+			selection = [];
+			selecting = false;
+			const already = skipped.length > 0 ? `already had vol. ${volumeRanges(skipped)}` : '';
+			if (added.length > 0) {
+				const ids = result.books.map((b) => b.id);
+				toast.success(`Added vol. ${volumeRanges(added)}`, {
+					description: [series.shortName, already].filter(Boolean).join(' · '),
+					duration: 6000,
+					action: { label: 'Undo', onClick: () => undo(ids, series.id, added) }
+				});
+			} else {
+				toast.warning(`Nothing added — ${already}`, { description: series.shortName });
+			}
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'Failed to add the books');
+		} finally {
+			pending = null;
+		}
+	}
+
+	function toggleSelecting() {
+		selecting = !selecting;
+		selection = [];
+		ahead = 12;
+	}
+
+	async function undo(bookIds: number[], seriesId: number, volumes: number[]) {
+		const label = `vol. ${volumeRanges(volumes)}`;
+		try {
+			await undoAdd.mutateAsync({ bookIds, seriesId });
+			toast(`Removed ${label}`);
 		} catch {
-			toast.error(`Couldn't undo Vol. ${volume} — remove it on the desktop`);
+			toast.error(`Couldn't undo ${label} — remove it on the desktop`);
 		}
 	}
 
@@ -352,13 +428,52 @@
 				</label>
 				<LocationToggle {settings} />
 			</div>
-			<p class="mt-2 text-xs text-muted-foreground">
-				{#if price === null}
-					<span class="text-destructive">Price: digits only, e.g. 175 or 89.50</span>
-				{:else}
-					Tap <span class="font-semibold text-foreground">+</span> to add — saved at once, dated today.
-				{/if}
-			</p>
+			<div class="mt-2 flex items-center gap-2">
+				<p class="min-w-0 flex-1 text-xs text-muted-foreground">
+					{#if price === null}
+						<span class="text-destructive">Price: digits only, e.g. 175 or 89.50</span>
+					{:else if selecting}
+						Tap volumes to select, then add them together{price !== undefined
+							? ` (฿${price} each)`
+							: ''}.
+					{:else}
+						Tap <span class="font-semibold text-foreground">+</span> to add — saved at once, dated today.
+					{/if}
+				</p>
+				<button
+					type="button"
+					onclick={toggleSelecting}
+					aria-pressed={selecting}
+					class="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-medium transition-colors {selecting
+						? 'border-primary bg-primary text-primary-foreground'
+						: 'border-input text-foreground active:bg-accent'}"
+				>
+					{#if selecting}<X class="h-4 w-4" /> Done{:else}<ListChecks class="h-4 w-4" /> Select several{/if}
+				</button>
+			</div>
+
+			{#if selecting}
+				<div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Quick select">
+					{#each RUNS as n (n)}
+						<button
+							type="button"
+							onclick={() => (selection = addVolumes(selection, nextRun(owned, n)))}
+							class="h-9 rounded-full border border-border px-3 text-sm text-foreground active:bg-accent"
+						>
+							Next {n}
+						</button>
+					{/each}
+					{#if selection.length > 0}
+						<button
+							type="button"
+							onclick={() => (selection = [])}
+							class="h-9 px-2 text-sm text-muted-foreground underline-offset-4 hover:underline"
+						>
+							Clear
+						</button>
+					{/if}
+				</div>
+			{/if}
 
 			<ol class="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-6">
 				{#each owned.volumes as slot (slot.volume)}
@@ -378,42 +493,116 @@
 						</li>
 					{:else}
 						<li>
-							<button
-								type="button"
-								onclick={() => add(slot.volume)}
-								disabled={!canAdd}
-								aria-label="Add vol. {slot.volume} (missing)"
-								class="flex aspect-square w-full flex-col items-center justify-center rounded-xl border border-dashed border-foreground/30 text-muted-foreground transition-colors active:bg-accent disabled:opacity-50"
-							>
-								{#if pending === slot.volume}
-									<LoaderCircle class="h-5 w-5 animate-spin" />
-								{:else}
+							{#if selecting}
+								{@const on = selection.includes(slot.volume)}
+								<button
+									type="button"
+									onclick={() => (selection = toggleVolume(selection, slot.volume))}
+									aria-pressed={on}
+									aria-label="Select vol. {slot.volume} (missing)"
+									class="relative flex aspect-square w-full flex-col items-center justify-center rounded-xl border transition-colors {on
+										? 'border-primary bg-primary text-primary-foreground'
+										: 'border-dashed border-foreground/30 text-muted-foreground'}"
+								>
 									<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
-									<span class="flex items-center gap-0.5 text-[10px]">
-										<Plus class="h-2.5 w-2.5" />missing
-									</span>
-								{/if}
-							</button>
+									<span class="text-[10px]">missing</span>
+									{#if on}<Check class="absolute top-1 right-1 h-3.5 w-3.5" />{/if}
+								</button>
+							{:else}
+								<button
+									type="button"
+									onclick={() => add(slot.volume)}
+									disabled={!canAdd}
+									aria-label="Add vol. {slot.volume} (missing)"
+									class="flex aspect-square w-full flex-col items-center justify-center rounded-xl border border-dashed border-foreground/30 text-muted-foreground transition-colors active:bg-accent disabled:opacity-50"
+								>
+									{#if pending === slot.volume}
+										<LoaderCircle class="h-5 w-5 animate-spin" />
+									{:else}
+										<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
+										<span class="flex items-center gap-0.5 text-[10px]">
+											<Plus class="h-2.5 w-2.5" />missing
+										</span>
+									{/if}
+								</button>
+							{/if}
 						</li>
 					{/if}
 				{/each}
-				<li class="col-span-2">
+				{#if selecting}
+					{#each futureVolumes as v (v)}
+						{@const on = selection.includes(v)}
+						<li>
+							<button
+								type="button"
+								onclick={() => (selection = toggleVolume(selection, v))}
+								aria-pressed={on}
+								aria-label="Select vol. {v}"
+								class="relative flex aspect-square w-full flex-col items-center justify-center rounded-xl border transition-colors {on
+									? 'border-primary bg-primary text-primary-foreground'
+									: v === owned.next
+										? 'border-2 border-primary text-primary'
+										: 'border-dashed border-border text-muted-foreground'}"
+							>
+								<span class="font-mono text-lg font-semibold tabular-nums">{v}</span>
+								{#if v === owned.next}<span class="text-[10px] font-semibold">next</span>{/if}
+								{#if on}<Check class="absolute top-1 right-1 h-3.5 w-3.5" />{/if}
+							</button>
+						</li>
+					{/each}
+					<li>
+						<button
+							type="button"
+							onclick={() => (ahead += 12)}
+							class="flex aspect-square w-full flex-col items-center justify-center rounded-xl text-xs font-medium text-muted-foreground active:bg-accent"
+						>
+							<Plus class="h-4 w-4" /> More
+						</button>
+					</li>
+				{:else}
+					<li class="col-span-2">
+						<button
+							type="button"
+							onclick={() => add(owned.next)}
+							disabled={!canAdd}
+							aria-label="Add vol. {owned.next} (next)"
+							class="flex aspect-[2/1] w-full items-center justify-center gap-1 rounded-xl border-2 border-primary bg-primary/5 font-semibold text-primary transition-colors active:bg-primary active:text-primary-foreground disabled:opacity-50"
+						>
+							{#if pending === owned.next}
+								<LoaderCircle class="h-5 w-5 animate-spin" />
+							{:else}
+								<Plus class="h-5 w-5" />
+								<span class="font-mono text-lg tabular-nums">Vol. {owned.next}</span>
+							{/if}
+						</button>
+					</li>
+				{/if}
+			</ol>
+
+			{#if selecting}
+				<!-- Room for the action bar, then the bar itself just above the tabs -->
+				<div class="h-20" aria-hidden="true"></div>
+				<div
+					class="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 py-2 backdrop-blur"
+				>
 					<button
 						type="button"
-						onclick={() => add(owned.next)}
-						disabled={!canAdd}
-						aria-label="Add vol. {owned.next} (next)"
-						class="flex aspect-[2/1] w-full items-center justify-center gap-1 rounded-xl border-2 border-primary bg-primary/5 font-semibold text-primary transition-colors active:bg-primary active:text-primary-foreground disabled:opacity-50"
+						onclick={addSelected}
+						disabled={!canAdd || selection.length === 0}
+						class="mx-auto flex h-14 w-full max-w-md items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground transition-opacity active:opacity-80 disabled:opacity-40"
 					>
-						{#if pending === owned.next}
+						{#if pending === BATCH}
 							<LoaderCircle class="h-5 w-5 animate-spin" />
+						{:else if selection.length === 0}
+							Select volumes to add
 						{:else}
-							<Plus class="h-5 w-5" />
-							<span class="font-mono text-lg tabular-nums">Vol. {owned.next}</span>
+							Add {selection.length} volume{selection.length > 1 ? 's' : ''} · vol. {volumeRanges(
+								selection
+							)}
 						{/if}
 					</button>
-				</li>
-			</ol>
+				</div>
+			{/if}
 
 			{#if owned.extras.length > 0}
 				<p class="mt-5 mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">

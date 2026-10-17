@@ -419,3 +419,47 @@ export function withBookCount(
 			)
 		: list;
 }
+
+// ─── Multi-add (select several volumes) ──────────────────────────────────────
+
+/**
+ * Regular volumes a select-mode grid can offer: the gaps below the latest,
+ * then `ahead` volumes from the next one on (a run bought at a fair).
+ */
+export function pickableVolumes(
+	owned: Pick<OwnedVolumes, 'missing' | 'next'>,
+	ahead = 12
+): number[] {
+	const future = Array.from({ length: Math.max(0, ahead) }, (_, i) => owned.next + i);
+	return [...owned.missing, ...future];
+}
+
+/** The `count` volumes from the next one on: "Next 5" */
+export function nextRun(owned: Pick<OwnedVolumes, 'next'>, count: number): number[] {
+	return Array.from({ length: Math.max(0, count) }, (_, i) => owned.next + i);
+}
+
+/** Selection with `volume` toggled, kept sorted */
+export function toggleVolume(selection: readonly number[], volume: number): number[] {
+	return selection.includes(volume)
+		? selection.filter((v) => v !== volume)
+		: [...selection, volume].sort((a, b) => a - b);
+}
+
+/** Selection plus `volumes` (no duplicates), kept sorted */
+export function addVolumes(selection: readonly number[], volumes: readonly number[]): number[] {
+	return [...new Set([...selection, ...volumes])].sort((a, b) => a - b);
+}
+
+/** Volumes as compact text: [1, 2, 5, 6, 7, 9] → "1–2, 5–7, 9" */
+export function volumeRanges(volumes: readonly number[]): string {
+	const sorted = [...new Set(volumes)].sort((a, b) => a - b);
+	const parts: string[] = [];
+	for (let i = 0; i < sorted.length; i++) {
+		let j = i;
+		while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j++;
+		parts.push(j === i ? `${sorted[i]}` : `${sorted[i]}–${sorted[j]}`);
+		i = j;
+	}
+	return parts.join(', ');
+}

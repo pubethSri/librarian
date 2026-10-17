@@ -1,33 +1,38 @@
 <script lang="ts">
 	// Add tab: a series not in the collection yet. Type its name → existing
-	// matches first (tap = open it in Find); else create it with its first
-	// volume as a draft, finished later on the desktop.
+	// matches first (tap = open it in Find); else create it with the volumes
+	// you're buying (any set: 1–2, 5–7…) as drafts, finished on the desktop.
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
-	import { CirclePlus, LoaderCircle, Minus, Plus, X } from '@lucide/svelte';
+	import { Check, CirclePlus, LoaderCircle, Plus, X } from '@lucide/svelte';
 	import LocationToggle from '$lib/components/field/LocationToggle.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import { createSeriesListQuery } from '$lib/queries/series';
-	import { createSeriesWithFirstVolumeMutation } from '$lib/queries/field';
+	import { createSeriesWithVolumesMutation } from '$lib/queries/field';
 	import { getFieldSettings } from '$lib/field/settings.svelte';
 	import {
+		addVolumes,
+		nextRun,
 		normalize,
 		parsePrice,
-		parseVolume,
 		purchaseFields,
-		searchSeries
+		searchSeries,
+		toggleVolume,
+		volumeRanges
 	} from '$lib/field/logic';
 	import { SERIES_TYPE_LABELS, type SeriesType } from '$lib/types';
 
 	const settings = getFieldSettings();
 	const seriesQuery = createSeriesListQuery({ fresh: true });
-	const create = createSeriesWithFirstVolumeMutation();
+	const create = createSeriesWithVolumesMutation();
 
 	let name = $state('');
 	let creating = $state(false);
 	let type = $state<SeriesType | null>(null);
-	let volumeText = $state('1');
+	/** The volumes being bought; vol. 1 by default */
+	let volumes = $state<number[]>([1]);
+	let shown = $state(12);
 	let priceText = $state('');
 	let saving = $state(false);
 
@@ -41,18 +46,14 @@
 				normalize(s.fullName) === normalize(trimmed)
 		) ?? null
 	);
-	const volume = $derived(parseVolume(volumeText));
+	const tiles = $derived(Array.from({ length: shown }, (_, i) => i + 1));
+	const RUNS = [3, 5, 10];
 	const price = $derived(parsePrice(priceText));
 	const canSave = $derived(
-		!!trimmed && type !== null && volume !== null && price !== null && settings.ready && !saving
+		!!trimmed && type !== null && volumes.length > 0 && price !== null && settings.ready && !saving
 	);
 
 	const TYPES: SeriesType[] = ['light_novel', 'manga'];
-
-	function step(by: number) {
-		const n = Math.max(1, Math.floor(volume ?? 1) + by);
-		volumeText = String(n);
-	}
 
 	function clearName() {
 		name = '';
@@ -60,22 +61,22 @@
 	}
 
 	async function save() {
-		if (!canSave || type === null || volume === null || price === null) return;
+		if (!canSave || type === null || price === null) return;
 		saving = true;
 		try {
 			const { series } = await create.mutateAsync({
 				series: { shortName: trimmed, fullName: trimmed, type },
-				book: {
-					volumeNumber: volume,
+				books: volumes.map((volumeNumber) => ({
+					volumeNumber,
 					isExtra: false,
 					location: settings.location,
 					price,
 					...purchaseFields(settings.fairId, settings.today),
 					isDraft: true
-				}
+				}))
 			});
 			toast.success(`Created ${series.shortName}`, {
-				description: `Vol. ${volume} saved as a draft — finish it on the desktop`
+				description: `Vol. ${volumeRanges(volumes)} saved as drafts — finish them on the desktop`
 			});
 			goto(resolve(`/field?series=${series.id}`));
 		} catch (err) {
@@ -186,61 +187,82 @@
 					</div>
 				</div>
 
-				<div class="flex items-end gap-3">
-					<div>
-						<p class="mb-1.5 text-xs font-medium text-muted-foreground">First volume</p>
-						<div class="flex h-12 items-center rounded-xl border border-input">
+				<div>
+					<p class="mb-1.5 text-xs font-medium text-muted-foreground">
+						Volumes you're buying{volumes.length > 0
+							? ` · ${volumes.length} (vol. ${volumeRanges(volumes)})`
+							: ''}
+					</p>
+					<div class="mb-2 flex flex-wrap gap-2" role="group" aria-label="Quick select">
+						{#each RUNS as n (n)}
 							<button
 								type="button"
-								onclick={() => step(-1)}
-								class="flex h-full w-11 items-center justify-center text-muted-foreground active:bg-accent"
-								aria-label="One less"
+								onclick={() => (volumes = addVolumes(volumes, nextRun({ next: 1 }, n)))}
+								class="h-9 rounded-full border border-border px-3 text-sm text-foreground active:bg-accent"
 							>
-								<Minus class="h-4 w-4" />
+								1–{n}
 							</button>
-							<input
-								bind:value={volumeText}
-								type="text"
-								inputmode="decimal"
-								aria-label="First volume number"
-								aria-invalid={volume === null}
-								class="h-full w-12 bg-transparent text-center font-mono text-lg tabular-nums outline-none aria-invalid:text-destructive"
-							/>
+						{/each}
+						{#if volumes.length > 0}
 							<button
 								type="button"
-								onclick={() => step(1)}
-								class="flex h-full w-11 items-center justify-center text-muted-foreground active:bg-accent"
-								aria-label="One more"
+								onclick={() => (volumes = [])}
+								class="h-9 px-2 text-sm text-muted-foreground underline-offset-4 hover:underline"
 							>
-								<Plus class="h-4 w-4" />
+								Clear
 							</button>
-						</div>
+						{/if}
 					</div>
-					<label class="min-w-0 flex-1">
-						<span class="mb-1.5 block text-xs font-medium text-muted-foreground">Price ฿</span>
-						<input
-							bind:value={priceText}
-							type="text"
-							inputmode="decimal"
-							autocomplete="off"
-							placeholder="none"
-							aria-invalid={price === null}
-							class="h-12 w-full rounded-xl border border-input bg-background px-3 font-mono text-lg tabular-nums outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
-						/>
-					</label>
+					<ol class="grid grid-cols-6 gap-1.5" aria-label="Volumes">
+						{#each tiles as v (v)}
+							{@const on = volumes.includes(v)}
+							<li>
+								<button
+									type="button"
+									onclick={() => (volumes = toggleVolume(volumes, v))}
+									aria-pressed={on}
+									aria-label="Vol. {v}"
+									class="relative flex aspect-square w-full items-center justify-center rounded-lg border font-mono text-base font-semibold tabular-nums transition-colors {on
+										? 'border-primary bg-primary text-primary-foreground'
+										: 'border-dashed border-border text-muted-foreground'}"
+								>
+									{v}
+									{#if on}<Check class="absolute top-0.5 right-0.5 h-3 w-3" />{/if}
+								</button>
+							</li>
+						{/each}
+						<li>
+							<button
+								type="button"
+								onclick={() => (shown += 12)}
+								class="flex aspect-square w-full flex-col items-center justify-center rounded-lg text-[10px] font-medium text-muted-foreground active:bg-accent"
+							>
+								<Plus class="h-4 w-4" /> More
+							</button>
+						</li>
+					</ol>
 				</div>
+
+				<label class="block">
+					<span class="mb-1.5 block text-xs font-medium text-muted-foreground">Price ฿ (each)</span>
+					<input
+						bind:value={priceText}
+						type="text"
+						inputmode="decimal"
+						autocomplete="off"
+						placeholder="none"
+						aria-invalid={price === null}
+						class="h-12 w-full rounded-xl border border-input bg-background px-3 font-mono text-lg tabular-nums outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
+					/>
+				</label>
 
 				<div>
 					<p class="mb-1.5 text-xs font-medium text-muted-foreground">Location</p>
 					<LocationToggle {settings} />
 				</div>
 
-				{#if volume === null || price === null}
-					<p class="text-xs text-destructive">
-						{volume === null ? 'Volume: a number like 1 or 4.5. ' : ''}{price === null
-							? 'Price: digits only, e.g. 175.'
-							: ''}
-					</p>
+				{#if price === null}
+					<p class="text-xs text-destructive">Price: digits only, e.g. 175.</p>
 				{/if}
 
 				<button
@@ -250,10 +272,16 @@
 					class="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground transition-opacity active:opacity-80 disabled:opacity-40"
 				>
 					{#if saving}<LoaderCircle class="h-5 w-5 animate-spin" />{/if}
-					{type === null ? 'Pick a type' : 'Save'}
+					{#if type === null}
+						Pick a type
+					{:else if volumes.length === 0}
+						Pick the volumes
+					{:else}
+						Save · {volumes.length} volume{volumes.length > 1 ? 's' : ''}
+					{/if}
 				</button>
 				<p class="text-center text-xs text-muted-foreground">
-					Saved as a draft — publisher, tags and the rest on the desktop.
+					Saved as drafts — publisher, tags and the rest on the desktop.
 				</p>
 			</div>
 		{/if}

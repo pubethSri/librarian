@@ -8,7 +8,8 @@ import type { BookLocation } from '$lib/types';
 import { currentFairId, parseFairChoice, todayLocal, type FairLike } from './logic';
 import { readField, writeField } from './storage';
 
-const KEY = Symbol('field-settings');
+// A string, not a Symbol: a dev-server hot update can load this module twice
+const KEY = 'librarian.field.settings';
 
 export function createFieldSettings(getFairs: () => readonly FairLike[] | undefined) {
 	// Defaults until load() runs in the browser (storage and "today" are per device)
