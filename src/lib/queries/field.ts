@@ -5,6 +5,13 @@ import type {
 	CreateSeriesPayload,
 	SeriesListItem
 } from '$lib/types';
+import {
+	toBookListItem,
+	withBook,
+	withBookCount,
+	withoutBook,
+	type BookRow
+} from '$lib/field/logic';
 
 /** Raised when the guard finds the volume already added (HTTP 409) */
 export class AlreadyAddedError extends Error {
@@ -14,10 +21,17 @@ export class AlreadyAddedError extends Error {
 }
 
 /**
- * Everything a phone add or undo can change: lists, fair hauls, insights.
- * Awaited, so the mutation stays pending until the grid has the new data.
+ * Mark what a phone write changes as stale without refetching it now: fair
+ * hauls, insights, series detail pages refresh the next time they're shown.
  */
-function refreshAfterWrite(queryClient: QueryClient) {
+function markStale(queryClient: QueryClient) {
+	for (const queryKey of [['bookfairs'], ['insights'], ['books', 'event'], ['series']]) {
+		queryClient.invalidateQueries({ queryKey, refetchType: 'none' });
+	}
+}
+
+/** Refetch the lists the Field screens show (after a 409: this device is behind) */
+function refetchLists(queryClient: QueryClient) {
 	return Promise.all(
 		[['books'], ['series'], ['bookfairs'], ['insights']].map((queryKey) =>
 			queryClient.invalidateQueries({ queryKey })
@@ -25,7 +39,7 @@ function refreshAfterWrite(queryClient: QueryClient) {
 	);
 }
 
-async function postBook(payload: CreateBookPayload): Promise<BookListItem> {
+async function postBook(payload: CreateBookPayload): Promise<BookRow> {
 	const res = await fetch('/api/books', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -42,26 +56,52 @@ async function postBook(payload: CreateBookPayload): Promise<BookListItem> {
 	return res.json();
 }
 
-/** Mutation: Field Mode quick add — one book, refused (409) if the volume exists */
+/**
+ * Mutation: Field Mode quick add — one book, refused (409) if the volume
+ * exists. A tap costs one request: the created row is patched into the
+ * cached books / series lists instead of refetching them (~200 KB) — on a
+ * phone, a refetch per tap queued enough requests to stall the page.
+ */
 export function createQuickAddMutation() {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: (payload: Omit<CreateBookPayload, 'onlyIfMissing'>) =>
-			postBook({ ...payload, onlyIfMissing: true }),
-		// A 409 means this device's list is stale: refetch either way
-		onSettled: () => refreshAfterWrite(queryClient)
+		mutationFn: ({
+			payload
+		}: {
+			payload: Omit<CreateBookPayload, 'onlyIfMissing'>;
+			series: SeriesListItem;
+		}) => postBook({ ...payload, onlyIfMissing: true }),
+		onSuccess: (row: BookRow, { series }) => {
+			const item = toBookListItem(row, series);
+			queryClient.setQueryData<BookListItem[]>(['books'], (list) => withBook(list, item));
+			queryClient.setQueryData<SeriesListItem[]>(['series'], (list) =>
+				withBookCount(list, series.id, 1)
+			);
+			markStale(queryClient);
+		},
+		onError: (err: Error) => {
+			// Another device added it: this one's lists are behind
+			if (err instanceof AlreadyAddedError) refetchLists(queryClient);
+		}
 	}));
 }
 
-/** Mutation: undo a quick add (deletes the book) */
+/** Mutation: undo a quick add (deletes the book; patched out of the cache) */
 export function createUndoAddMutation() {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: async (bookId: number) => {
+		mutationFn: async ({ bookId }: { bookId: number; seriesId: number }) => {
 			const res = await fetch(`/api/books/${bookId}`, { method: 'DELETE' });
+			// 404: already gone (deleted elsewhere) — the same outcome
 			if (!res.ok && res.status !== 404) throw new Error('Failed to undo');
 		},
-		onSettled: () => refreshAfterWrite(queryClient)
+		onSuccess: (_: void, { bookId, seriesId }) => {
+			queryClient.setQueryData<BookListItem[]>(['books'], (list) => withoutBook(list, bookId));
+			queryClient.setQueryData<SeriesListItem[]>(['series'], (list) =>
+				withBookCount(list, seriesId, -1)
+			);
+			markStale(queryClient);
+		}
 	}));
 }
 
@@ -75,7 +115,7 @@ export function createSeriesWithFirstVolumeMutation() {
 		}: {
 			series: CreateSeriesPayload;
 			book: Omit<CreateBookPayload, 'seriesId'>;
-		}): Promise<{ series: Pick<SeriesListItem, 'id' | 'shortName'>; book: BookListItem }> => {
+		}): Promise<{ series: Pick<SeriesListItem, 'id' | 'shortName'>; book: BookRow }> => {
 			const res = await fetch('/api/series', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -95,6 +135,7 @@ export function createSeriesWithFirstVolumeMutation() {
 				throw err;
 			}
 		},
-		onSettled: () => refreshAfterWrite(queryClient)
+		// Rare, and Find needs the new series in the list: refetch rather than patch
+		onSettled: () => refetchLists(queryClient)
 	}));
 }

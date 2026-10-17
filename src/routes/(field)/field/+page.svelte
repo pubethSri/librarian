@@ -80,18 +80,21 @@
 		pending = volume;
 		try {
 			const book = await quickAdd.mutateAsync({
-				seriesId: series.id,
-				volumeNumber: volume,
-				isExtra: false,
-				location: settings.location,
-				price,
-				...purchaseFields(settings.fairId, settings.today),
-				isDraft: false
+				series,
+				payload: {
+					seriesId: series.id,
+					volumeNumber: volume,
+					isExtra: false,
+					location: settings.location,
+					price,
+					...purchaseFields(settings.fairId, settings.today),
+					isDraft: false
+				}
 			});
 			toast.success(`Added Vol. ${volume}`, {
 				description: series.shortName,
 				duration: 6000,
-				action: { label: 'Undo', onClick: () => undo(book.id, volume) }
+				action: { label: 'Undo', onClick: () => undo(book.id, series.id, volume) }
 			});
 		} catch (err) {
 			if (err instanceof AlreadyAddedError) {
@@ -106,9 +109,9 @@
 		}
 	}
 
-	async function undo(bookId: number, volume: number) {
+	async function undo(bookId: number, seriesId: number, volume: number) {
 		try {
-			await undoAdd.mutateAsync(bookId);
+			await undoAdd.mutateAsync({ bookId, seriesId });
 			toast(`Removed Vol. ${volume}`);
 		} catch {
 			toast.error(`Couldn't undo Vol. ${volume} — remove it on the desktop`);

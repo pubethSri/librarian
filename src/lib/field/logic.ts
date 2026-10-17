@@ -3,7 +3,7 @@
 // regular volume from 1 to the latest (owned or missing), extras apart, and
 // the next volume to buy. Pure — no runes, no DOM; unit-tested.
 
-import type { BookLocation, ReadingStatus, SeriesListItem } from '$lib/types';
+import type { BookListItem, BookLocation, ReadingStatus, SeriesListItem } from '$lib/types';
 import { latestVolume } from '$lib/utils/volume';
 
 // ─── Search ──────────────────────────────────────────────────────────────────
@@ -363,4 +363,59 @@ export function hitlistText(groups: readonly HitlistGroup[]): string {
 		}
 	}
 	return lines.join('\n');
+}
+
+// ─── Cache patches (quick add / undo) ────────────────────────────────────────
+// A tap on the phone must cost one small request, not a refetch of every
+// list (~200 KB for the books): the server's reply is folded into the
+// cached lists instead. Pure, so the TanStack cache updates stay testable.
+
+/** A book as POST /api/books returns it (the bare row) */
+export type BookRow = Omit<
+	BookListItem,
+	'seriesShortName' | 'seriesFullName' | 'seriesTags' | 'readingStatus' | 'timesRead'
+>;
+
+/** A just-created book row as a books-list item (new books have no reads) */
+export function toBookListItem(
+	row: BookRow,
+	series: Pick<SeriesListItem, 'shortName' | 'fullName' | 'tags'>
+): BookListItem {
+	return {
+		...row,
+		seriesShortName: series.shortName,
+		seriesFullName: series.fullName,
+		seriesTags: series.tags,
+		readingStatus: 'unread',
+		timesRead: 0
+	};
+}
+
+/** The books list with one book added (replacing a stale copy of the same id) */
+export function withBook(
+	list: readonly BookListItem[] | undefined,
+	book: BookListItem
+): BookListItem[] | undefined {
+	return list ? [...list.filter((b) => b.id !== book.id), book] : list;
+}
+
+/** The books list without one book */
+export function withoutBook(
+	list: readonly BookListItem[] | undefined,
+	bookId: number
+): BookListItem[] | undefined {
+	return list ? list.filter((b) => b.id !== bookId) : list;
+}
+
+/** The series list with one series' book count moved by `delta` */
+export function withBookCount(
+	list: readonly SeriesListItem[] | undefined,
+	seriesId: number,
+	delta: number
+): SeriesListItem[] | undefined {
+	return list
+		? list.map((s) =>
+				s.id === seriesId ? { ...s, bookCount: Math.max(0, s.bookCount + delta) } : s
+			)
+		: list;
 }

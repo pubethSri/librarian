@@ -8,8 +8,8 @@ import type {
 } from '$lib/types';
 
 /** Fetch all bookfairs with book count */
-async function fetchBookfairs(): Promise<BookfairWithCount[]> {
-	const res = await fetch('/api/bookfairs');
+async function fetchBookfairs(signal?: AbortSignal): Promise<BookfairWithCount[]> {
+	const res = await fetch('/api/bookfairs', { signal });
 	if (!res.ok) throw new Error('Failed to fetch bookfairs');
 	return res.json();
 }
@@ -28,7 +28,7 @@ async function fetchBookfairDetail(id: number): Promise<BookfairDetail> {
 export function createBookfairsListQuery() {
 	return createQuery<BookfairWithCount[]>(() => ({
 		queryKey: ['bookfairs'],
-		queryFn: fetchBookfairs
+		queryFn: ({ signal }) => fetchBookfairs(signal)
 	}));
 }
 

@@ -2,17 +2,20 @@ import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-qu
 import type { SeriesListItem, CreateSeriesPayload, UpdateSeriesPayload } from '$lib/types';
 
 /** Fetch all series with optional filters */
-async function fetchSeries(params?: {
-	search?: string;
-	type?: string;
-	status?: string;
-}): Promise<SeriesListItem[]> {
+async function fetchSeries(
+	params?: {
+		search?: string;
+		type?: string;
+		status?: string;
+	},
+	signal?: AbortSignal
+): Promise<SeriesListItem[]> {
 	const url = new URL('/api/series', window.location.origin);
 	if (params?.search) url.searchParams.set('search', params.search);
 	if (params?.type) url.searchParams.set('type', params.type);
 	if (params?.status) url.searchParams.set('status', params.status);
 
-	const res = await fetch(url);
+	const res = await fetch(url, { signal });
 	if (!res.ok) throw new Error('Failed to fetch series');
 	return res.json();
 }
@@ -20,15 +23,19 @@ async function fetchSeries(params?: {
 /**
  * Query: list all series.
  *
- * `fresh` refetches on every mount and whenever the tab regains focus — for
- * Field Mode, where a phone must not answer "do I own this?" from data the
- * laptop has since changed.
+ * `fresh` refetches whenever the tab regains focus or a screen mounts, once
+ * the data is older than `FRESH_MS` — for Field Mode, where a phone must not
+ * answer "do I own this?" from data the laptop has since changed. (Not 0: a
+ * tab switch on the phone would re-download every list each time.)
  */
+/** How long Field Mode trusts a fetched list before refetching it */
+export const FRESH_MS = 15_000;
+
 export function createSeriesListQuery(opts: { fresh?: boolean } = {}) {
 	return createQuery<SeriesListItem[]>(() => ({
 		queryKey: ['series'],
-		queryFn: () => fetchSeries(),
-		...(opts.fresh ? { staleTime: 0, refetchOnWindowFocus: true } : {})
+		queryFn: ({ signal }) => fetchSeries(undefined, signal),
+		...(opts.fresh ? { staleTime: FRESH_MS, refetchOnWindowFocus: true } : {})
 	}));
 }
 

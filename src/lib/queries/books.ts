@@ -1,9 +1,10 @@
 import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 import type { BookListItem, CreateBookPayload, UpdateBookPayload } from '$lib/types';
+import { FRESH_MS } from './series';
 
 /** Fetch all books with optional filters */
-async function fetchBooks(): Promise<BookListItem[]> {
-	const res = await fetch('/api/books');
+async function fetchBooks(signal?: AbortSignal): Promise<BookListItem[]> {
+	const res = await fetch('/api/books', { signal });
 	if (!res.ok) throw new Error('Failed to fetch books');
 	return res.json();
 }
@@ -12,8 +13,9 @@ async function fetchBooks(): Promise<BookListItem[]> {
 export function createBooksListQuery(opts: { fresh?: boolean } = {}) {
 	return createQuery<BookListItem[]>(() => ({
 		queryKey: ['books'],
-		queryFn: () => fetchBooks(),
-		...(opts.fresh ? { staleTime: 0, refetchOnWindowFocus: true } : {})
+		// The signal lets a superseded refetch free its connection
+		queryFn: ({ signal }) => fetchBooks(signal),
+		...(opts.fresh ? { staleTime: FRESH_MS, refetchOnWindowFocus: true } : {})
 	}));
 }
 

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+	toBookListItem,
+	withBook,
+	withBookCount,
+	withoutBook,
 	buildHitlist,
 	hitlistTags,
 	hitlistText,
@@ -394,5 +398,56 @@ describe('hitlist', () => {
 				'- Frieren — vol. 2'
 			].join('\n')
 		);
+	});
+});
+
+describe('cache patches', () => {
+	const row = {
+		id: 7,
+		seriesId: 3,
+		volumeNumber: '10.0',
+		isExtra: false,
+		location: 'apartment' as const,
+		boughtAt: '2026-10-17T00:00:00.000Z',
+		price: '175.00',
+		source: 'bookfair' as const,
+		sourceEventId: 13,
+		isDraft: false,
+		createdAt: '2026-10-17T07:00:00.000Z',
+		updatedAt: '2026-10-17T07:00:00.000Z'
+	};
+	const series = { shortName: 'SW', fullName: 'Silent Witch', tags: [{ id: 1, name: 'Fantasy' }] };
+	const item = toBookListItem(row, series);
+	const seriesList = [
+		{ id: 3, bookCount: 9 },
+		{ id: 4, bookCount: 0 }
+	] as unknown as Parameters<typeof withBookCount>[0];
+
+	it('turns a created row into an unread list item with the series fields', () => {
+		expect(item).toMatchObject({
+			id: 7,
+			seriesShortName: 'SW',
+			seriesFullName: 'Silent Witch',
+			seriesTags: [{ id: 1, name: 'Fantasy' }],
+			readingStatus: 'unread',
+			timesRead: 0
+		});
+	});
+
+	it('adds and removes a book without duplicating it', () => {
+		const once = withBook([], item);
+		expect(withBook(once, item)).toHaveLength(1);
+		expect(withoutBook(once, 7)).toEqual([]);
+	});
+
+	it('leaves an unloaded list alone', () => {
+		expect(withBook(undefined, item)).toBeUndefined();
+		expect(withoutBook(undefined, 7)).toBeUndefined();
+		expect(withBookCount(undefined, 3, 1)).toBeUndefined();
+	});
+
+	it("moves one series' book count, never below 0", () => {
+		expect(withBookCount(seriesList, 3, 1)?.map((s) => s.bookCount)).toEqual([10, 0]);
+		expect(withBookCount(seriesList, 4, -1)?.map((s) => s.bookCount)).toEqual([9, 0]);
 	});
 });
