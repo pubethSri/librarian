@@ -82,7 +82,7 @@ Found while checking for other secure-context problems after the `crypto.randomU
 ### Consolidation leftovers
 
 - **Types + validation via `drizzle-zod`** — deferred past the fair (no user-facing value, touches every route). Do it before the reading-queue table lands.
-- Tier 2: Drizzle relational queries in `/api/books`; move `filterEngine.ts` to `lib/`; the 20 `state_referenced_locally` warnings (edit dialogs); drop the unused `series.total_volumes` column (volume counts are derived since 2026-10-15); `npm audit` triage.
+- Tier 2: Drizzle relational queries in `/api/books`; move `filterEngine.ts` to `lib/`; the 20 `state_referenced_locally` warnings (edit dialogs); rename `series.total_volumes` → `released_volumes` (it's "Released up to vol. N" since 2026-10-17 — owned counts stay derived); `npm audit` triage.
 - Optional Console polish: series-grouping toggle. (Row selection from the preview shipped 2026-10-13.)
 - **Spreadsheet-style inline editing of the Console preview** (cell edits become staged rows, committed together) — proposed 2026-10-13. Decide after the backfill shows how often per-book edits are needed; a lighter "click a price cell, save immediately" variant is an hour or two.
 
