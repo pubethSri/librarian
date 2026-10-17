@@ -26,6 +26,8 @@
 	let status = $state<SeriesStatus>(series.status);
 	let publisher = $state(series.publisher || '');
 	let watchlist = $state(series.watchlist);
+	// Latest volume known to be released (Hitlist → Confirmed new volumes); blank = unknown
+	let released = $state(''); // synced from the series by the $effect below
 
 	$effect(() => {
 		shortName = series.shortName;
@@ -34,11 +36,18 @@
 		status = series.status;
 		publisher = series.publisher || '';
 		watchlist = series.watchlist;
+		released = series.totalVolumes === null ? '' : String(series.totalVolumes);
 	});
 
 	function handleSubmit() {
 		if (!shortName.trim() || !fullName.trim()) {
 			toast.error('Short name and full name are required');
+			return;
+		}
+		const releasedText = String(released).trim();
+		const totalVolumes = releasedText === '' ? null : Number(releasedText);
+		if (totalVolumes !== null && !(Number.isInteger(totalVolumes) && totalVolumes >= 1)) {
+			toast.error('Released up to: a whole volume number, or leave it blank');
 			return;
 		}
 
@@ -50,7 +59,8 @@
 				type: seriesType,
 				status,
 				publisher: publisher.trim() || undefined,
-				watchlist
+				watchlist,
+				totalVolumes
 			},
 			{
 				onSuccess: () => {
@@ -108,6 +118,20 @@
 			<div class="space-y-2">
 				<Label for="edit-publisher">Publisher</Label>
 				<PublisherInput id="edit-publisher" bind:value={publisher} />
+			</div>
+			<div class="space-y-2">
+				<Label for="edit-released">Released up to vol.</Label>
+				<Input
+					id="edit-released"
+					bind:value={released}
+					inputmode="numeric"
+					placeholder="Unknown"
+					class="w-32"
+				/>
+				<p class="text-xs text-muted-foreground">
+					The latest volume known to be out. Past what you own, it's listed under "Confirmed new
+					volumes" on the Field Mode Hitlist.
+				</p>
 			</div>
 			<div class="flex items-center justify-between">
 				<Label for="edit-watchlist" class="text-sm font-normal">Watchlist</Label>

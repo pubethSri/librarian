@@ -10,6 +10,7 @@ import {
 	withBook,
 	withBookCount,
 	withoutBook,
+	withReleased,
 	type BookRow
 } from '$lib/field/logic';
 
@@ -197,5 +198,37 @@ export function createSeriesWithVolumesMutation() {
 		},
 		// Rare, and Find needs the new series in the list: refetch rather than patch
 		onSettled: () => refetchLists(queryClient)
+	}));
+}
+
+/**
+ * Mutation: set a series' "released up to" volume. The cached series list
+ * is patched first (the Hitlist updates at once); a failure refetches it.
+ */
+export function createReleasedMutation() {
+	const queryClient = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: async ({ seriesId, released }: { seriesId: number; released: number | null }) => {
+			const res = await fetch(`/api/series/${seriesId}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ totalVolumes: released })
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				throw new Error(err.message || 'Failed to save the released volume');
+			}
+		},
+		onMutate: ({ seriesId, released }) => {
+			queryClient.setQueryData<SeriesListItem[]>(['series'], (list) =>
+				withReleased(list, seriesId, released)
+			);
+		},
+		onSuccess: (_: void, { seriesId }) => {
+			queryClient.invalidateQueries({ queryKey: ['series', seriesId], refetchType: 'none' });
+		},
+		onError: () => {
+			queryClient.invalidateQueries({ queryKey: ['series'] });
+		}
 	}));
 }

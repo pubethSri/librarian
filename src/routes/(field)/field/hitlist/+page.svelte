@@ -1,7 +1,7 @@
 <script lang="ts">
-	// Hitlist: the watchlist as a shopping list — each series' next volume and
-	// gaps, grouped by publisher; tag filter; Copy and Print (the offline
-	// fallback: print it or screenshot it before the fair).
+	// Hitlist: what to look for at the fair. Confirmed new volumes first (any
+	// series whose released volume is past what you own — black cards), then
+	// the watchlist's next volumes by publisher; tag filter; Copy and save.
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { Copy, Printer, Star, X } from '@lucide/svelte';
@@ -10,10 +10,12 @@
 	import { createBooksListQuery } from '$lib/queries/books';
 	import {
 		buildHitlist,
+		confirmedNew,
 		groupBySeries,
 		hitlistTags,
 		hitlistText,
-		todayLocal
+		todayLocal,
+		volumeSpan
 	} from '$lib/field/logic';
 	import { copyText } from '$lib/field/clipboard';
 	import { formatDay } from '$lib/console/logic';
@@ -29,10 +31,15 @@
 	const loading = $derived(seriesQuery.isPending || booksQuery.isPending);
 	const allSeries = $derived(seriesQuery.data ?? []);
 	const booksBySeries = $derived(groupBySeries(booksQuery.data ?? []));
-	const tags = $derived(hitlistTags(allSeries));
-	const groups = $derived(buildHitlist(allSeries, booksBySeries, selectedTags));
-	const count = $derived(groups.reduce((n, g) => n + g.items.length, 0));
+	/** Every confirmed series (unfiltered): they stay out of the watchlist groups */
+	const confirmedAll = $derived(confirmedNew(allSeries, booksBySeries));
+	const confirmedIds = $derived(new Set(confirmedAll.map((c) => c.series.id)));
+	const confirmed = $derived(confirmedNew(allSeries, booksBySeries, selectedTags));
+	const tags = $derived(hitlistTags(allSeries, confirmedIds));
+	const groups = $derived(buildHitlist(allSeries, booksBySeries, selectedTags, confirmedIds));
+	const count = $derived(groups.reduce((n, g) => n + g.items.length, 0) + confirmed.length);
 	const watchlistSize = $derived(allSeries.filter((s) => s.watchlist).length);
+	const totalSize = $derived(allSeries.filter((s) => s.watchlist || confirmedIds.has(s.id)).length);
 
 	function toggleTag(id: number) {
 		selectedTags = selectedTags.includes(id)
@@ -41,7 +48,7 @@
 	}
 
 	async function copy() {
-		const text = hitlistText(groups);
+		const text = hitlistText(groups, confirmed);
 		if (await copyText(text)) {
 			manualCopy = null;
 			toast.success(`Copied ${count} series`);
@@ -67,8 +74,7 @@
 				{#if loading}
 					Loading…
 				{:else}
-					{count}{selectedTags.length > 0 ? ` of ${watchlistSize}` : ''} watchlist series · next volume
-					to buy
+					{count}{selectedTags.length > 0 ? ` of ${totalSize}` : ''} series to look for
 				{/if}
 				<span class="hidden print:inline"> · {formatDay(todayLocal())}</span>
 			</p>
@@ -158,7 +164,7 @@
 		<p class="py-8 text-center text-sm text-destructive">
 			Couldn't load the collection. Check the connection and try again.
 		</p>
-	{:else if watchlistSize === 0}
+	{:else if watchlistSize === 0 && confirmedAll.length === 0}
 		<div class="py-12 text-center">
 			<Star class="mx-auto h-8 w-8 text-muted-foreground" />
 			<p class="mt-3 text-base font-medium text-foreground">The watchlist is empty</p>
@@ -168,10 +174,54 @@
 		</div>
 	{:else if count === 0}
 		<p class="py-10 text-center text-sm text-muted-foreground">
-			No watchlist series has all the selected tags.
+			No series on the list has all the selected tags.
 		</p>
 	{:else}
 		<div class="space-y-5 print:space-y-3">
+			{#if confirmed.length > 0}
+				<section class="break-inside-avoid" aria-label="Confirmed new volumes">
+					<h2
+						class="px-1 pb-2 text-xs font-semibold tracking-wide text-foreground uppercase print:pb-1"
+					>
+						Confirmed new volumes
+						<span class="font-normal text-muted-foreground normal-case">· {confirmed.length}</span>
+					</h2>
+					<ul class="space-y-2">
+						{#each confirmed as item (item.series.id)}
+							<li>
+								<a
+									href={resolve(`/field?series=${item.series.id}`)}
+									class="flex min-h-14 items-center gap-3 rounded-xl bg-primary px-4 py-2 text-primary-foreground transition-opacity active:opacity-80"
+								>
+									<span class="min-w-0 flex-1">
+										<span class="block truncate text-base font-semibold">
+											{item.series.shortName}
+										</span>
+										<span class="block truncate text-xs opacity-75">
+											out up to vol. {item.to}{item.series.watchlist
+												? ''
+												: ' · not on the watchlist'}{item.missing.length > 0
+												? ` · also missing ${item.missing.join(', ')}`
+												: ''}
+										</span>
+									</span>
+									<span class="shrink-0 font-mono text-xl font-bold tabular-nums">
+										<span
+											class="mr-1 align-middle font-sans text-[10px] font-normal tracking-wide uppercase opacity-75"
+											>vol.</span
+										>{volumeSpan(item.from, item.to)}
+									</span>
+								</a>
+							</li>
+						{/each}
+					</ul>
+				</section>
+				{#if groups.length > 0}
+					<p class="px-1 pt-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Watchlist — next volume
+					</p>
+				{/if}
+			{/if}
 			{#each groups as group (group.publisher ?? '')}
 				<section class="break-inside-avoid">
 					<h2

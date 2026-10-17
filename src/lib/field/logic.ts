@@ -317,10 +317,15 @@ export type HitlistGroup<T extends HitlistSeriesLike = HitlistSeriesLike> = {
 	items: HitlistItem<T>[];
 };
 
-/** Tags used by the watchlist, by name — the Hitlist's filter chips */
-export function hitlistTags(series: readonly HitlistSeriesLike[]): { id: number; name: string }[] {
+/** Tags used by the watchlist (and `also`: the confirmed series), by name — the filter chips */
+export function hitlistTags(
+	series: readonly HitlistSeriesLike[],
+	also: ReadonlySet<number> = new Set()
+): { id: number; name: string }[] {
 	const tags = new Map<number, string>();
-	for (const s of series) if (s.watchlist) for (const t of s.tags) tags.set(t.id, t.name);
+	for (const s of series) {
+		if (s.watchlist || also.has(s.id)) for (const t of s.tags) tags.set(t.id, t.name);
+	}
 	return [...tags].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -331,11 +336,13 @@ export function hitlistTags(series: readonly HitlistSeriesLike[]): { id: number;
 export function buildHitlist<T extends HitlistSeriesLike>(
 	series: readonly T[],
 	booksBySeries: ReadonlyMap<number, readonly OwnedBookLike[]>,
-	tagIds: readonly number[] = []
+	tagIds: readonly number[] = [],
+	/** Series shown elsewhere (the Confirmed section) — left out here */
+	exclude: ReadonlySet<number> = new Set()
 ): HitlistGroup<T>[] {
 	const groups = new Map<string | null, HitlistItem<T>[]>();
 	for (const s of series) {
-		if (!s.watchlist) continue;
+		if (!s.watchlist || exclude.has(s.id)) continue;
 		if (!tagIds.every((id) => s.tags.some((t) => t.id === id))) continue;
 		const owned = ownedVolumes(booksBySeries.get(s.id) ?? []);
 		const publisher = s.publisher?.trim() || null;
@@ -351,10 +358,20 @@ export function buildHitlist<T extends HitlistSeriesLike>(
 		}));
 }
 
-/** Plain text for Copy: one line per series, publishers as headings */
-export function hitlistText(groups: readonly HitlistGroup[]): string {
-	const count = groups.reduce((n, g) => n + g.items.length, 0);
+/** Plain text for Copy: confirmed new volumes first, then the watchlist by publisher */
+export function hitlistText(
+	groups: readonly HitlistGroup[],
+	confirmed: readonly ConfirmedItem[] = []
+): string {
+	const count = groups.reduce((n, g) => n + g.items.length, 0) + confirmed.length;
 	const lines = [`Hitlist — ${count} series`];
+	if (confirmed.length > 0) {
+		lines.push('', 'Confirmed new volumes');
+		for (const c of confirmed) {
+			const missing = c.missing.length > 0 ? ` (also missing ${c.missing.join(', ')})` : '';
+			lines.push(`- ${c.series.shortName} — vol. ${volumeSpan(c.from, c.to)} out${missing}`);
+		}
+	}
 	for (const g of groups) {
 		lines.push('', g.publisher ?? 'Unknown publisher');
 		for (const i of g.items) {
@@ -363,6 +380,50 @@ export function hitlistText(groups: readonly HitlistGroup[]): string {
 		}
 	}
 	return lines.join('\n');
+}
+
+// ─── Confirmed new volumes ───────────────────────────────────────────────────
+// `series.totalVolumes` = the latest volume known to be released, set by hand
+// ("Released up to vol. N"). A series whose released volume is past the
+// latest one owned has confirmed new volumes — watchlist or not.
+
+export type ConfirmedItem<T extends HitlistSeriesLike = HitlistSeriesLike> = {
+	series: T;
+	/** First released volume not owned yet (latest owned + 1) */
+	from: number;
+	/** Latest released volume */
+	to: number;
+	/** Gaps below the latest owned */
+	missing: number[];
+};
+
+/** "16" or "15–16" */
+export function volumeSpan(from: number, to: number): string {
+	return from === to ? `${from}` : `${from}–${to}`;
+}
+
+/** Series with released volumes past the latest owned, by name; tags as in the Hitlist */
+export function confirmedNew<T extends HitlistSeriesLike & { totalVolumes: number | null }>(
+	series: readonly T[],
+	booksBySeries: ReadonlyMap<number, readonly OwnedBookLike[]>,
+	tagIds: readonly number[] = []
+): ConfirmedItem<T>[] {
+	const items: ConfirmedItem<T>[] = [];
+	for (const s of series) {
+		if (s.totalVolumes === null || s.totalVolumes < 1) continue;
+		if (!tagIds.every((id) => s.tags.some((t) => t.id === id))) continue;
+		const owned = ownedVolumes(booksBySeries.get(s.id) ?? []);
+		if (s.totalVolumes < owned.next) continue;
+		items.push({ series: s, from: owned.next, to: s.totalVolumes, missing: owned.missing });
+	}
+	return items.sort((a, b) => a.series.shortName.localeCompare(b.series.shortName));
+}
+
+/** A typed "released up to" value: a whole volume ≥ 1, or null to clear */
+export function normalizeReleased(value: number | null): number | null {
+	if (value === null || !Number.isFinite(value)) return null;
+	const n = Math.floor(value);
+	return n >= 1 && n <= 999 ? n : null;
 }
 
 // ─── Cache patches (quick add / undo) ────────────────────────────────────────
@@ -405,6 +466,15 @@ export function withoutBook(
 	bookId: number
 ): BookListItem[] | undefined {
 	return list ? list.filter((b) => b.id !== bookId) : list;
+}
+
+/** The series list with one series' released volume set */
+export function withReleased(
+	list: readonly SeriesListItem[] | undefined,
+	seriesId: number,
+	released: number | null
+): SeriesListItem[] | undefined {
+	return list ? list.map((s) => (s.id === seriesId ? { ...s, totalVolumes: released } : s)) : list;
 }
 
 /** The series list with one series' book count moved by `delta` */

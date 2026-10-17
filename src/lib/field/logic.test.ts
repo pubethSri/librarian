@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+	confirmedNew,
+	normalizeReleased,
+	volumeSpan,
+	withReleased,
 	addVolumes,
 	nextRun,
 	pickableVolumes,
@@ -383,8 +387,11 @@ describe('hitlist', () => {
 		expect(ids([])).toHaveLength(4);
 	});
 
-	it('lists the watchlist tags by name', () => {
+	it('lists the watchlist tags by name, plus those of extra series', () => {
 		expect(hitlistTags(series)).toEqual([isekai, romance]);
+		const other = [s(7, 'Other', null, [{ id: 3, name: 'action' }], false)];
+		expect(hitlistTags(other)).toEqual([]);
+		expect(hitlistTags(other, new Set([7]))).toEqual([{ id: 3, name: 'action' }]);
 	});
 
 	it('treats a blank publisher as unknown', () => {
@@ -480,5 +487,99 @@ describe('multi-add helpers', () => {
 		expect(volumeRanges([7, 1, 2, 5, 6, 9])).toBe('1–2, 5–7, 9');
 		expect(volumeRanges([4])).toBe('4');
 		expect(volumeRanges([])).toBe('');
+	});
+});
+
+describe('confirmed new volumes', () => {
+	const s = (
+		id: number,
+		shortName: string,
+		totalVolumes: number | null,
+		watchlist = false,
+		tags: { id: number; name: string }[] = []
+	) => ({
+		id,
+		shortName,
+		fullName: shortName,
+		type: 'manga' as const,
+		status: 'ongoing' as const,
+		publisher: null,
+		watchlist,
+		tags,
+		totalVolumes
+	});
+	const vol = (id: number, volumeNumber: number) => ({
+		id,
+		volumeNumber,
+		isExtra: false,
+		location: 'home' as const,
+		readingStatus: 'unread' as const,
+		timesRead: 0
+	});
+	const books = new Map([
+		[1, [vol(1, 1), vol(2, 2), vol(3, 4)]],
+		[2, [vol(4, 1), vol(5, 2)]],
+		[3, [vol(6, 1)]]
+	]);
+	const series = [
+		s(1, 'Zeta', 6, true),
+		s(2, 'Alpha', 2),
+		s(3, 'Beta', 3, false, [{ id: 9, name: 'romance' }]),
+		s(4, 'Never bought', 2),
+		s(5, 'Unknown', null, true)
+	];
+
+	it('lists series released past the latest owned, watchlist or not, by name', () => {
+		const items = confirmedNew(series, books);
+		expect(items.map((i) => [i.series.shortName, i.from, i.to])).toEqual([
+			['Beta', 2, 3],
+			['Never bought', 1, 2],
+			['Zeta', 5, 6]
+		]);
+		expect(items.find((i) => i.series.id === 1)?.missing).toEqual([3]);
+	});
+
+	it('drops a series once its released volume is owned, and unknown ones', () => {
+		const ids = confirmedNew(series, books).map((i) => i.series.id);
+		expect(ids).not.toContain(2);
+		expect(ids).not.toContain(5);
+	});
+
+	it('applies the tag filter', () => {
+		expect(confirmedNew(series, books, [9]).map((i) => i.series.id)).toEqual([3]);
+	});
+
+	it('keeps confirmed series out of the watchlist groups and puts them first in the text', () => {
+		const confirmed = confirmedNew(series, books);
+		const groups = buildHitlist(series, books, [], new Set(confirmed.map((c) => c.series.id)));
+		expect(groups.flatMap((g) => g.items.map((i) => i.series.id))).toEqual([5]);
+		expect(hitlistText(groups, confirmed)).toBe(
+			[
+				'Hitlist — 4 series',
+				'',
+				'Confirmed new volumes',
+				'- Beta — vol. 2–3 out',
+				'- Never bought — vol. 1–2 out',
+				'- Zeta — vol. 5–6 out (also missing 3)',
+				'',
+				'Unknown publisher',
+				'- Unknown — vol. 1'
+			].join('\n')
+		);
+	});
+
+	it('formats spans and normalizes typed values', () => {
+		expect(volumeSpan(16, 16)).toBe('16');
+		expect(volumeSpan(15, 16)).toBe('15–16');
+		expect(normalizeReleased(12.7)).toBe(12);
+		expect(normalizeReleased(0)).toBeNull();
+		expect(normalizeReleased(null)).toBeNull();
+		expect(normalizeReleased(Number.NaN)).toBeNull();
+	});
+
+	it('patches the released volume into the cached series list', () => {
+		const list = [{ id: 1, totalVolumes: null }] as unknown as Parameters<typeof withReleased>[0];
+		expect(withReleased(list, 1, 7)?.[0].totalVolumes).toBe(7);
+		expect(withReleased(undefined, 1, 7)).toBeUndefined();
 	});
 });

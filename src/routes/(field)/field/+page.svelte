@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { createSeriesListQuery } from '$lib/queries/series';
 	import { createBooksListQuery } from '$lib/queries/books';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import LocationToggle from '$lib/components/field/LocationToggle.svelte';
@@ -13,6 +14,8 @@
 		Check,
 		ListChecks,
 		LoaderCircle,
+		Megaphone,
+		Minus,
 		Plus,
 		Search,
 		Star,
@@ -23,6 +26,7 @@
 		groupBySeries,
 		lastPrice,
 		nextRun,
+		normalizeReleased,
 		ownedVolumes,
 		parsePrice,
 		pickableVolumes,
@@ -30,6 +34,8 @@
 		searchSeries,
 		toggleVolume,
 		volumeRanges,
+		volumeSpan,
+		withReleased,
 		type OwnedVolumes,
 		type VolumeSlot
 	} from '$lib/field/logic';
@@ -39,9 +45,15 @@
 		AlreadyAddedError,
 		createMultiAddMutation,
 		createQuickAddMutation,
+		createReleasedMutation,
 		createUndoAddMutation
 	} from '$lib/queries/field';
-	import { BOOK_LOCATION_LABELS, SERIES_STATUS_LABELS, type BookLocation } from '$lib/types';
+	import {
+		BOOK_LOCATION_LABELS,
+		SERIES_STATUS_LABELS,
+		type BookLocation,
+		type SeriesListItem
+	} from '$lib/types';
 
 	// Fresh: a phone at the fair must see what the laptop added a minute ago
 	const seriesQuery = createSeriesListQuery({ fresh: true });
@@ -192,6 +204,35 @@
 		} catch {
 			toast.error(`Couldn't undo ${label} — remove it on the desktop`);
 		}
+	}
+
+	// ─── Released up to vol. N (Hitlist → Confirmed new volumes) ────────────
+	const queryClient = useQueryClient();
+	const releasedMutation = createReleasedMutation();
+	let releasedTimer: ReturnType<typeof setTimeout> | undefined;
+
+	/** Show it at once; save once the taps stop (one PATCH for several taps) */
+	function setReleased(value: number | null) {
+		if (!selected) return;
+		const seriesId = selected.id;
+		const released = normalizeReleased(value);
+		queryClient.setQueryData<SeriesListItem[]>(['series'], (list) =>
+			withReleased(list, seriesId, released)
+		);
+		clearTimeout(releasedTimer);
+		releasedTimer = setTimeout(() => {
+			releasedMutation.mutate(
+				{ seriesId, released },
+				{ onError: (err) => toast.error(err.message) }
+			);
+		}, 600);
+	}
+
+	function stepReleased(by: number) {
+		if (!selected || !owned) return;
+		const current = selected.totalVolumes;
+		if (by > 0) setReleased(Math.max(current ?? owned.latest, owned.latest) + by);
+		else setReleased(current === null ? null : current + by);
 	}
 
 	function ownedOf(seriesId: number): OwnedVolumes {
@@ -602,6 +643,68 @@
 						{/if}
 					</button>
 				</div>
+			{/if}
+
+			{#if !selecting}
+				{@const released = selected.totalVolumes}
+				<section class="mt-5 rounded-xl border border-border p-3" aria-label="Released volumes">
+					<div class="flex items-center gap-3">
+						<div class="min-w-0 flex-1">
+							<p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+								Released
+							</p>
+							<p class="text-sm text-foreground">
+								{#if released !== null && released >= owned.next}
+									Out up to <span class="font-semibold">vol. {released}</span> — vol.
+									{volumeSpan(owned.next, released)} to buy
+								{:else if released !== null}
+									Up to vol. {released} — you have them all
+								{:else}
+									Seen a newer volume in a shop?
+								{/if}
+							</p>
+						</div>
+						<div class="flex h-11 shrink-0 items-center rounded-xl border border-input">
+							<button
+								type="button"
+								onclick={() => stepReleased(-1)}
+								disabled={released === null}
+								class="flex h-full w-10 items-center justify-center text-muted-foreground active:bg-accent disabled:opacity-30"
+								aria-label="Released: one less"
+							>
+								<Minus class="h-4 w-4" />
+							</button>
+							<span class="w-9 text-center font-mono text-base font-semibold tabular-nums">
+								{released ?? '—'}
+							</span>
+							<button
+								type="button"
+								onclick={() => stepReleased(1)}
+								class="flex h-full w-10 items-center justify-center text-muted-foreground active:bg-accent"
+								aria-label="Released: one more"
+							>
+								<Plus class="h-4 w-4" />
+							</button>
+						</div>
+					</div>
+					{#if released === null}
+						<button
+							type="button"
+							onclick={() => setReleased(owned.next)}
+							class="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-foreground/30 text-sm font-medium text-foreground active:bg-accent"
+						>
+							<Megaphone class="h-4 w-4" /> Vol. {owned.next} is out
+						</button>
+					{:else}
+						<button
+							type="button"
+							onclick={() => setReleased(null)}
+							class="mt-1 h-9 px-1 text-xs text-muted-foreground underline-offset-4 hover:underline"
+						>
+							Clear (unknown)
+						</button>
+					{/if}
+				</section>
 			{/if}
 
 			{#if owned.extras.length > 0}

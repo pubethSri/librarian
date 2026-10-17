@@ -51,6 +51,7 @@ export type SeriesListItem = {
 	status: SeriesStatus;
 	type: SeriesType;
 	publisher: string | null;
+	/** Latest volume known to be released, set by hand (null = unknown) — the Hitlist's Confirmed section */
 	totalVolumes: number | null;
 	watchlist: boolean;
 	createdAt: string;
@@ -166,7 +167,7 @@ export type CreateSeriesPayload = {
 	type: SeriesType;
 	status?: SeriesStatus;
 	publisher?: string;
-	totalVolumes?: number;
+	totalVolumes?: number | null;
 	watchlist?: boolean;
 };
 

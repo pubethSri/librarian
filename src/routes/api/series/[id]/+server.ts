@@ -49,6 +49,15 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 	const existing = await db.query.series.findFirst({ where: eq(series.id, id) });
 	if (!existing) throw error(404, 'Series not found');
 
+	// totalVolumes = latest volume known to be released ("Released up to vol. N")
+	if (
+		body.totalVolumes !== undefined &&
+		body.totalVolumes !== null &&
+		!(Number.isInteger(body.totalVolumes) && body.totalVolumes >= 1 && body.totalVolumes <= 999)
+	) {
+		throw error(400, 'totalVolumes must be a whole volume number (1–999) or null');
+	}
+
 	const [updated] = await db
 		.update(series)
 		.set({
