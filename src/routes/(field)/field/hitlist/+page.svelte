@@ -4,7 +4,7 @@
 	// the watchlist's next volumes by publisher; tag filter; Copy and save.
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
-	import { Copy, Printer, Star, X } from '@lucide/svelte';
+	import { Copy, ImageDown, LoaderCircle, Star, X } from '@lucide/svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { createSeriesListQuery } from '$lib/queries/series';
 	import { createBooksListQuery } from '$lib/queries/books';
@@ -18,6 +18,12 @@
 		volumeSpan
 	} from '$lib/field/logic';
 	import { copyText } from '$lib/field/clipboard';
+	import {
+		drawHitlist,
+		hitlistFileName,
+		hitlistImageLines,
+		saveHitlistImage
+	} from '$lib/field/hitlistImage';
 	import { formatDay } from '$lib/console/logic';
 	import { SERIES_STATUS_LABELS } from '$lib/types';
 
@@ -57,6 +63,22 @@
 		}
 	}
 
+	let savingImage = $state(false);
+
+	async function saveImage() {
+		savingImage = true;
+		try {
+			const today = todayLocal();
+			const canvas = drawHitlist(hitlistImageLines(groups, confirmed, formatDay(today)));
+			const how = await saveHitlistImage(canvas, hitlistFileName(today));
+			if (how === 'downloaded') toast.success(`Saved ${hitlistFileName(today)}`);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Couldn't save the image");
+		} finally {
+			savingImage = false;
+		}
+	}
+
 	function selectAll(e: Event) {
 		(e.currentTarget as HTMLTextAreaElement).select();
 	}
@@ -89,12 +111,13 @@
 		</button>
 		<button
 			type="button"
-			onclick={() => window.print()}
-			disabled={loading || count === 0}
+			onclick={saveImage}
+			disabled={loading || count === 0 || savingImage}
 			class="flex h-11 items-center gap-1.5 rounded-xl border border-input px-3 text-sm font-medium text-foreground active:bg-accent disabled:opacity-40 print:hidden"
-			aria-label="Print"
 		>
-			<Printer class="h-4 w-4" />
+			{#if savingImage}<LoaderCircle class="h-4 w-4 animate-spin" />{:else}<ImageDown
+					class="h-4 w-4"
+				/>{/if} Save image
 		</button>
 	</div>
 
