@@ -23,8 +23,9 @@ services:
       - '3000:3000'
     environment:
       DATABASE_URL: postgres://root:mysecretpassword@db:5432/local
-      AUTH_PASSWORD: ${AUTH_PASSWORD:-librarian}
-      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
+      # No defaults: the server refuses to start without both (set them in .env)
+      AUTH_PASSWORD: ${AUTH_PASSWORD}
+      AUTH_SECRET: ${AUTH_SECRET}
       NODE_ENV: production
     depends_on:
       db:

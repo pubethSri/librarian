@@ -2,14 +2,20 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
+	import { browser } from '$app/environment';
+	import { installSessionGuard, retryUnlessExpired } from '$lib/session';
 
 	let { children } = $props();
+
+	// An expired session turns API calls into one "sign in again" toast
+	if (browser) installSessionGuard();
 
 	const queryClient = new QueryClient({
 		defaultOptions: {
 			queries: {
 				staleTime: 1000 * 60 * 5, // 5 minutes
-				refetchOnWindowFocus: false
+				refetchOnWindowFocus: false,
+				retry: retryUnlessExpired
 			}
 		}
 	});

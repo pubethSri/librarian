@@ -1,17 +1,39 @@
 import { env } from '$env/dynamic/private';
-import * as crypto from 'crypto';
-
-const AUTH_SECRET = env.AUTH_SECRET || 'librarian-default-secret-change-me';
-const AUTH_PASSWORD = env.AUTH_PASSWORD || 'librarian';
+import {
+	SESSION_MAX_AGE_S,
+	createRateLimiter,
+	passwordMatches,
+	signSessionToken,
+	verifySessionTokenAt
+} from './authCore';
 
 const COOKIE_NAME = 'librarian_session';
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+
+/**
+ * The password and signing secret. No fallbacks: a missing value would mean a
+ * guessable password or a forgeable cookie, so the server refuses to run.
+ */
+function authEnv(): { password: string; secret: string } {
+	const password = env.AUTH_PASSWORD;
+	const secret = env.AUTH_SECRET;
+	if (!password || !secret) {
+		throw new Error(
+			'AUTH_PASSWORD and AUTH_SECRET must be set (see .env.example) — refusing to start without them'
+		);
+	}
+	return { password, secret };
+}
+
+/** Called from the server `init` hook so a missing secret fails at startup */
+export function assertAuthEnv(): void {
+	authEnv();
+}
 
 /**
  * Verify the provided password against the AUTH_PASSWORD env var.
  */
 export function verifyPassword(password: string): boolean {
-	return password === AUTH_PASSWORD;
+	return passwordMatches(password, authEnv().password);
 }
 
 /**
@@ -19,47 +41,32 @@ export function verifyPassword(password: string): boolean {
  * Uses HMAC-SHA256 to sign a timestamp, so we can verify the cookie wasn't tampered with.
  */
 export function createSessionToken(): string {
-	const timestamp = Date.now().toString();
-	const hmac = crypto.createHmac('sha256', AUTH_SECRET).update(timestamp).digest('hex');
-	return `${timestamp}.${hmac}`;
+	return signSessionToken(authEnv().secret, Date.now());
 }
 
 /**
- * Verify a session token is valid (signature matches).
+ * Verify a session token: signature matches and it is younger than the cookie's max age.
  */
 export function verifySessionToken(token: string): boolean {
-	const parts = token.split('.');
-	if (parts.length !== 2) return false;
-
-	const [timestamp, signature] = parts;
-	const expectedSignature = crypto
-		.createHmac('sha256', AUTH_SECRET)
-		.update(timestamp)
-		.digest('hex');
-
-	// Constant-time comparison to prevent timing attacks
-	try {
-		return crypto.timingSafeEqual(
-			Buffer.from(signature, 'hex'),
-			Buffer.from(expectedSignature, 'hex')
-		);
-	} catch {
-		return false;
-	}
+	return verifySessionTokenAt(token, authEnv().secret, Date.now());
 }
 
 /**
  * Get cookie configuration for the session cookie.
+ * `secure` follows the request's protocol (see `isSecureRequest`), not NODE_ENV.
  */
-export function getSessionCookieOptions() {
+export function getSessionCookieOptions(secure: boolean) {
 	return {
 		name: COOKIE_NAME,
-		maxAge: COOKIE_MAX_AGE,
+		maxAge: SESSION_MAX_AGE_S,
 		path: '/',
 		httpOnly: true,
 		sameSite: 'lax' as const,
-		secure: env.NODE_ENV === 'production'
+		secure
 	};
 }
+
+/** Failed sign-ins: 5 per 10 minutes per client address */
+export const loginLimiter = createRateLimiter({ max: 5, windowMs: 10 * 60 * 1000 });
 
 export { COOKIE_NAME };
