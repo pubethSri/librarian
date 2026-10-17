@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
 	confirmedTo,
+	currentlyReading,
+	readingTarget,
 	hitlistCounts,
 	hitlistVolumeText,
 	normalizeReleased,
@@ -36,6 +38,7 @@ import {
 	searchSeries,
 	type OwnedBookLike
 } from './logic';
+import type { ReadingStatus } from '$lib/types';
 
 const series = (id: number, shortName: string, fullName = shortName, bookCount = 1) => ({
 	id,
@@ -130,10 +133,42 @@ describe('ownedVolumes', () => {
 			book({ volumeNumber: '4.0' })
 		]);
 		expect(owned.volumes).toEqual([
-			{ volume: 1, isExtra: false, copies: 1, locations: ['apartment'], read: true },
-			{ volume: 2, isExtra: false, copies: 2, locations: ['home', 'apartment'], read: false },
-			{ volume: 3, isExtra: false, copies: 0, locations: [], read: false },
-			{ volume: 4, isExtra: false, copies: 1, locations: ['apartment'], read: false }
+			{
+				volume: 1,
+				isExtra: false,
+				copies: 1,
+				locations: ['apartment'],
+				read: true,
+				bookId: 1,
+				status: 'read'
+			},
+			{
+				volume: 2,
+				isExtra: false,
+				copies: 2,
+				locations: ['home', 'apartment'],
+				read: false,
+				bookId: 2,
+				status: 'unread'
+			},
+			{
+				volume: 3,
+				isExtra: false,
+				copies: 0,
+				locations: [],
+				read: false,
+				bookId: null,
+				status: 'unread'
+			},
+			{
+				volume: 4,
+				isExtra: false,
+				copies: 1,
+				locations: ['apartment'],
+				read: false,
+				bookId: 4,
+				status: 'unread'
+			}
 		]);
 		expect(owned.latest).toBe(4);
 		expect(owned.next).toBe(5);
@@ -151,6 +186,39 @@ describe('ownedVolumes', () => {
 		expect(owned.next).toBe(2);
 		expect(owned.missing).toEqual([]);
 		expect(owned.extras.map((e) => e.volume)).toEqual([1.5, 9.5]);
+	});
+
+	it('points reading actions at the copy being read, else the most-read copy', () => {
+		const reading = book({ volumeNumber: '1.0', readingStatus: 'reading' });
+		const readTwice = book({ volumeNumber: '1.0', readingStatus: 'read', timesRead: 2 });
+		const plain = book({ volumeNumber: '1.0' });
+		expect(readingTarget([plain, readTwice, reading])).toBe(reading);
+		expect(readingTarget([plain, readTwice])).toBe(readTwice);
+		expect(readingTarget([plain])).toBe(plain);
+		expect(readingTarget([])).toBeNull();
+		expect(ownedVolumes([plain, readTwice]).volumes[0]).toMatchObject({
+			bookId: readTwice.id,
+			status: 'read'
+		});
+	});
+
+	it('lists Reading books by series name, then volume', () => {
+		const b = (seriesShortName: string, volumeNumber: string, readingStatus: ReadingStatus) => ({
+			...book({ volumeNumber, readingStatus }),
+			seriesId: 1,
+			seriesShortName
+		});
+		const list = currentlyReading([
+			b('Overlord', '3.0', 'reading'),
+			b('Arifureta', '12.0', 'reading'),
+			b('Arifureta', '2.0', 'reading'),
+			b('Arifureta', '1.0', 'read')
+		]);
+		expect(list.map((x) => `${x.seriesShortName} ${x.volumeNumber}`)).toEqual([
+			'Arifureta 2.0',
+			'Arifureta 12.0',
+			'Overlord 3.0'
+		]);
 	});
 
 	it('starts at volume 1 when nothing regular is owned', () => {

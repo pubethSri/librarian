@@ -87,6 +87,10 @@ export type VolumeSlot = {
 	locations: BookLocation[];
 	/** Read at least once (any copy) */
 	read: boolean;
+	/** The copy the tile's reading actions apply to (`readingTarget`); null for a gap */
+	bookId: number | null;
+	/** That copy's current reading status */
+	status: ReadingStatus;
 };
 
 export type OwnedVolumes = {
@@ -104,13 +108,28 @@ export type OwnedVolumes = {
 	total: number;
 };
 
+/**
+ * Which copy of a volume a reading action means: the one being read, else the
+ * most-read one, else the first. Null when no copy is owned.
+ */
+export function readingTarget<T extends OwnedBookLike>(books: readonly T[]): T | null {
+	return (
+		books.find((b) => b.readingStatus === 'reading') ??
+		[...books].sort((a, b) => b.timesRead - a.timesRead)[0] ??
+		null
+	);
+}
+
 function slotOf(volume: number, isExtra: boolean, books: readonly OwnedBookLike[]): VolumeSlot {
+	const target = readingTarget(books);
 	return {
 		volume,
 		isExtra,
 		copies: books.length,
 		locations: books.map((b) => b.location),
-		read: books.some((b) => b.timesRead > 0)
+		read: books.some((b) => b.timesRead > 0),
+		bookId: target?.id ?? null,
+		status: target?.readingStatus ?? 'unread'
 	};
 }
 
@@ -143,6 +162,21 @@ export function ownedVolumes(books: readonly OwnedBookLike[]): OwnedVolumes {
 		missing: volumes.filter((v) => v.copies === 0).map((v) => v.volume),
 		total: books.length
 	};
+}
+
+// ─── Currently reading (v0.4 reading log) ────────────────────────────────────
+
+export type CurrentlyReadingBook = OwnedBookLike & { seriesId: number; seriesShortName: string };
+
+/** Books whose current status is Reading, by series name then volume */
+export function currentlyReading<T extends CurrentlyReadingBook>(books: readonly T[]): T[] {
+	return books
+		.filter((b) => b.readingStatus === 'reading')
+		.sort(
+			(a, b) =>
+				a.seriesShortName.localeCompare(b.seriesShortName) ||
+				Number(a.volumeNumber) - Number(b.volumeNumber)
+		);
 }
 
 /** Books grouped by series id */

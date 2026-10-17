@@ -8,9 +8,12 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import LocationToggle from '$lib/components/field/LocationToggle.svelte';
+	import CurrentlyReading from '$lib/components/field/CurrentlyReading.svelte';
+	import VolumeReadingSheet from '$lib/components/field/VolumeReadingSheet.svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		ArrowLeft,
+		BookOpen,
 		Check,
 		ListChecks,
 		LoaderCircle,
@@ -79,6 +82,9 @@
 	const owned = $derived(selected ? ownedVolumes(booksBySeries.get(selected.id) ?? []) : null);
 
 	const loading = $derived(seriesQuery.isPending || booksQuery.isPending);
+
+	/** The owned tile whose reading sheet is open */
+	let readingSlot = $state<VolumeSlot | null>(null);
 
 	// ─── Quick add ──────────────────────────────────────────────────────────
 	const settings = getFieldSettings();
@@ -272,7 +278,8 @@
 		const name = volumeText({ volumeNumber: slot.volume, isExtra: slot.isExtra });
 		if (slot.copies === 0) return `${name}: not owned`;
 		const where = slot.locations.map((l) => BOOK_LOCATION_LABELS[l]).join(', ');
-		return `${name}: ${where}${slot.read ? ' · read' : ''}`;
+		const state = slot.status === 'reading' ? ' · reading' : slot.read ? ' · read' : '';
+		return `${name}: ${where}${state}`;
 	}
 </script>
 
@@ -360,6 +367,7 @@
 				</ul>
 			{/if}
 		{:else}
+			<CurrentlyReading books={booksQuery.data ?? []} onopen={open} />
 			<p class="px-1 pb-4 text-sm text-muted-foreground">
 				Type 2–3 letters of a series — any word, or its initials.
 			</p>
@@ -519,18 +527,26 @@
 			<ol class="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-6">
 				{#each owned.volumes as slot (slot.volume)}
 					{#if slot.copies > 0}
-						<!-- Owned tiles stay inert: reserved for the v0.4 reading actions -->
-						<li
-							title={slotTitle(slot)}
-							class="relative flex aspect-square flex-col items-center justify-center rounded-xl border border-border bg-card"
-						>
-							<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
-							<span class="text-[10px] font-medium text-muted-foreground">
-								{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
-							</span>
-							{#if slot.read}
-								<Check class="absolute top-1 right-1 h-3 w-3 text-muted-foreground" />
-							{/if}
+						<!-- Owned tile: tap for the reading actions -->
+						<li>
+							<button
+								type="button"
+								title={slotTitle(slot)}
+								onclick={() => (readingSlot = slot)}
+								aria-label="{slotTitle(slot)} — reading"
+								class="relative flex aspect-square w-full flex-col items-center justify-center rounded-xl border border-border bg-card transition-colors active:bg-accent"
+							>
+								<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
+								<span class="text-[10px] font-medium text-muted-foreground">
+									{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
+								</span>
+								{#if slot.status === 'reading'}
+									<BookOpen class="absolute top-1 left-1 h-3 w-3 text-sky-600 dark:text-sky-400" />
+								{/if}
+								{#if slot.read}
+									<Check class="absolute top-1 right-1 h-3 w-3 text-muted-foreground" />
+								{/if}
+							</button>
 						</li>
 					{:else}
 						<li>
@@ -713,27 +729,35 @@
 				</p>
 				<ul class="flex flex-wrap gap-2">
 					{#each owned.extras as slot (slot.volume)}
-						<li
-							title={slotTitle(slot)}
-							class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm"
-						>
-							<span class="text-foreground">
-								{volumeText({ volumeNumber: slot.volume, isExtra: true }).replace(
-									/^extra/,
-									'Extra'
-								)}
-							</span>
-							<span class="text-[10px] font-medium text-muted-foreground">
-								{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
-							</span>
-							{#if slot.read}<Check class="h-3 w-3 text-muted-foreground" />{/if}
+						<li>
+							<button
+								type="button"
+								title={slotTitle(slot)}
+								onclick={() => (readingSlot = slot)}
+								class="flex min-h-10 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm transition-colors active:bg-accent"
+							>
+								{#if slot.status === 'reading'}
+									<BookOpen class="h-3 w-3 text-sky-600 dark:text-sky-400" />
+								{/if}
+								<span class="text-foreground">
+									{volumeText({ volumeNumber: slot.volume, isExtra: true }).replace(
+										/^extra/,
+										'Extra'
+									)}
+								</span>
+								<span class="text-[10px] font-medium text-muted-foreground">
+									{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
+								</span>
+								{#if slot.read}<Check class="h-3 w-3 text-muted-foreground" />{/if}
+							</button>
 						</li>
 					{/each}
 				</ul>
 			{/if}
 
 			<p class="mt-6 text-xs text-muted-foreground">
-				A = Apartment · H = Home · <Check class="inline h-3 w-3" /> read
+				A = Apartment · H = Home · <Check class="inline h-3 w-3" /> read ·
+				<BookOpen class="inline h-3 w-3" /> reading · tap a volume to log a read
 			</p>
 			<a
 				href={resolve(`/series/${selected.id}`)}
@@ -741,6 +765,7 @@
 			>
 				Open series page
 			</a>
+			<VolumeReadingSheet bind:slot={readingSlot} seriesName={selected.shortName} />
 		{/if}
 	{/if}
 </div>
