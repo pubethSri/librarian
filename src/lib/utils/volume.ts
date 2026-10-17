@@ -42,3 +42,30 @@ export function findSameVolume<T extends VolumeLike>(
 		null
 	);
 }
+
+/**
+ * Split books about to be added into the ones the collection lacks and the
+ * ones it already has — by series + volume + extra flag, counting earlier
+ * entries of the same list too (a volume listed twice is added once).
+ */
+type SeriesVolume = { seriesId: number; volumeNumber: string | number; isExtra?: boolean };
+
+export function splitMissing<T extends SeriesVolume>(
+	existing: readonly SeriesVolume[],
+	toAdd: readonly T[]
+): { add: T[]; skipped: T[] } {
+	const add: T[] = [];
+	const skipped: T[] = [];
+	const has = (list: readonly SeriesVolume[], b: SeriesVolume) =>
+		findSameVolume(
+			list
+				.filter((e) => e.seriesId === b.seriesId)
+				.map((e) => ({ volumeNumber: e.volumeNumber, isExtra: e.isExtra === true })),
+			{ volumeNumber: b.volumeNumber, isExtra: b.isExtra === true }
+		) !== null;
+	for (const b of toAdd) {
+		if (has(existing, b) || has(add, b)) skipped.push(b);
+		else add.push(b);
+	}
+	return { add, skipped };
+}

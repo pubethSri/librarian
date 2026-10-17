@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findSameVolume, latestVolume, volumeLabel, volumeText } from './volume';
+import { findSameVolume, splitMissing, latestVolume, volumeLabel, volumeText } from './volume';
 
 describe('volumeLabel', () => {
 	it('shows a regular volume as its number, without the stored decimal', () => {
@@ -64,5 +64,38 @@ describe('findSameVolume', () => {
 	it('finds nothing for a new volume or an empty series', () => {
 		expect(findSameVolume(books, { volumeNumber: 6, isExtra: false })).toBeNull();
 		expect(findSameVolume([], { volumeNumber: 1, isExtra: false })).toBeNull();
+	});
+});
+
+describe('splitMissing', () => {
+	const existing = [
+		{ seriesId: 1, volumeNumber: '1.0', isExtra: false },
+		{ seriesId: 1, volumeNumber: '2.0', isExtra: false },
+		{ seriesId: 2, volumeNumber: '5.0', isExtra: false }
+	];
+	const add = (seriesId: number, volumeNumber: string) => ({ seriesId, volumeNumber });
+
+	it('adds the volumes a series lacks and skips the owned ones', () => {
+		const { add: a, skipped } = splitMissing(existing, [
+			add(1, '2.0'),
+			add(1, '5.0'),
+			add(1, '6.0'),
+			add(2, '5.0')
+		]);
+		expect(a.map((b) => `${b.seriesId}:${b.volumeNumber}`)).toEqual(['1:5.0', '1:6.0']);
+		expect(skipped.map((b) => `${b.seriesId}:${b.volumeNumber}`)).toEqual(['1:2.0', '2:5.0']);
+	});
+
+	it('adds a volume listed twice only once', () => {
+		const { add: a, skipped } = splitMissing([], [add(3, '1.0'), add(3, '1.0')]);
+		expect(a).toHaveLength(1);
+		expect(skipped).toHaveLength(1);
+	});
+
+	it('keeps an extra apart from the regular volume at the same position', () => {
+		const { add: a } = splitMissing(existing, [
+			{ seriesId: 1, volumeNumber: '2.0', isExtra: true }
+		]);
+		expect(a).toHaveLength(1);
 	});
 });

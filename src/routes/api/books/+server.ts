@@ -5,6 +5,7 @@ import { books, reading, series, seriesTags, tags } from '$lib/server/db/schema'
 import { eq, inArray, sql } from 'drizzle-orm';
 import { currentStatus, timesRead } from '$lib/reading';
 import { findSameVolume } from '$lib/utils/volume';
+import { lockSeriesInserts } from '$lib/server/locks';
 
 // GET /api/books — List all books with optional filters
 export const GET: RequestHandler = async ({ url }) => {
@@ -119,9 +120,6 @@ export const GET: RequestHandler = async ({ url }) => {
 	return json(result);
 };
 
-/** Advisory-lock namespace for "one insert per series at a time" */
-const LOCK_NAMESPACE = 4201;
-
 // POST /api/books — Create a new book (`onlyIfMissing: true` → 409 if the volume exists)
 export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.json();
@@ -154,7 +152,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	// The desktop Add Volume dialog doesn't opt in — it may add a real copy.
 	if (body.onlyIfMissing === true) {
 		const result = await db.transaction(async (tx) => {
-			await tx.execute(sql`SELECT pg_advisory_xact_lock(${LOCK_NAMESPACE}, ${values.seriesId})`);
+			await lockSeriesInserts(tx, [values.seriesId]);
 			const existing = findSameVolume(
 				await tx.select().from(books).where(eq(books.seriesId, values.seriesId)),
 				values
