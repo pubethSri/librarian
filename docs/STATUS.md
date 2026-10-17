@@ -3,28 +3,28 @@
 > **This file is the single source of truth for "where the project is now."**
 > Roadmap / future scope lives in [`ROADMAP.md`](./ROADMAP.md); how to work in the repo lives in [`../CLAUDE.md`](../CLAUDE.md); product vision in [`context.md`](./context.md); design in [`design_direction.md`](./design_direction.md). Update _this_ file at every version bump.
 
-## State as of 2026-10-16
+## State as of 2026-10-17
 
 - **Current version:** v0.3 — **in progress**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Deploy target **Oct 20**. **Plan changed 2026-10-16:** Insights (old v0.4 items 4.2–4.7) was pulled forward and is **built**, as is B3; B4–B7 remain — see the schedule below.
 - **Machine:** moved from Arch Linux to **Windows 11** on 2026-10-13 (see Environment below).
-- **Latest:** **B4 + B5 built** (2026-10-16): B4 (unattended run) = Field Mode's own phone shell (Find · Add · Hitlist tabs), the where-am-I-buying chip, the server duplicate guard, quick add with Undo, the Add tab for new series; **B5** = the Hitlist tab (watchlist next volumes by publisher, tag filter, copy with fallback, print). Claude's pre-checks on the scratch DB passed; **awaiting your visual pass of both, bundled** (script below — planned for Oct 17). Before that: Insights I1–I6 and B3 merged into `main` after your PC + phone passes.
-- **Branches:** `main` = Insights + B3. **`feature/b4-quick-add`** = `main` + B4. **`feature/b5-hitlist`** = `feature/b4-quick-add` + B5 (stacked, so merging it brings both). **Not merged, not pushed.**
-- **Next:** your **B4 + B5 visual pass** → merge `feature/b5-hitlist` into `main` → **B6 deploy + hardening** → B7 trial run → tag `v0.3`. v0.4 = Reading log flow (redesigned 2026-10-16) + Reading queue + insights polish.
+- **Latest:** **B4 + B5 passed your visual pass** (2026-10-17) and are **merged into `main`** (local, not pushed). Your feedback round is **built on `feature/field-feedback`**: select several volumes (gaps / runs) + add them at once, the same picker for a new series, **Confirmed new volumes** on the Hitlist ("Released up to vol. N"), and **Save image** instead of print. Claude's pre-check passed; **awaiting your visual pass** of the round (script below).
+- **Branches:** `main` = Insights + B3 + B4 + B5 (+ the freeze fix), **local only — push when you like**. **`feature/field-feedback`** = `main` + the feedback round (not merged, not pushed).
+- **Next:** your **feedback-round visual pass** → merge → **B6 deploy + hardening** (decide hosting first) → B7 trial run → tag `v0.3`. v0.4 = Reading log flow (redesigned 2026-10-16) + Reading queue + insights polish.
 
-### Next session — start here (B4 + B5 visual pass → B6 deploy)
+### Next session — start here (feedback-round visual pass → B6 deploy)
 
-**Schedule to the fair** (today is 2026-10-16; fair opens Oct 23, you attend 24–26):
+**Schedule to the fair** (today is 2026-10-17; fair opens Oct 23, you attend 24–26):
 
-| Day       | Work                                                                                                                      |
-| --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Oct 16    | ~~B4 built~~ ✅ · ~~B5 built~~ ✅ (both a day or two early)                                                               |
-| Oct 17    | **B4 + B5 visual pass → merge.** **Decide B6 hosting.** Create the Oct 2026 fair.                                         |
-| Oct 18–20 | **B6** deploy + hardening (audit 🔴 #4, 🟠 #5–7, #10–11; daily `pg_dump`) → **deployed by Oct 20** — now with a spare day |
-| Oct 21–22 | **B7** trial run at a bookstore, fix what hurts → tag `v0.3`                                                              |
+| Day       | Work                                                                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Oct 16    | ~~B4 built~~ ✅ · ~~B5 built~~ ✅ (both a day or two early)                                                                                      |
+| Oct 17    | ~~B4 + B5 visual pass → merge~~ ✅ · ~~feedback round built~~ ✅ · **its visual pass → merge.** **Decide B6 hosting.** Create the Oct 2026 fair. |
+| Oct 18–20 | **B6** deploy + hardening (audit 🔴 #4, 🟠 #5–7, #10–11; daily `pg_dump`) → **deployed by Oct 20** — now with a spare day                        |
+| Oct 21–22 | **B7** trial run at a bookstore, fix what hurts → tag `v0.3`                                                                                     |
 
 B6 is still the one that can't slip (no deploy = no phone at the fair). With B4 + B5 done early, B6 can start as soon as hosting is decided.
 
-1. **B4 + B5 visual pass** — run the "Field Mode (B4 + B5) visual-pass script" below. Pass → merge **`feature/b5-hitlist`** into `main` (it contains B4). Fixes go on that branch first.
+1. **Feedback-round visual pass** — run the "Field Mode feedback round (2026-10-17) — visual-pass script" below. Pass → merge **`feature/field-feedback`** into `main`. (B4 + B5 already passed and are in `main`.)
 2. **Create the real fair** (มหกรรมหนังสือระดับชาติ 31, 2026-10-23) on the Bookfairs page of the real app before the fair. The chip suggests it automatically **from Oct 23 through Nov 2**; before the 23rd it says Not at a fair (right for the Oct 21–22 bookstore trial).
 3. **B6 deploy + hardening** — decide hosting first (item 4). Then the hardening list in `ROADMAP.md` (LAN / deploy audit #4–7, #10–12) and a daily `pg_dump`. Note for the deploy: Copy on the Hitlist works over plain HTTP through its fallback, but a real HTTPS origin (Tailscale `serve` or Vercel) gives the clean clipboard path and is needed later for the PWA (audit #3).
 4. **Still open:** your visual pass of the **extra volumes** change (Silent Witch reads 1–4, Extra, 5–9, Extra; Latest Volume 9; Console suggests vol. 10). **B6 hosting** — laptop + Tailscale vs Vercel Hobby + Neon Free (`ROADMAP.md` B6 has both); **decide by Oct 18** so B6 can start on the 19th.
@@ -65,6 +65,34 @@ B6 is still the one that can't slip (no deploy = no phone at the fair). With B4 
 - [x] **B5 Hitlist** in the shell's third tab (`src/routes/(field)/field/hitlist/+page.svelte`): every watchlist series with its **next volume** and gaps, **grouped by publisher** (A→Z, "Unknown publisher" last), names A→Z; **tag chips** in one horizontally scrolling row (AND, like the rest of the app; Clear); a row **opens the series in Find** for a one-tap quick add; **Copy** (plain text, publishers as headings) via `navigator.clipboard` → textarea + `execCommand` → a manual-copy panel (audit #2); **Print** hides the shell and prints a compact dated list (the offline fallback). Pure `buildHitlist` / `hitlistTags` / `hitlistText` in `$lib/field/logic` (tested); copy in `$lib/field/clipboard.ts`.
   - _Pre-check (scratch, 375×812):_ 14 watchlist series in 3 publisher groups (Animag 2 · Phoenix Next 11 · Siam Inter Comic 1), gaps shown (สัมพันธ์ลับสัปดาห์ละครั้ง: missing 4, 5); Romance → 9 of 14, Romance + Yuri → 5; chip row 40 px and scrolls, no page sideways scroll; a real tap on Copy copied ("Copied 14 series"); with the clipboard API removed and `execCommand` failing, the manual-copy panel showed the right text; Silent Witch row → `/field?series=18` with + Vol. 10. Print CSS is generated (`print:hidden` etc.); the print preview itself is for your pass.
   - _Decisions:_ a series' status is shown when not Ongoing (an Ended series still lists next = latest + 1 — there is no published count); the filter isn't remembered; the Hitlist reads the fresh queries, so it reflects adds from Find immediately.
+
+### Field Mode feedback round (2026-10-17) — built on `feature/field-feedback`
+
+From your B4 + B5 visual pass. Decisions (your answers, all as recommended): multi-add = **select mode on the grid**; confirmed volumes = **one number per series** ("Released up to vol. N", reusing the empty `series.total_volumes` column — no migration); Hitlist button = **Save as image, no print**; **merge B4 + B5 now** (done: `main` fast-forwarded, local).
+
+- [x] **Select several (Find).** A _Select several_ toggle beside the add hint: the grid then offers the gaps plus 12 volumes ahead (**More** adds 12), **Next 3 / 5 / 10** chips, Clear, and a bar above the tabs — **Add N volumes · vol. 5, 8–10** — saved in **one** request (`POST /api/books/batch` with `onlyIfMissing`: volumes already owned are skipped and named in the toast, "already had vol. 9") with **one Undo** (`DELETE /api/books/batch { ids }`). The single-tap + Vol. N stays for the common case. Pre-check: 5 picked (gap 5 + Next 3 + 12) → 1 POST, toast "Added vol. 5, 8–10, 12", Undo → 1 DELETE, all gone; a volume added "on another device" first → skipped and the grid refetched.
+- [x] **Add tab picker.** The first-volume stepper became the same tile picker (vol. 1 preselected; **1–3 / 1–5 / 1–10** chips; More): a new series is created with any set of volumes as drafts in one Save ("Save · 5 volumes"). Pre-check: "Multi Pick Test" with 1–2, 5–7 → 5 drafts, Find shows "Missing: vol. 3, 4".
+- [x] **Confirmed new volumes.** `series.total_volumes` = **latest volume known to be released**, set from the phone's series view (**Released** card: one-tap "Vol. N is out", −/+, Clear; shown at once, saved as one debounced PATCH) or **Edit Series → "Released up to vol."** on the desktop. The Hitlist puts every series released past what you own — **watchlist or not** — first, on **black cards** ("VOL. 10–11", "not on the watchlist", also-missing gaps); such series leave the watchlist groups; tag chips cover them too; Copy lists them first. A row drops off by itself once you own the volume. PATCH validates 1–999 or null. Pre-check: two taps → one PATCH; Arifureta (not on the watchlist) + Silent Witch shown on top; Edit Series showed 11 and cleared to unknown.
+- [x] **Save image.** The print button became **Save image**: a 1080-px PNG drawn on a canvas (no dependency; phone fonts, Thai OK) — title + date, Confirmed on black, publisher groups, right-aligned volumes, missing lines — saved as `hitlist-<day>.png`: the **share sheet** where the browser offers it (HTTPS after B6 → "Save image" to the gallery), else a **download** (Android → Downloads; iPhone → Files). Print CSS stays for Ctrl+P. Pre-check: valid PNG (1080 px wide, ~225 KB), checked visually.
+- _Found while building:_ after a dev-server hot update the Field pages could lose their settings context (a `Symbol` key duplicated with the module) → the series view rendered blank. The key is now a string. Only the dev server could hit it, but if a Field page ever renders blank after I edit files, reload it.
+- Tests 276 → 292. Pure helpers: `splitMissing` (`$lib/utils/volume`); `pickableVolumes` / `nextRun` / `toggleVolume` / `addVolumes` / `volumeRanges` / `confirmedNew` / `volumeSpan` / `normalizeReleased` / `withReleased` (`$lib/field/logic`); `hitlistImageLines` (`$lib/field/hitlistImage`).
+
+### Field Mode feedback round (2026-10-17) — visual-pass script
+
+Same setup as before: scratch server (`dev-test-db`, now started with `--host`) → phone at `http://172.16.10.13:5174/field`, or the pane / Chrome device mode at 375×812.
+
+1. **Select several** — open a series with a gap (scratch: `/field?series=63`, missing 5). Tap **Select several** → the button turns black ("Done"), the grid shows 5 (missing) and 8 (next) … 19 plus **More**; the bar above the tabs says "Select volumes to add" (disabled). _Red flag:_ the bar covers the tabs or the last tile row.
+2. Tap **5**, then **Next 3**, then **12** → tiles turn black with ✓; bar: **Add 5 volumes · vol. 5, 8–10, 12**. **More** → 20–31 appear. **Clear** empties it. Pick a few again.
+3. Tap the bar → one save; toast "Added vol. 5, 8–10, 12 · <series> · Undo"; the grid shows them owned and select mode closes. **Undo** → "Removed vol. …", all gone.
+4. **Skip on another device** — on the PC add vol. 9 to that series; on the phone (no refresh) select 9 + 10 → Add → "Added vol. 10 · already had vol. 9"; the grid shows both. Remove the test books afterwards.
+5. **Price / location in select mode** — the hint says "(฿<price> each)"; switch Home, add two → both H with that price.
+6. **Add tab picker** — type a new name → Create → vol. **1** is preselected; tap 2, 5, 6, 7 (or **1–5** then untap 3, 4) → label "5 (vol. 1–2, 5–7)", button **Save · 5 volumes** (after picking a type) → Save → the series opens in Find with 1, 2, 5, 6, 7 and "Missing: vol. 3, 4"; desktop Drafts = 5. Delete it afterwards.
+7. **Released (phone)** — in a watchlist series: the **Released** card says "Seen a newer volume in a shop?" → tap **Vol. N is out** → "Out up to vol. N — vol. N to buy"; **+** → N+1 ("vol. N–N+1 to buy"); **−** back; reload → kept. **Clear (unknown)** resets.
+8. **Hitlist — Confirmed** — set Released on one watchlist series and one series **not** on the watchlist (search it in Find). Hitlist → **Confirmed new volumes · 2** on top, black cards with "VOL. N–M", the non-watchlist one says "not on the watchlist"; the watchlist series is no longer in its publisher group. Buy the volume (quick add) → the card disappears. _Red flag:_ a confirmed series listed twice.
+9. **Released (desktop)** — Edit Series on that series → "Released up to vol." shows the phone's value; change / clear it → the Hitlist follows.
+10. **Copy** — Copy → pasted text starts with "Confirmed new volumes" then the publishers.
+11. **Save image** — tap **Save image**: over the phone's plain-HTTP address it **downloads** `hitlist-<today>.png` (Android: notification / Downloads; iPhone: Files → Downloads, or a preview to long-press → Save to Photos). Open it: title + date, black confirmed cards, publisher groups, volumes right-aligned, Thai names readable, nothing cut off at the bottom. (After B6's HTTPS it opens the share sheet instead.)
+12. **Old flows still fine** — single + Vol. N, missing-tile tap, Undo, 409 message (B4 steps 5–8) behave as before.
 
 ### Visual-pass finding (2026-10-17) — phone froze after several adds + undos (fixed)
 
@@ -120,8 +148,9 @@ Where: the **scratch server** keeps test adds out of real data — start `dev-te
 | B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)  |
 | I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16)  |
 | B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done (PC + phone pass 2026-10-16) |
-| B4    | Field Mode 2 — phone shell + quick add                       | ✅ Built (awaiting visual pass)      |
-| B5    | Bookfair Hitlist (simple)                                    | ✅ Built (awaiting visual pass)      |
+| B4    | Field Mode 2 — phone shell + quick add                       | ✅ Done (visual pass 2026-10-17)     |
+| B4+   | Feedback round: multi-add, Confirmed, Save image             | ✅ Built (awaiting visual pass)      |
+| B5    | Bookfair Hitlist (simple)                                    | ✅ Done (visual pass 2026-10-17)     |
 | B6    | Deploy on the laptop (Tailscale)                             | ⬜                                   |
 | B7    | Trial run + fixes → tag `v0.3`                               | ⬜                                   |
 
@@ -585,26 +614,26 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 
 ## API Routes
 
-| Route                                 | Methods            | Description                                                                                                          |
-| ------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `/api/series`                         | GET, POST          | List/create series (search, filter, includes tags + book count)                                                      |
-| `/api/series/[id]`                    | GET, PATCH, DELETE | Single series with nested books/tags                                                                                 |
-| `/api/series/[id]/tags`               | PUT                | Replace tags for series                                                                                              |
-| `/api/books`                          | GET, POST          | List/create books (filters; + seriesTags, readingStatus, timesRead); POST `onlyIfMissing` → 409 if the volume exists |
-| `/api/books/[id]`                     | GET, PATCH, DELETE | Single book with reading history                                                                                     |
-| `/api/books/batch`                    | POST               | Batch-create books (Console commit, New Series volumes)                                                              |
-| `/api/books/bulk`                     | PATCH              | Bulk-update books: allowlisted fields incl. `price`, `boughtAt`; `readingStatus` via the reading rules (undated)     |
-| `/api/books/[id]/reading/status`      | PUT                | Set a book's current reading status (mark read / re-read / correct), dated now                                       |
-| `/api/books/[id]/reading`             | GET, POST          | Reading history + re-reads                                                                                           |
-| `/api/books/[id]/reading/[readingId]` | PATCH              | Update reading entry                                                                                                 |
-| `/api/bookfairs`                      | GET, POST          | List/create bookfairs                                                                                                |
-| `/api/bookfairs/[id]`                 | GET, PATCH, DELETE | Bookfair detail / update / delete                                                                                    |
-| `/api/tags`                           | GET, POST          | List/create tags (includes seriesCount)                                                                              |
-| `/api/tags/[id]`                      | DELETE             | Delete tag                                                                                                           |
-| `/api/export/airtable`                | GET                | CSV download (Airtable format)                                                                                       |
-| `/api/insights`                       | GET                | Every Insights figure (`?tz=` = the viewer's time zone for dated reads)                                              |
-| `/api/health`                         | GET                | Health check (public)                                                                                                |
-| `/api/logout`                         | POST               | Clear session cookie                                                                                                 |
+| Route                                 | Methods            | Description                                                                                                                      |
+| ------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/series`                         | GET, POST          | List/create series (search, filter, includes tags + book count)                                                                  |
+| `/api/series/[id]`                    | GET, PATCH, DELETE | Single series with nested books/tags                                                                                             |
+| `/api/series/[id]/tags`               | PUT                | Replace tags for series                                                                                                          |
+| `/api/books`                          | GET, POST          | List/create books (filters; + seriesTags, readingStatus, timesRead); POST `onlyIfMissing` → 409 if the volume exists             |
+| `/api/books/[id]`                     | GET, PATCH, DELETE | Single book with reading history                                                                                                 |
+| `/api/books/batch`                    | POST, DELETE       | Batch-create books (Console commit, New Series volumes; `onlyIfMissing` skips owned volumes) · delete several by id (Field Undo) |
+| `/api/books/bulk`                     | PATCH              | Bulk-update books: allowlisted fields incl. `price`, `boughtAt`; `readingStatus` via the reading rules (undated)                 |
+| `/api/books/[id]/reading/status`      | PUT                | Set a book's current reading status (mark read / re-read / correct), dated now                                                   |
+| `/api/books/[id]/reading`             | GET, POST          | Reading history + re-reads                                                                                                       |
+| `/api/books/[id]/reading/[readingId]` | PATCH              | Update reading entry                                                                                                             |
+| `/api/bookfairs`                      | GET, POST          | List/create bookfairs                                                                                                            |
+| `/api/bookfairs/[id]`                 | GET, PATCH, DELETE | Bookfair detail / update / delete                                                                                                |
+| `/api/tags`                           | GET, POST          | List/create tags (includes seriesCount)                                                                                          |
+| `/api/tags/[id]`                      | DELETE             | Delete tag                                                                                                                       |
+| `/api/export/airtable`                | GET                | CSV download (Airtable format)                                                                                                   |
+| `/api/insights`                       | GET                | Every Insights figure (`?tz=` = the viewer's time zone for dated reads)                                                          |
+| `/api/health`                         | GET                | Health check (public)                                                                                                            |
+| `/api/logout`                         | POST               | Clear session cookie                                                                                                             |
 
 ## Changelog
 
@@ -632,6 +661,7 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-17 | **Feedback round** (branch `feature/field-feedback`): B4 + B5 visual pass passed → merged into `main` (local). Select several volumes (gaps + runs, Next 3/5/10) added in one batch with one Undo (batch `onlyIfMissing` skip + `DELETE /api/books/batch`); Add tab tile picker (new series with any volumes as drafts); "Released up to vol. N" (phone card + Edit Series) → Hitlist **Confirmed new volumes** on black, any series; **Save image** (canvas PNG, share or download) replaces print. Field context key → string (dev hot-update blank page). Tests 276 → 292.                    |
 | 2026-10-17 | Visual-pass fix: phone froze after bursts of quick add / Undo (each tap refetched ~230 KB in 4 requests; un-aborted refetches hit Chrome's 6-connection limit). Now 1 request per tap (cache patched from the reply), abort signals on list fetches, Field lists fresh for 15 s. Tests 272 → 276.                                                                                                                                                                                                                                                                                                |
 | 2026-10-16 | **B5 Hitlist built** (branch `feature/b5-hitlist`, stacked on B4): watchlist next volumes + gaps by publisher, AND tag filter, row → Find, Copy with HTTP fallback, print-only list. Visual-pass script bundled with B4's for Oct 17. `.claude/dev-test-db.mjs` passes extra args (`--host` → scratch server on the LAN for phone tests). Tests 266 → 272.                                                                                                                                                                                                                                       |
 | 2026-10-16 | **B4 Field Mode 2 built** (branch `feature/b4-quick-add`, unattended run): phone shell `(field)` with Find · Add · Hitlist tabs + dashboard banner; where-am-I-buying chip (fair from its day → +10, remembered for the day, purchases dated today); `POST /api/books` `onlyIfMissing` → 409 under an advisory lock; quick add on next / missing tiles with price pre-fill, location toggle, 6 s Undo and the 409 message; Add tab creates a series + draft first volume. Tests 246 → 266. Awaiting visual pass.                                                                                 |
