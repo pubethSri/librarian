@@ -1,4 +1,11 @@
-import adapter from '@sveltejs/adapter-node';
+import nodeAdapter from '@sveltejs/adapter-node';
+import vercelAdapter from '@sveltejs/adapter-vercel';
+
+// Vercel sets VERCEL=1 during its build; everywhere else (Docker, the laptop) stays adapter-node
+const adapter = process.env.VERCEL
+	? // Singapore, next to the Neon database
+		vercelAdapter({ regions: ['sin1'] })
+	: nodeAdapter();
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -7,7 +14,7 @@ const config = {
 		runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true)
 	},
 	kit: {
-		adapter: adapter(),
+		adapter,
 		typescript: {
 			config: (config) => ({
 				...config,

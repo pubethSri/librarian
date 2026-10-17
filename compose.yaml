@@ -26,6 +26,8 @@ services:
       # No defaults: the server refuses to start without both (set them in .env)
       AUTH_PASSWORD: ${AUTH_PASSWORD}
       AUTH_SECRET: ${AUTH_SECRET}
+      # The URL the browser uses (Tailscale name, LAN IP…); the login form is rejected otherwise
+      ORIGIN: ${ORIGIN:-http://localhost:3000}
       NODE_ENV: production
     depends_on:
       db:
