@@ -14,7 +14,7 @@
 #>
 param(
 	[string]$EnvFile = '',
-	[string]$PgImage = 'postgres:16-alpine',
+	[string]$PgImage = 'postgres:18-alpine',
 	[string]$Container = 'librarian-db-1'
 )
 

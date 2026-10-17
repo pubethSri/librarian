@@ -11,7 +11,7 @@
     powershell -NoProfile -ExecutionPolicy Bypass -File C:\librarian\scripts\backup.ps1
 
   Restore into a scratch DB (never over production by accident):
-    docker run --rm -v C:/librarian/temp/backups:/b postgres:16-alpine `
+    docker run --rm -v C:/librarian/temp/backups:/b postgres:18-alpine `
       pg_restore --no-owner --no-acl -d "<scratch url>" /b/prod-<stamp>.dump
 
 .PARAMETER Keep
@@ -21,12 +21,12 @@
   File holding DIRECT_DATABASE_URL (default: .env.prod in the repo root).
 
 .PARAMETER PgImage
-  Docker image for pg_dump; its major version must be >= the server's (default postgres:16-alpine).
+  Docker image for pg_dump; its major version must be >= the server's (default postgres:18-alpine, matching Neon).
 #>
 param(
 	[int]$Keep = 14,
 	[string]$EnvFile = '',
-	[string]$PgImage = 'postgres:16-alpine'
+	[string]$PgImage = 'postgres:18-alpine'
 )
 
 $ErrorActionPreference = 'Stop'
