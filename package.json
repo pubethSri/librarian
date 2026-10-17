@@ -21,6 +21,7 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"db:seed": "npx tsx scripts/seed.ts",
+		"db:backup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup.ps1",
 		"migrate:airtable": "npx tsx scripts/migrate-airtable.ts",
 		"migrate:airtable:dry": "npx tsx scripts/migrate-airtable.ts --dry-run"
 	},
