@@ -217,7 +217,17 @@ export type CreateReadingPayload = {
 	notes?: string;
 };
 
-export type UpdateReadingPayload = Partial<CreateReadingPayload>;
+/**
+ * Edit a read-through's days (PATCH /api/books/[id]/reading/[readingId]).
+ * `YYYY-MM-DD` calendar days; null clears; a key left out is unchanged.
+ */
+export type UpdateReadingPayload = { startedOn?: string | null; finishedOn?: string | null };
+
+/** "I read this" (POST /api/books/[id]/reading/log) — see `LogRead` in $lib/reading */
+export type LogReadPayload = { finishedOn: string | null; startedOn?: string | null };
+
+/** A book's derived reading state, returned by every reading write */
+export type ReadingSummary = { bookId: number; readingStatus: ReadingStatus; timesRead: number };
 
 // ─── Console Types ──────────────────────────────────────────────────────────
 

@@ -1,99 +1,141 @@
-import { createMutation, useQueryClient } from '@tanstack/svelte-query';
-import type { CreateReadingPayload, ReadingStatus, UpdateReadingPayload } from '$lib/types';
+import {
+	createMutation,
+	createQuery,
+	useQueryClient,
+	type QueryClient
+} from '@tanstack/svelte-query';
+import type {
+	BookListItem,
+	LogReadPayload,
+	ReadingEntry,
+	ReadingStatus,
+	ReadingSummary,
+	UpdateReadingPayload
+} from '$lib/types';
 
 /**
- * Mutation: set a book's current reading status (mark read, re-read, correct).
- * The server applies the rules in $lib/reading and stamps today's date.
+ * How a reading write refreshes the cache. Desktop refetches what it shows;
+ * Field Mode (`patch`) costs one request per tap: the reply's summary is
+ * patched into the cached books list and the rest is only marked stale.
  */
-export function createReadingStatusMutation() {
+export type ReadingCacheMode = { patch?: boolean };
+
+function afterReadingWrite(qc: QueryClient, summary: ReadingSummary, mode: ReadingCacheMode) {
+	if (mode.patch) {
+		qc.setQueryData<BookListItem[]>(['books'], (list) =>
+			list?.map((b) =>
+				b.id === summary.bookId
+					? { ...b, readingStatus: summary.readingStatus, timesRead: summary.timesRead }
+					: b
+			)
+		);
+		for (const queryKey of [['series'], ['insights'], ['reading', summary.bookId]]) {
+			qc.invalidateQueries({ queryKey, refetchType: 'none' });
+		}
+		return;
+	}
+	for (const queryKey of [['books'], ['series'], ['insights'], ['reading', summary.bookId]]) {
+		qc.invalidateQueries({ queryKey });
+	}
+}
+
+async function send<T>(url: string, method: string, body: unknown, failure: string): Promise<T> {
+	const res = await fetch(url, {
+		method,
+		headers: { 'Content-Type': 'application/json' },
+		body: body === undefined ? undefined : JSON.stringify(body)
+	});
+	if (!res.ok) {
+		const err = await res.json().catch(() => ({}));
+		throw new Error(err.message || failure);
+	}
+	return res.json();
+}
+
+/**
+ * Mutation: set a book's current reading status (start, re-read start, drop,
+ * correct). `on` = the calendar day to stamp — pass the device's today.
+ */
+export function createReadingStatusMutation(mode: ReadingCacheMode = {}) {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: async ({ bookId, status }: { bookId: number; status: ReadingStatus }) => {
-			const res = await fetch(`/api/books/${bookId}/reading/status`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ status })
-			});
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.message || 'Failed to update reading status');
-			}
-			return res.json() as Promise<{ changed: number }>;
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['books'] });
-			queryClient.invalidateQueries({ queryKey: ['series'] });
-		}
+		mutationFn: ({
+			bookId,
+			status,
+			on
+		}: {
+			bookId: number;
+			status: ReadingStatus;
+			on?: string | null;
+		}) =>
+			send<ReadingSummary & { changed: number }>(
+				`/api/books/${bookId}/reading/status`,
+				'PUT',
+				{ status, on },
+				'Failed to update reading status'
+			),
+		onSuccess: (summary) => afterReadingWrite(queryClient, summary, mode)
 	}));
 }
 
-/** Mutation: create a new reading entry for a book */
-export function createReadingMutation() {
+/** Mutation: "I read this" — a finished read-through (a re-read on a Read book) */
+export function createLogReadMutation(mode: ReadingCacheMode = {}) {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: async ({
-			bookId,
-			...payload
-		}: CreateReadingPayload & { bookId: number; seriesId?: number }) => {
-			const res = await fetch(`/api/books/${bookId}/reading`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			});
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.message || 'Failed to create reading entry');
-			}
+		mutationFn: ({ bookId, ...payload }: LogReadPayload & { bookId: number }) =>
+			send<ReadingSummary>(
+				`/api/books/${bookId}/reading/log`,
+				'POST',
+				payload,
+				'Failed to log the read'
+			),
+		onSuccess: (summary) => afterReadingWrite(queryClient, summary, mode)
+	}));
+}
+
+/** Query: a book's read-throughs, newest first; `bookId` null = disabled */
+export function createReadingHistoryQuery(bookId: () => number | null) {
+	return createQuery<ReadingEntry[]>(() => ({
+		queryKey: ['reading', bookId()],
+		queryFn: async () => {
+			const res = await fetch(`/api/books/${bookId()}/reading`);
+			if (!res.ok) throw new Error('Failed to load the reading history');
 			return res.json();
 		},
-		onSuccess: (
-			_data: unknown,
-			variables: CreateReadingPayload & { bookId: number; seriesId?: number }
-		) => {
-			queryClient.invalidateQueries({ queryKey: ['books'] });
-			// Invalidate specific series detail if seriesId is provided
-			if (variables.seriesId) {
-				queryClient.invalidateQueries({ queryKey: ['series', variables.seriesId] });
-			}
-			// Also broadly invalidate series list for dashboard stats
-			queryClient.invalidateQueries({ queryKey: ['series'] });
-		}
+		enabled: bookId() !== null
 	}));
 }
 
-/** Mutation: update an existing reading entry */
-export function createReadingUpdateMutation() {
+/** Mutation: edit a read-through's start / finish days (history editor) */
+export function createReadingDaysMutation() {
 	const queryClient = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: async ({
+		mutationFn: ({
 			bookId,
 			readingId,
 			...payload
-		}: UpdateReadingPayload & { bookId: number; readingId: number; seriesId?: number }) => {
-			const res = await fetch(`/api/books/${bookId}/reading/${readingId}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			});
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.message || 'Failed to update reading entry');
-			}
-			return res.json();
-		},
-		onSuccess: (
-			_data: unknown,
-			variables: UpdateReadingPayload & {
-				bookId: number;
-				readingId: number;
-				seriesId?: number;
-			}
-		) => {
-			queryClient.invalidateQueries({ queryKey: ['books'] });
-			if (variables.seriesId) {
-				queryClient.invalidateQueries({ queryKey: ['series', variables.seriesId] });
-			}
-			queryClient.invalidateQueries({ queryKey: ['series'] });
-		}
+		}: UpdateReadingPayload & { bookId: number; readingId: number }) =>
+			send<ReadingSummary>(
+				`/api/books/${bookId}/reading/${readingId}`,
+				'PATCH',
+				payload,
+				'Failed to save the days'
+			),
+		onSuccess: (summary) => afterReadingWrite(queryClient, summary, {})
+	}));
+}
+
+/** Mutation: delete a mistaken read-through (history editor) */
+export function createReadingDeleteMutation() {
+	const queryClient = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: ({ bookId, readingId }: { bookId: number; readingId: number }) =>
+			send<ReadingSummary>(
+				`/api/books/${bookId}/reading/${readingId}`,
+				'DELETE',
+				undefined,
+				'Failed to delete the read'
+			),
+		onSuccess: (summary) => afterReadingWrite(queryClient, summary, {})
 	}));
 }

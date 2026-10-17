@@ -107,3 +107,100 @@ export function planReadingChange(
 			return { kind: 'update', id: latest.id, set: { status: 'dropped', finishedAt: null } };
 	}
 }
+
+// ─── Logging a read after the fact ──────────────────────────────────────────
+// STATUS.md → Reading-flow Decisions 2026-10-16: a read is logged once, when
+// you remember, with the day you pick. Reading dates are calendar days, stored
+// like purchase dates — UTC midnight — so no time zone shifts the day.
+
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A real calendar day written `YYYY-MM-DD` */
+export function isDay(value: unknown): value is string {
+	if (typeof value !== 'string' || !DAY_PATTERN.test(value)) return false;
+	const date = new Date(`${value}T00:00:00Z`);
+	return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+/** A calendar day as stored: UTC midnight */
+export function dayToDate(day: string): Date {
+	return new Date(`${day}T00:00:00Z`);
+}
+
+/** The calendar day a stored reading date stands for */
+export function rowDay(value: string | Date | null): string | null {
+	return value ? new Date(value).toISOString().slice(0, 10) : null;
+}
+
+/** `YYYY-MM-DD` moved by n days */
+export function shiftDay(day: string, n: number): string {
+	return new Date(dayToDate(day).getTime() + n * 86_400_000).toISOString().slice(0, 10);
+}
+
+/**
+ * The latest day that is already "today" somewhere (UTC+14). The server
+ * can't know the phone's time zone, so this is its "not in the future" bound;
+ * the client checks against its own today.
+ */
+export function latestDay(now: Date): string {
+	return new Date(now.getTime() + 14 * 3_600_000).toISOString().slice(0, 10);
+}
+
+/** Checks a read-through's days: none in the future, finish not before start. Error or null */
+export function checkReadDays(
+	startedOn: string | null,
+	finishedOn: string | null,
+	maxDay: string
+): string | null {
+	if (startedOn && startedOn > maxDay) return 'The start day is in the future';
+	if (finishedOn && finishedOn > maxDay) return 'The finish day is in the future';
+	if (startedOn && finishedOn && finishedOn < startedOn) {
+		return 'The finish day is before the start day';
+	}
+	return null;
+}
+
+/**
+ * "I read this". `finishedOn` null = finished, day unknown. `startedOn`
+ * undefined = keep the start already recorded; null = no start day.
+ */
+export type LogRead = { finishedOn: string | null; startedOn?: string | null };
+
+/**
+ * What "I read this" does to a book's reading rows:
+ * - Unread / Reading / Dropped: completes the current row (a recorded start
+ *   is kept unless a start is given);
+ * - Read, or no rows yet: a new Read row — on a Read book, a re-read logged
+ *   in one step.
+ * Also returns the start day in effect, for `checkReadDays`.
+ */
+export function planLogRead(
+	latest: ReadingRowLike | null,
+	log: LogRead
+): { change: ReadingChange; startedOn: string | null } {
+	const finishedAt = log.finishedOn ? dayToDate(log.finishedOn) : null;
+
+	if (!latest || latest.status === 'read') {
+		const startedOn = log.startedOn ?? null;
+		return {
+			startedOn,
+			change: {
+				kind: 'insert',
+				values: { status: 'read', startedAt: startedOn ? dayToDate(startedOn) : null, finishedAt }
+			}
+		};
+	}
+
+	const startedOn = log.startedOn === undefined ? rowDay(latest.startedAt) : log.startedOn;
+	return {
+		startedOn,
+		change: {
+			kind: 'update',
+			id: latest.id,
+			set:
+				log.startedOn === undefined
+					? { status: 'read', finishedAt }
+					: { status: 'read', startedAt: startedOn ? dayToDate(startedOn) : null, finishedAt }
+		}
+	};
+}

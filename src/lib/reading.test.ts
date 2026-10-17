@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { currentStatus, latestReading, planReadingChange, timesRead } from './reading';
+import {
+	checkReadDays,
+	currentStatus,
+	dayToDate,
+	isDay,
+	latestDay,
+	latestReading,
+	planLogRead,
+	planReadingChange,
+	rowDay,
+	shiftDay,
+	timesRead
+} from './reading';
 import type { ReadingRowLike } from './reading';
 
 const NOW = new Date('2026-10-14T10:00:00Z');
@@ -128,6 +140,96 @@ describe('planReadingChange — existing current row', () => {
 			kind: 'update',
 			id: 4,
 			set: { status: 'dropped', finishedAt: null }
+		});
+	});
+});
+
+describe('reading days', () => {
+	it('accepts only real YYYY-MM-DD days', () => {
+		expect(isDay('2026-10-17')).toBe(true);
+		expect(isDay('2026-02-30')).toBe(false);
+		expect(isDay('2026-10-17T00:00:00Z')).toBe(false);
+		expect(isDay(null)).toBe(false);
+	});
+
+	it('stores a day as UTC midnight and reads it back unshifted', () => {
+		expect(dayToDate('2026-10-17').toISOString()).toBe('2026-10-17T00:00:00.000Z');
+		expect(rowDay(dayToDate('2026-10-17'))).toBe('2026-10-17');
+		expect(rowDay('2026-10-17T00:00:00.000Z')).toBe('2026-10-17');
+		expect(rowDay(null)).toBeNull();
+	});
+
+	it('shifts days across month and year ends', () => {
+		expect(shiftDay('2026-10-01', -1)).toBe('2026-09-30');
+		expect(shiftDay('2026-12-31', 1)).toBe('2027-01-01');
+	});
+
+	it('bounds "not in the future" by the furthest-ahead time zone', () => {
+		expect(latestDay(new Date('2026-10-17T09:00:00Z'))).toBe('2026-10-17');
+		// 23:00 UTC is already the next day in Bangkok (UTC+7)
+		expect(latestDay(new Date('2026-10-17T23:00:00Z'))).toBe('2026-10-18');
+	});
+
+	it('rejects future days and a finish before the start', () => {
+		expect(checkReadDays('2026-10-01', '2026-10-05', '2026-10-17')).toBeNull();
+		expect(checkReadDays(null, null, '2026-10-17')).toBeNull();
+		expect(checkReadDays('2026-10-05', '2026-10-05', '2026-10-17')).toBeNull();
+		expect(checkReadDays(null, '2026-10-18', '2026-10-17')).toMatch(/finish day is in the future/);
+		expect(checkReadDays('2026-10-18', null, '2026-10-17')).toMatch(/start day is in the future/);
+		expect(checkReadDays('2026-10-05', '2026-10-01', '2026-10-17')).toMatch(/before the start/);
+	});
+});
+
+describe('planLogRead ("I read this")', () => {
+	const day = (d: string) => new Date(`${d}T00:00:00Z`);
+
+	it('inserts a Read row for a book with no rows', () => {
+		expect(planLogRead(null, { finishedOn: '2026-10-16' })).toEqual({
+			startedOn: null,
+			change: {
+				kind: 'insert',
+				values: { status: 'read', startedAt: null, finishedAt: day('2026-10-16') }
+			}
+		});
+	});
+
+	it('logs a re-read on a Read book in one step: a new Read row', () => {
+		const latest = row({ status: 'read', finishedAt: '2025-01-01T00:00:00Z' });
+		const plan = planLogRead(latest, { finishedOn: '2026-10-16', startedOn: '2026-10-10' });
+		expect(plan.change).toEqual({
+			kind: 'insert',
+			values: { status: 'read', startedAt: day('2026-10-10'), finishedAt: day('2026-10-16') }
+		});
+	});
+
+	it('completes the current row of a Reading book and keeps its start', () => {
+		const latest = row({ id: 4, status: 'reading', startedAt: '2026-10-01T00:00:00Z' });
+		const plan = planLogRead(latest, { finishedOn: '2026-10-16' });
+		expect(plan.startedOn).toBe('2026-10-01');
+		expect(plan.change).toEqual({
+			kind: 'update',
+			id: 4,
+			set: { status: 'read', finishedAt: day('2026-10-16') }
+		});
+	});
+
+	it('replaces or clears the start when one is given', () => {
+		const latest = row({ id: 4, status: 'dropped', startedAt: '2026-10-01T00:00:00Z' });
+		expect(planLogRead(latest, { finishedOn: null, startedOn: null }).change).toEqual({
+			kind: 'update',
+			id: 4,
+			set: { status: 'read', startedAt: null, finishedAt: null }
+		});
+		expect(planLogRead(latest, { finishedOn: null, startedOn: '2026-10-03' }).startedOn).toBe(
+			'2026-10-03'
+		);
+	});
+
+	it('completes an Unread row (finish day unknown)', () => {
+		expect(planLogRead(row({ id: 2 }), { finishedOn: null }).change).toEqual({
+			kind: 'update',
+			id: 2,
+			set: { status: 'read', finishedAt: null }
 		});
 	});
 });

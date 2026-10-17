@@ -1,8 +1,18 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { reading } from '$lib/server/db/schema';
-import { latestReading, planReadingChange } from '$lib/reading';
-import type { ReadingStatus } from '$lib/types';
+import {
+	checkReadDays,
+	currentStatus,
+	latestDay,
+	latestReading,
+	planLogRead,
+	planReadingChange,
+	timesRead,
+	type LogRead,
+	type ReadingChange
+} from '$lib/reading';
+import type { ReadingStatus, ReadingSummary } from '$lib/types';
 
 export const READING_STATUSES: readonly ReadingStatus[] = ['unread', 'reading', 'read', 'dropped'];
 
@@ -42,14 +52,40 @@ export async function applyReadingStatus(
 	for (const bookId of bookIds) {
 		const latest = latestReading(byBook.get(bookId) ?? []);
 		if (!options.allowReread && latest?.status === 'read' && target === 'reading') continue;
-		const change = planReadingChange(latest, target, now);
-		if (change.kind === 'update') {
-			await tx.update(reading).set(change.set).where(eq(reading.id, change.id));
-			changed++;
-		} else if (change.kind === 'insert') {
-			await tx.insert(reading).values({ bookId, ...change.values });
-			changed++;
-		}
+		if (await applyChange(tx, bookId, planReadingChange(latest, target, now))) changed++;
 	}
 	return changed;
+}
+
+async function applyChange(tx: Tx, bookId: number, change: ReadingChange): Promise<boolean> {
+	if (change.kind === 'update') {
+		await tx.update(reading).set(change.set).where(eq(reading.id, change.id));
+		return true;
+	}
+	if (change.kind === 'insert') {
+		await tx.insert(reading).values({ bookId, ...change.values });
+		return true;
+	}
+	return false;
+}
+
+/** Raised for days that break the rules (future, finish before start) — a 400 */
+export class ReadingDaysError extends Error {}
+
+/**
+ * "I read this" for one book: completes the current read-through or, on a
+ * Read book, adds a re-read (see `planLogRead`). Throws `ReadingDaysError`.
+ */
+export async function logRead(tx: Tx, bookId: number, log: LogRead, now: Date): Promise<void> {
+	const rows = await tx.select().from(reading).where(eq(reading.bookId, bookId));
+	const { change, startedOn } = planLogRead(latestReading(rows), log);
+	const problem = checkReadDays(startedOn, log.finishedOn, latestDay(now));
+	if (problem) throw new ReadingDaysError(problem);
+	await applyChange(tx, bookId, change);
+}
+
+/** A book's derived reading state after a change — what the client patches in */
+export async function readingSummary(tx: Tx, bookId: number): Promise<ReadingSummary> {
+	const rows = await tx.select().from(reading).where(eq(reading.bookId, bookId));
+	return { bookId, readingStatus: currentStatus(rows), timesRead: timesRead(rows) };
 }

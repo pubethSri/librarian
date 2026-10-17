@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	const result = await db.query.reading.findMany({
 		where: eq(reading.bookId, bookId),
-		orderBy: (reading, { desc }) => [desc(reading.createdAt)]
+		orderBy: (reading, { desc }) => [desc(reading.createdAt), desc(reading.id)]
 	});
 
 	return json(result);
