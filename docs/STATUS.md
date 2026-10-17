@@ -44,6 +44,7 @@ B6 is the one that can't slip: no deploy = no phone at the fair. If time runs sh
   - **A — laptop + Tailscale** (decided 2026-10-13): the production build runs on this laptop (`compose.yaml` `app` service next to the existing `librarian-db-1`), reached from the phone through Tailscale over mobile data; **`tailscale serve`** gives an HTTPS URL `https://<machine>.<tailnet>.ts.net`. No data migration; data stays home. Costs: the laptop must stay **on, awake and online** all fair days (power plan: never sleep on AC; Windows Update paused); if it drops, the phone has no app. 👤 Tailscale account + app on laptop and phone.
   - **B — Vercel Hobby + Neon Free** (recommended 2026-10-15): always on, nothing to keep awake. Work: switch to `@sveltejs/adapter-vercel` (or pick the adapter by env so the laptop build keeps adapter-node), Neon's **pooled** URL with `postgres(url, { prepare: false })` in `src/lib/server/db/index.ts`, migrate the data (`pg_dump` `local` → `pg_restore` into Neon), backups become a scheduled `pg_dump` from Neon. Data lives in Neon from then on (the laptop DB becomes a copy). 👤 Vercel + Neon accounts, env vars in the Vercel dashboard, `vercel login` / GitHub link (needs `main` pushed).
   - Also ask: the **production password** (you set `AUTH_PASSWORD` / `AUTH_SECRET` yourself — Claude generates a random secret into `.env` on request but never sees the password you choose); whether to **push `main`** now.
+  - _Answered 2026-10-17:_ **B — Vercel Hobby + Neon Free**; Claude generates `AUTH_SECRET`, you choose `AUTH_PASSWORD`; **`main` pushed** (`origin/main` = `d1e70a4`); daily backups to **`temp/backups/`**. Details under "B6 Decisions (2026-10-17)".
 - [ ] **B6.1 Hardening — auth** (`src/hooks.server.ts`, `src/lib/server/auth.ts`, `src/routes/login/+page.server.ts`; pure helpers unit-tested):
   - _(must)_ **#4 login redirect loop:** `/login`'s `load` redirects only for a **valid** token (`verifySessionToken`); an invalid / expired cookie is deleted.
   - _(must)_ **#10 open redirect:** `redirectTo` accepts same-origin paths only (`/x`, not `//x` or `https://…`), else `/` — a pure `safeRedirect()`.
@@ -588,6 +589,15 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 - **Duplicate guard** is opt-in (`onlyIfMissing`), keyed on series + volume number + extra flag, under a per-series advisory lock. Field Mode never offers a second copy (the desktop dialog does).
 - **Quick add** is never a draft; the **Add tab's** first volume always is. Phone writes refresh `['books']`, `['series']`, `['bookfairs']`, `['insights']`.
 - **A new series' type has no default** on the phone (explicit LN / Manga).
+
+### B6 Decisions (2026-10-17)
+
+- **Hosting = Vercel Hobby + Neon Free** (user, B6.0). Region **Singapore** for both (Vercel `sin1`, Neon AWS `ap-southeast-1`). Create the Neon project on **Postgres 16** so the existing container's `pg_dump` / `pg_restore` (16) can dump and restore it.
+- **From the migration on, Neon holds the real data**; the laptop's `local` becomes a dev copy. Use the Vercel URL on the desktop too — writing to `local` after the migration forks the data.
+- **One codebase, two adapters:** `svelte.config.js` picks `adapter-vercel` when `VERCEL` is set (Vercel's build), else `adapter-node` (Docker / laptop). `postgres(url, { prepare: false })` everywhere (needed for Neon's pooled URL, harmless locally).
+- **Secrets:** production values live in **`.env.prod`** (untracked; not `.env.production`, which Vite would load into `npm run build`). Claude generated `AUTH_SECRET` there; you fill in `AUTH_PASSWORD` and the two Neon URLs (pooled → `DATABASE_URL`, direct → `DIRECT_DATABASE_URL`) and copy `DATABASE_URL` / `AUTH_PASSWORD` / `AUTH_SECRET` into the Vercel dashboard yourself. Scripts (migration, backups) read `.env.prod`; Claude never prints its values.
+- **`main` pushed** 2026-10-17 so Vercel can build from GitHub. `feature/b6-deploy` reaches production only through a merge into `main` + push, each with your OK.
+- **Backups** go to `temp/backups/prod-<stamp>.dump` (kept 14), from Neon's direct URL.
 
 ## Environment
 
