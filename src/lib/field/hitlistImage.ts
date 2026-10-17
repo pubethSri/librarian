@@ -4,7 +4,7 @@
 // phone's own fonts. `hitlistImageLines` (what to draw) is pure and tested;
 // `drawHitlist` / `saveHitlistImage` touch the DOM.
 
-import { volumeSpan, type ConfirmedItem, type HitlistGroup } from './logic';
+import { hitlistCounts, volumeSpan, type HitlistGroup } from './logic';
 
 export type ImageLine =
 	| { kind: 'title'; text: string }
@@ -13,46 +13,40 @@ export type ImageLine =
 	| { kind: 'confirmed'; name: string; detail: string; volume: string }
 	| { kind: 'row'; name: string; detail: string; volume: string };
 
-/** What the image shows, top to bottom — the same content as the screen */
-export function hitlistImageLines(
-	groups: readonly HitlistGroup[],
-	confirmed: readonly ConfirmedItem[],
-	dateLabel: string
-): ImageLine[] {
-	const count = groups.reduce((n, g) => n + g.items.length, 0) + confirmed.length;
+/** What the image shows, top to bottom — the same grouping as the screen */
+export function hitlistImageLines(groups: readonly HitlistGroup[], dateLabel: string): ImageLine[] {
+	const { series, confirmed } = hitlistCounts(groups);
 	const lines: ImageLine[] = [
 		{ kind: 'title', text: 'Hitlist' },
-		{ kind: 'subtitle', text: `${count} series to look for · ${dateLabel}` }
-	];
-	if (confirmed.length > 0) {
-		lines.push({ kind: 'heading', text: `Confirmed new volumes · ${confirmed.length}` });
-		for (const c of confirmed) {
-			const detail = [
-				`out up to vol. ${c.to}`,
-				c.missing.length > 0 ? `also missing ${c.missing.join(', ')}` : ''
-			]
-				.filter(Boolean)
-				.join(' · ');
-			lines.push({
-				kind: 'confirmed',
-				name: c.series.shortName,
-				detail,
-				volume: volumeSpan(c.from, c.to)
-			});
+		{
+			kind: 'subtitle',
+			text: `${series} series${confirmed > 0 ? ` · ${confirmed} confirmed` : ''} · ${dateLabel}`
 		}
-	}
+	];
 	for (const g of groups) {
 		lines.push({
 			kind: 'heading',
 			text: `${g.publisher ?? 'Unknown publisher'} · ${g.items.length}`
 		});
 		for (const i of g.items) {
-			lines.push({
-				kind: 'row',
-				name: i.series.shortName,
-				detail: i.missing.length > 0 ? `missing ${i.missing.join(', ')}` : '',
-				volume: String(i.next)
-			});
+			const missing = i.missing.length > 0 ? `missing ${i.missing.join(', ')}` : '';
+			if (i.confirmedTo !== null) {
+				lines.push({
+					kind: 'confirmed',
+					name: i.series.shortName,
+					detail: [`out up to vol. ${i.confirmedTo}`, missing && `also ${missing}`]
+						.filter(Boolean)
+						.join(' · '),
+					volume: volumeSpan(i.next, i.confirmedTo)
+				});
+			} else {
+				lines.push({
+					kind: 'row',
+					name: i.series.shortName,
+					detail: missing,
+					volume: String(i.next)
+				});
+			}
 		}
 	}
 	return lines;

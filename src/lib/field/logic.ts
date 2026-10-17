@@ -292,8 +292,12 @@ export function parseVolume(text: string): number | null {
 }
 
 // ─── Hitlist (B5) ────────────────────────────────────────────────────────────
-// The watchlist as a shopping list: each series' next volume (and the gaps
-// below it), grouped by publisher. Also the text that Copy / print give.
+// What to look for at the fair, grouped by publisher (one group = one booth):
+// every watchlist series' next volume (and the gaps below it), plus any
+// series — watchlist or not — with **confirmed new volumes**: its
+// `totalVolumes` ("Released up to vol. N", set by hand) is past the latest
+// volume owned. Confirmed items come first in their group. Also the text
+// that Copy gives.
 
 export type HitlistSeriesLike = SearchableSeries & {
 	type: SeriesListItem['type'];
@@ -301,11 +305,17 @@ export type HitlistSeriesLike = SearchableSeries & {
 	publisher: string | null;
 	watchlist: boolean;
 	tags: { id: number; name: string }[];
+	/** Latest volume known to be released (null / missing = unknown) */
+	totalVolumes?: number | null;
 };
 
 export type HitlistItem<T extends HitlistSeriesLike = HitlistSeriesLike> = {
 	series: T;
+	/** The volume to look for next: latest owned + 1 */
 	next: number;
+	/** Released volumes not owned run `next`…`confirmedTo`; null = none confirmed */
+	confirmedTo: number | null;
+	/** Gaps below the latest owned */
 	missing: number[];
 	/** Books owned (extras and copies included) */
 	owned: number;
@@ -317,106 +327,94 @@ export type HitlistGroup<T extends HitlistSeriesLike = HitlistSeriesLike> = {
 	items: HitlistItem<T>[];
 };
 
-/** Tags used by the watchlist (and `also`: the confirmed series), by name — the filter chips */
-export function hitlistTags(
-	series: readonly HitlistSeriesLike[],
-	also: ReadonlySet<number> = new Set()
-): { id: number; name: string }[] {
-	const tags = new Map<number, string>();
-	for (const s of series) {
-		if (s.watchlist || also.has(s.id)) for (const t of s.tags) tags.set(t.id, t.name);
-	}
-	return [...tags].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+/** "16" or "15–16" */
+export function volumeSpan(from: number, to: number): string {
+	return from === to ? `${from}` : `${from}–${to}`;
+}
+
+/** Released volumes not owned yet: the latest released when it's ≥ next, else null */
+export function confirmedTo(totalVolumes: number | null | undefined, next: number): number | null {
+	return totalVolumes != null && totalVolumes >= next ? totalVolumes : null;
 }
 
 /**
- * Watchlist series that carry every selected tag, grouped by publisher
- * (A→Z, unknown publisher last), each group sorted by name.
+ * The Hitlist: watchlist series and series with confirmed new volumes that
+ * carry every selected tag, grouped by publisher (A→Z, unknown last);
+ * within a group confirmed items first, then by name.
  */
 export function buildHitlist<T extends HitlistSeriesLike>(
 	series: readonly T[],
 	booksBySeries: ReadonlyMap<number, readonly OwnedBookLike[]>,
-	tagIds: readonly number[] = [],
-	/** Series shown elsewhere (the Confirmed section) — left out here */
-	exclude: ReadonlySet<number> = new Set()
+	tagIds: readonly number[] = []
 ): HitlistGroup<T>[] {
 	const groups = new Map<string | null, HitlistItem<T>[]>();
 	for (const s of series) {
-		if (!s.watchlist || exclude.has(s.id)) continue;
 		if (!tagIds.every((id) => s.tags.some((t) => t.id === id))) continue;
 		const owned = ownedVolumes(booksBySeries.get(s.id) ?? []);
+		const confirmed = confirmedTo(s.totalVolumes, owned.next);
+		if (!s.watchlist && confirmed === null) continue;
 		const publisher = s.publisher?.trim() || null;
 		const list = groups.get(publisher) ?? [];
-		list.push({ series: s, next: owned.next, missing: owned.missing, owned: owned.total });
+		list.push({
+			series: s,
+			next: owned.next,
+			confirmedTo: confirmed,
+			missing: owned.missing,
+			owned: owned.total
+		});
 		groups.set(publisher, list);
 	}
 	return [...groups]
 		.sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : a.localeCompare(b)))
 		.map(([publisher, items]) => ({
 			publisher,
-			items: items.sort((a, b) => a.series.shortName.localeCompare(b.series.shortName))
+			items: items.sort(
+				(a, b) =>
+					Number(b.confirmedTo !== null) - Number(a.confirmedTo !== null) ||
+					a.series.shortName.localeCompare(b.series.shortName)
+			)
 		}));
 }
 
-/** Plain text for Copy: confirmed new volumes first, then the watchlist by publisher */
-export function hitlistText(
-	groups: readonly HitlistGroup[],
-	confirmed: readonly ConfirmedItem[] = []
-): string {
-	const count = groups.reduce((n, g) => n + g.items.length, 0) + confirmed.length;
-	const lines = [`Hitlist — ${count} series`];
-	if (confirmed.length > 0) {
-		lines.push('', 'Confirmed new volumes');
-		for (const c of confirmed) {
-			const missing = c.missing.length > 0 ? ` (also missing ${c.missing.join(', ')})` : '';
-			lines.push(`- ${c.series.shortName} — vol. ${volumeSpan(c.from, c.to)} out${missing}`);
-		}
-	}
+/** Series and confirmed series on a Hitlist */
+export function hitlistCounts(groups: readonly HitlistGroup[]): {
+	series: number;
+	confirmed: number;
+} {
+	const items = groups.flatMap((g) => g.items);
+	return { series: items.length, confirmed: items.filter((i) => i.confirmedTo !== null).length };
+}
+
+/** Tags of the series on a Hitlist (build it unfiltered), by name — the filter chips */
+export function hitlistTags(groups: readonly HitlistGroup[]): { id: number; name: string }[] {
+	const tags = new Map<number, string>();
+	for (const g of groups)
+		for (const i of g.items) for (const t of i.series.tags) tags.set(t.id, t.name);
+	return [...tags].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** "vol. 15–16 out" for a confirmed item, "vol. 10" otherwise */
+export function hitlistVolumeText(item: Pick<HitlistItem, 'next' | 'confirmedTo'>): string {
+	return item.confirmedTo !== null
+		? `vol. ${volumeSpan(item.next, item.confirmedTo)} out`
+		: `vol. ${item.next}`;
+}
+
+/** Plain text for Copy: publishers as headings, confirmed volumes marked "out" */
+export function hitlistText(groups: readonly HitlistGroup[]): string {
+	const { series, confirmed } = hitlistCounts(groups);
+	const lines = [`Hitlist — ${series} series${confirmed > 0 ? ` (${confirmed} confirmed)` : ''}`];
 	for (const g of groups) {
 		lines.push('', g.publisher ?? 'Unknown publisher');
 		for (const i of g.items) {
-			const missing = i.missing.length > 0 ? ` (missing ${i.missing.join(', ')})` : '';
-			lines.push(`- ${i.series.shortName} — vol. ${i.next}${missing}`);
+			const missing =
+				i.missing.length > 0
+					? ` (${i.confirmedTo !== null ? 'also ' : ''}missing ${i.missing.join(', ')})`
+					: '';
+			lines.push(`- ${i.series.shortName} — ${hitlistVolumeText(i)}${missing}`);
 		}
 	}
 	return lines.join('\n');
-}
-
-// ─── Confirmed new volumes ───────────────────────────────────────────────────
-// `series.totalVolumes` = the latest volume known to be released, set by hand
-// ("Released up to vol. N"). A series whose released volume is past the
-// latest one owned has confirmed new volumes — watchlist or not.
-
-export type ConfirmedItem<T extends HitlistSeriesLike = HitlistSeriesLike> = {
-	series: T;
-	/** First released volume not owned yet (latest owned + 1) */
-	from: number;
-	/** Latest released volume */
-	to: number;
-	/** Gaps below the latest owned */
-	missing: number[];
-};
-
-/** "16" or "15–16" */
-export function volumeSpan(from: number, to: number): string {
-	return from === to ? `${from}` : `${from}–${to}`;
-}
-
-/** Series with released volumes past the latest owned, by name; tags as in the Hitlist */
-export function confirmedNew<T extends HitlistSeriesLike & { totalVolumes: number | null }>(
-	series: readonly T[],
-	booksBySeries: ReadonlyMap<number, readonly OwnedBookLike[]>,
-	tagIds: readonly number[] = []
-): ConfirmedItem<T>[] {
-	const items: ConfirmedItem<T>[] = [];
-	for (const s of series) {
-		if (s.totalVolumes === null || s.totalVolumes < 1) continue;
-		if (!tagIds.every((id) => s.tags.some((t) => t.id === id))) continue;
-		const owned = ownedVolumes(booksBySeries.get(s.id) ?? []);
-		if (s.totalVolumes < owned.next) continue;
-		items.push({ series: s, from: owned.next, to: s.totalVolumes, missing: owned.missing });
-	}
-	return items.sort((a, b) => a.series.shortName.localeCompare(b.series.shortName));
 }
 
 /** A typed "released up to" value: a whole volume ≥ 1, or null to clear */

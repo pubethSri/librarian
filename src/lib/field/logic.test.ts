@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-	confirmedNew,
+	confirmedTo,
+	hitlistCounts,
+	hitlistVolumeText,
 	normalizeReleased,
 	volumeSpan,
 	withReleased,
@@ -327,92 +329,6 @@ describe('parseVolume', () => {
 	});
 });
 
-describe('hitlist', () => {
-	const s = (
-		id: number,
-		shortName: string,
-		publisher: string | null,
-		tags: { id: number; name: string }[] = [],
-		watchlist = true
-	) => ({
-		id,
-		shortName,
-		fullName: shortName,
-		type: 'light_novel' as const,
-		status: 'ongoing' as const,
-		publisher,
-		watchlist,
-		tags
-	});
-	const isekai = { id: 1, name: 'isekai' };
-	const romance = { id: 2, name: 'romance' };
-	const series = [
-		s(1, 'Silent Witch', 'Phoenix Next', [isekai]),
-		s(2, 'Frieren', 'Siam Inter', [isekai, romance]),
-		s(3, 'Ougon', null, [romance]),
-		s(4, 'Alya', 'Phoenix Next'),
-		s(5, 'Not watched', 'Phoenix Next', [isekai], false)
-	];
-	const vol = (id: number, volumeNumber: number) => ({
-		id,
-		volumeNumber,
-		isExtra: false,
-		location: 'apartment' as const,
-		readingStatus: 'unread' as const,
-		timesRead: 0
-	});
-	const books = new Map([
-		[1, [vol(10, 1), vol(11, 2), vol(12, 4)]],
-		[2, [vol(20, 1)]]
-	]);
-
-	it('groups watchlist series by publisher, unknown last, names A→Z', () => {
-		const groups = buildHitlist(series, books);
-		expect(groups.map((g) => g.publisher)).toEqual(['Phoenix Next', 'Siam Inter', null]);
-		expect(groups[0].items.map((i) => i.series.shortName)).toEqual(['Alya', 'Silent Witch']);
-	});
-
-	it('gives the next volume and the gaps; nothing owned = vol. 1', () => {
-		const items = buildHitlist(series, books).flatMap((g) => g.items);
-		const witch = items.find((i) => i.series.id === 1);
-		expect(witch).toMatchObject({ next: 5, missing: [3], owned: 3 });
-		expect(items.find((i) => i.series.id === 4)).toMatchObject({ next: 1, missing: [], owned: 0 });
-	});
-
-	it('keeps only series with every selected tag', () => {
-		const ids = (tags: number[]) =>
-			buildHitlist(series, books, tags).flatMap((g) => g.items.map((i) => i.series.id));
-		expect(ids([1])).toEqual([1, 2]);
-		expect(ids([1, 2])).toEqual([2]);
-		expect(ids([])).toHaveLength(4);
-	});
-
-	it('lists the watchlist tags by name, plus those of extra series', () => {
-		expect(hitlistTags(series)).toEqual([isekai, romance]);
-		const other = [s(7, 'Other', null, [{ id: 3, name: 'action' }], false)];
-		expect(hitlistTags(other)).toEqual([]);
-		expect(hitlistTags(other, new Set([7]))).toEqual([{ id: 3, name: 'action' }]);
-	});
-
-	it('treats a blank publisher as unknown', () => {
-		expect(buildHitlist([s(9, 'X', '  ')], new Map())[0].publisher).toBeNull();
-	});
-
-	it('writes the copy text', () => {
-		expect(hitlistText(buildHitlist(series, books, [1]))).toBe(
-			[
-				'Hitlist — 2 series',
-				'',
-				'Phoenix Next',
-				'- Silent Witch — vol. 5 (missing 3)',
-				'',
-				'Siam Inter',
-				'- Frieren — vol. 2'
-			].join('\n')
-		);
-	});
-});
-
 describe('cache patches', () => {
 	const row = {
 		id: 7,
@@ -490,85 +406,124 @@ describe('multi-add helpers', () => {
 	});
 });
 
-describe('confirmed new volumes', () => {
+describe('hitlist', () => {
 	const s = (
 		id: number,
 		shortName: string,
-		totalVolumes: number | null,
-		watchlist = false,
-		tags: { id: number; name: string }[] = []
+		publisher: string | null,
+		opts: {
+			tags?: { id: number; name: string }[];
+			watchlist?: boolean;
+			totalVolumes?: number | null;
+		} = {}
 	) => ({
 		id,
 		shortName,
 		fullName: shortName,
-		type: 'manga' as const,
+		type: 'light_novel' as const,
 		status: 'ongoing' as const,
-		publisher: null,
-		watchlist,
-		tags,
-		totalVolumes
+		publisher,
+		watchlist: opts.watchlist ?? true,
+		tags: opts.tags ?? [],
+		totalVolumes: opts.totalVolumes ?? null
 	});
+	const isekai = { id: 1, name: 'isekai' };
+	const romance = { id: 2, name: 'romance' };
+	const series = [
+		s(1, 'Silent Witch', 'Phoenix Next', { tags: [isekai], totalVolumes: 6 }),
+		s(2, 'Frieren', 'Siam Inter', { tags: [isekai, romance] }),
+		s(3, 'Ougon', null, { tags: [romance] }),
+		s(4, 'Alya', 'Phoenix Next'),
+		s(5, 'Not watched', 'Phoenix Next', { tags: [isekai], watchlist: false }),
+		s(6, 'Released, not watched', 'Siam Inter', { watchlist: false, totalVolumes: 3 }),
+		s(7, 'Released but owned', 'Phoenix Next', { watchlist: false, totalVolumes: 1 })
+	];
 	const vol = (id: number, volumeNumber: number) => ({
 		id,
 		volumeNumber,
 		isExtra: false,
-		location: 'home' as const,
+		location: 'apartment' as const,
 		readingStatus: 'unread' as const,
 		timesRead: 0
 	});
 	const books = new Map([
-		[1, [vol(1, 1), vol(2, 2), vol(3, 4)]],
-		[2, [vol(4, 1), vol(5, 2)]],
-		[3, [vol(6, 1)]]
+		[1, [vol(10, 1), vol(11, 2), vol(12, 4)]],
+		[2, [vol(20, 1)]],
+		[7, [vol(70, 1)]]
 	]);
-	const series = [
-		s(1, 'Zeta', 6, true),
-		s(2, 'Alpha', 2),
-		s(3, 'Beta', 3, false, [{ id: 9, name: 'romance' }]),
-		s(4, 'Never bought', 2),
-		s(5, 'Unknown', null, true)
-	];
 
-	it('lists series released past the latest owned, watchlist or not, by name', () => {
-		const items = confirmedNew(series, books);
-		expect(items.map((i) => [i.series.shortName, i.from, i.to])).toEqual([
-			['Beta', 2, 3],
-			['Never bought', 1, 2],
-			['Zeta', 5, 6]
+	it('groups by publisher (unknown last), confirmed first in a group, then A→Z', () => {
+		const groups = buildHitlist(series, books);
+		expect(groups.map((g) => g.publisher)).toEqual(['Phoenix Next', 'Siam Inter', null]);
+		expect(groups[0].items.map((i) => i.series.shortName)).toEqual(['Silent Witch', 'Alya']);
+		expect(groups[1].items.map((i) => i.series.shortName)).toEqual([
+			'Released, not watched',
+			'Frieren'
 		]);
-		expect(items.find((i) => i.series.id === 1)?.missing).toEqual([3]);
 	});
 
-	it('drops a series once its released volume is owned, and unknown ones', () => {
-		const ids = confirmedNew(series, books).map((i) => i.series.id);
-		expect(ids).not.toContain(2);
+	it('includes a series off the watchlist only when it has confirmed new volumes', () => {
+		const ids = buildHitlist(series, books).flatMap((g) => g.items.map((i) => i.series.id));
+		expect(ids).toContain(6);
 		expect(ids).not.toContain(5);
+		expect(ids).not.toContain(7);
 	});
 
-	it('applies the tag filter', () => {
-		expect(confirmedNew(series, books, [9]).map((i) => i.series.id)).toEqual([3]);
+	it('gives the next volume, the confirmed span and the gaps', () => {
+		const items = buildHitlist(series, books).flatMap((g) => g.items);
+		expect(items.find((i) => i.series.id === 1)).toMatchObject({
+			next: 5,
+			confirmedTo: 6,
+			missing: [3],
+			owned: 3
+		});
+		expect(items.find((i) => i.series.id === 4)).toMatchObject({ next: 1, confirmedTo: null });
+		expect(items.find((i) => i.series.id === 6)).toMatchObject({ next: 1, confirmedTo: 3 });
 	});
 
-	it('keeps confirmed series out of the watchlist groups and puts them first in the text', () => {
-		const confirmed = confirmedNew(series, books);
-		const groups = buildHitlist(series, books, [], new Set(confirmed.map((c) => c.series.id)));
-		expect(groups.flatMap((g) => g.items.map((i) => i.series.id))).toEqual([5]);
-		expect(hitlistText(groups, confirmed)).toBe(
+	it('keeps only series with every selected tag', () => {
+		const ids = (tags: number[]) =>
+			buildHitlist(series, books, tags).flatMap((g) => g.items.map((i) => i.series.id));
+		expect(ids([1])).toEqual([1, 2]);
+		expect(ids([1, 2])).toEqual([2]);
+		expect(ids([])).toHaveLength(5);
+	});
+
+	it('counts series and confirmed ones, and lists their tags', () => {
+		const groups = buildHitlist(series, books);
+		expect(hitlistCounts(groups)).toEqual({ series: 5, confirmed: 2 });
+		expect(hitlistTags(groups)).toEqual([isekai, romance]);
+	});
+
+	it('treats a blank publisher as unknown', () => {
+		expect(buildHitlist([s(9, 'X', '  ')], new Map())[0].publisher).toBeNull();
+	});
+
+	it('confirms only released volumes past the latest owned', () => {
+		expect(confirmedTo(16, 15)).toBe(16);
+		expect(confirmedTo(15, 15)).toBe(15);
+		expect(confirmedTo(14, 15)).toBeNull();
+		expect(confirmedTo(null, 1)).toBeNull();
+		expect(confirmedTo(undefined, 1)).toBeNull();
+	});
+
+	it('writes volumes and the copy text', () => {
+		expect(hitlistVolumeText({ next: 15, confirmedTo: 16 })).toBe('vol. 15–16 out');
+		expect(hitlistVolumeText({ next: 10, confirmedTo: null })).toBe('vol. 10');
+		expect(hitlistText(buildHitlist(series, books, [1]))).toBe(
 			[
-				'Hitlist — 4 series',
+				'Hitlist — 2 series (1 confirmed)',
 				'',
-				'Confirmed new volumes',
-				'- Beta — vol. 2–3 out',
-				'- Never bought — vol. 1–2 out',
-				'- Zeta — vol. 5–6 out (also missing 3)',
+				'Phoenix Next',
+				'- Silent Witch — vol. 5–6 out (also missing 3)',
 				'',
-				'Unknown publisher',
-				'- Unknown — vol. 1'
+				'Siam Inter',
+				'- Frieren — vol. 2'
 			].join('\n')
 		);
 	});
 
-	it('formats spans and normalizes typed values', () => {
+	it('formats spans and normalizes typed released values', () => {
 		expect(volumeSpan(16, 16)).toBe('16');
 		expect(volumeSpan(15, 16)).toBe('15–16');
 		expect(normalizeReleased(12.7)).toBe(12);

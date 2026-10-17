@@ -1,7 +1,8 @@
 <script lang="ts">
-	// Hitlist: what to look for at the fair. Confirmed new volumes first (any
-	// series whose released volume is past what you own — black cards), then
-	// the watchlist's next volumes by publisher; tag filter; Copy and save.
+	// Hitlist: what to look for at the fair, one group per publisher (= booth).
+	// Each group: confirmed new volumes first (black cards — any series whose
+	// released volume is past what you own, watchlist or not), then the
+	// watchlist's next volumes; tag filter; Copy and Save image.
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { Copy, ImageDown, LoaderCircle, Star, X } from '@lucide/svelte';
@@ -10,8 +11,8 @@
 	import { createBooksListQuery } from '$lib/queries/books';
 	import {
 		buildHitlist,
-		confirmedNew,
 		groupBySeries,
+		hitlistCounts,
 		hitlistTags,
 		hitlistText,
 		todayLocal,
@@ -37,15 +38,13 @@
 	const loading = $derived(seriesQuery.isPending || booksQuery.isPending);
 	const allSeries = $derived(seriesQuery.data ?? []);
 	const booksBySeries = $derived(groupBySeries(booksQuery.data ?? []));
-	/** Every confirmed series (unfiltered): they stay out of the watchlist groups */
-	const confirmedAll = $derived(confirmedNew(allSeries, booksBySeries));
-	const confirmedIds = $derived(new Set(confirmedAll.map((c) => c.series.id)));
-	const confirmed = $derived(confirmedNew(allSeries, booksBySeries, selectedTags));
-	const tags = $derived(hitlistTags(allSeries, confirmedIds));
-	const groups = $derived(buildHitlist(allSeries, booksBySeries, selectedTags, confirmedIds));
-	const count = $derived(groups.reduce((n, g) => n + g.items.length, 0) + confirmed.length);
-	const watchlistSize = $derived(allSeries.filter((s) => s.watchlist).length);
-	const totalSize = $derived(allSeries.filter((s) => s.watchlist || confirmedIds.has(s.id)).length);
+	/** The whole list (no tag filter): its size and its tags for the chips */
+	const fullList = $derived(buildHitlist(allSeries, booksBySeries));
+	const tags = $derived(hitlistTags(fullList));
+	const totalSize = $derived(hitlistCounts(fullList).series);
+	const groups = $derived(buildHitlist(allSeries, booksBySeries, selectedTags));
+	const counts = $derived(hitlistCounts(groups));
+	const count = $derived(counts.series);
 
 	function toggleTag(id: number) {
 		selectedTags = selectedTags.includes(id)
@@ -54,7 +53,7 @@
 	}
 
 	async function copy() {
-		const text = hitlistText(groups, confirmed);
+		const text = hitlistText(groups);
 		if (await copyText(text)) {
 			manualCopy = null;
 			toast.success(`Copied ${count} series`);
@@ -69,7 +68,7 @@
 		savingImage = true;
 		try {
 			const today = todayLocal();
-			const canvas = drawHitlist(hitlistImageLines(groups, confirmed, formatDay(today)));
+			const canvas = drawHitlist(hitlistImageLines(groups, formatDay(today)));
 			const how = await saveHitlistImage(canvas, hitlistFileName(today));
 			if (how === 'downloaded') toast.success(`Saved ${hitlistFileName(today)}`);
 		} catch (err) {
@@ -96,7 +95,10 @@
 				{#if loading}
 					Loading…
 				{:else}
-					{count}{selectedTags.length > 0 ? ` of ${totalSize}` : ''} series to look for
+					{count}{selectedTags.length > 0 ? ` of ${totalSize}` : ''} series to look for{counts.confirmed >
+					0
+						? ` · ${counts.confirmed} confirmed`
+						: ''}
 				{/if}
 				<span class="hidden print:inline"> · {formatDay(todayLocal())}</span>
 			</p>
@@ -187,7 +189,7 @@
 		<p class="py-8 text-center text-sm text-destructive">
 			Couldn't load the collection. Check the connection and try again.
 		</p>
-	{:else if watchlistSize === 0 && confirmedAll.length === 0}
+	{:else if totalSize === 0}
 		<div class="py-12 text-center">
 			<Star class="mx-auto h-8 w-8 text-muted-foreground" />
 			<p class="mt-3 text-base font-medium text-foreground">The watchlist is empty</p>
@@ -201,50 +203,6 @@
 		</p>
 	{:else}
 		<div class="space-y-5 print:space-y-3">
-			{#if confirmed.length > 0}
-				<section class="break-inside-avoid" aria-label="Confirmed new volumes">
-					<h2
-						class="px-1 pb-2 text-xs font-semibold tracking-wide text-foreground uppercase print:pb-1"
-					>
-						Confirmed new volumes
-						<span class="font-normal text-muted-foreground normal-case">· {confirmed.length}</span>
-					</h2>
-					<ul class="space-y-2">
-						{#each confirmed as item (item.series.id)}
-							<li>
-								<a
-									href={resolve(`/field?series=${item.series.id}`)}
-									class="flex min-h-14 items-center gap-3 rounded-xl bg-primary px-4 py-2 text-primary-foreground transition-opacity active:opacity-80"
-								>
-									<span class="min-w-0 flex-1">
-										<span class="block truncate text-base font-semibold">
-											{item.series.shortName}
-										</span>
-										<span class="block truncate text-xs opacity-75">
-											out up to vol. {item.to}{item.series.watchlist
-												? ''
-												: ' · not on the watchlist'}{item.missing.length > 0
-												? ` · also missing ${item.missing.join(', ')}`
-												: ''}
-										</span>
-									</span>
-									<span class="shrink-0 font-mono text-xl font-bold tabular-nums">
-										<span
-											class="mr-1 align-middle font-sans text-[10px] font-normal tracking-wide uppercase opacity-75"
-											>vol.</span
-										>{volumeSpan(item.from, item.to)}
-									</span>
-								</a>
-							</li>
-						{/each}
-					</ul>
-				</section>
-				{#if groups.length > 0}
-					<p class="px-1 pt-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-						Watchlist — next volume
-					</p>
-				{/if}
-			{/if}
 			{#each groups as group (group.publisher ?? '')}
 				<section class="break-inside-avoid">
 					<h2
@@ -256,36 +214,68 @@
 					<ul class="space-y-2 print:space-y-0">
 						{#each group.items as item (item.series.id)}
 							<li>
-								<a
-									href={resolve(`/field?series=${item.series.id}`)}
-									class="flex min-h-14 items-center gap-3 rounded-xl border border-border px-4 py-2 transition-colors active:bg-accent print:min-h-0 print:rounded-none print:border-0 print:border-b print:px-1 print:py-1"
-								>
-									<span class="min-w-0 flex-1">
-										<span
-											class="block truncate text-base font-medium text-foreground print:text-sm"
-										>
-											{item.series.shortName}
-										</span>
-										{#if item.missing.length > 0 || item.series.status !== 'ongoing'}
-											<span class="block truncate text-xs text-muted-foreground">
-												{#if item.series.status !== 'ongoing'}{SERIES_STATUS_LABELS[
-														item.series.status
-													]}{item.missing.length > 0
-														? ' · '
-														: ''}{/if}{#if item.missing.length > 0}missing
-													<span class="font-mono tabular-nums">{item.missing.join(', ')}</span>{/if}
-											</span>
-										{/if}
-									</span>
-									<span
-										class="shrink-0 font-mono text-xl font-semibold text-foreground tabular-nums print:text-base"
+								{#if item.confirmedTo !== null}
+									<!-- Confirmed new volume(s): released and not owned yet -->
+									<a
+										href={resolve(`/field?series=${item.series.id}`)}
+										aria-label="{item.series.shortName}: confirmed, vol. {volumeSpan(
+											item.next,
+											item.confirmedTo
+										)} out"
+										class="flex min-h-14 items-center gap-3 rounded-xl bg-primary px-4 py-2 text-primary-foreground transition-opacity active:opacity-80 print:min-h-0 print:rounded-none print:bg-transparent print:px-1 print:py-1 print:font-bold print:text-black"
 									>
+										<span class="min-w-0 flex-1">
+											<span class="block truncate text-base font-semibold print:text-sm">
+												{item.series.shortName}
+											</span>
+											<span class="block truncate text-xs opacity-75">
+												out up to vol. {item.confirmedTo}{item.series.watchlist
+													? ''
+													: ' · not on the watchlist'}{item.missing.length > 0
+													? ` · also missing ${item.missing.join(', ')}`
+													: ''}
+											</span>
+										</span>
+										<span class="shrink-0 font-mono text-xl font-bold tabular-nums print:text-base">
+											<span
+												class="mr-1 align-middle font-sans text-[10px] font-normal tracking-wide uppercase opacity-75"
+												>vol.</span
+											>{volumeSpan(item.next, item.confirmedTo)}
+										</span>
+									</a>
+								{:else}
+									<a
+										href={resolve(`/field?series=${item.series.id}`)}
+										class="flex min-h-14 items-center gap-3 rounded-xl border border-border px-4 py-2 transition-colors active:bg-accent print:min-h-0 print:rounded-none print:border-0 print:border-b print:px-1 print:py-1"
+									>
+										<span class="min-w-0 flex-1">
+											<span
+												class="block truncate text-base font-medium text-foreground print:text-sm"
+											>
+												{item.series.shortName}
+											</span>
+											{#if item.missing.length > 0 || item.series.status !== 'ongoing'}
+												<span class="block truncate text-xs text-muted-foreground">
+													{#if item.series.status !== 'ongoing'}{SERIES_STATUS_LABELS[
+															item.series.status
+														]}{item.missing.length > 0
+															? ' · '
+															: ''}{/if}{#if item.missing.length > 0}missing
+														<span class="font-mono tabular-nums">{item.missing.join(', ')}</span
+														>{/if}
+												</span>
+											{/if}
+										</span>
 										<span
-											class="mr-1 align-middle font-sans text-[10px] font-normal tracking-wide text-muted-foreground uppercase"
-											>vol.</span
-										>{item.next}
-									</span>
-								</a>
+											class="shrink-0 font-mono text-xl font-semibold text-foreground tabular-nums print:text-base"
+										>
+											<span
+												class="mr-1 align-middle font-sans text-[10px] font-normal tracking-wide text-muted-foreground uppercase"
+												>vol.</span
+											>{item.next}
+										</span>
+									</a>
+								{/if}
 							</li>
 						{/each}
 					</ul>

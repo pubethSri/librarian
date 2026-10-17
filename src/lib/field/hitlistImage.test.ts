@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { hitlistFileName, hitlistImageLines } from './hitlistImage';
-import type { ConfirmedItem, HitlistGroup } from './logic';
+import type { HitlistGroup } from './logic';
 
 const series = (id: number, shortName: string, watchlist = true) => ({
 	id,
@@ -14,48 +14,61 @@ const series = (id: number, shortName: string, watchlist = true) => ({
 });
 
 describe('hitlistImageLines', () => {
-	const confirmed: ConfirmedItem[] = [
-		{ series: series(1, 'Frieren'), from: 15, to: 16, missing: [3] }
-	];
+	const item = (
+		id: number,
+		name: string,
+		next: number,
+		confirmedTo: number | null,
+		missing: number[] = []
+	) => ({
+		series: series(id, name),
+		next,
+		confirmedTo,
+		missing,
+		owned: next - 1
+	});
 	const groups: HitlistGroup[] = [
 		{
 			publisher: 'Phoenix Next',
 			items: [
-				{ series: series(2, 'Silent Witch'), next: 10, missing: [], owned: 10 },
-				{ series: series(3, 'Ougon'), next: 5, missing: [2], owned: 3 }
+				item(1, 'Frieren', 15, 16, [3]),
+				item(2, 'Silent Witch', 10, null),
+				item(3, 'Ougon', 5, null, [2])
 			]
 		},
-		{ publisher: null, items: [{ series: series(4, 'X'), next: 1, missing: [], owned: 0 }] }
+		{ publisher: null, items: [item(4, 'X', 1, null)] }
 	];
 
-	it('puts the title, the confirmed section, then each publisher with its rows', () => {
-		const lines = hitlistImageLines(groups, confirmed, 'Oct 17, 2026');
+	it('keeps confirmed volumes inside their publisher group', () => {
+		const lines = hitlistImageLines(groups, 'Oct 17, 2026');
 		expect(lines.map((l) => l.kind)).toEqual([
 			'title',
 			'subtitle',
 			'heading',
 			'confirmed',
-			'heading',
 			'row',
 			'row',
 			'heading',
 			'row'
 		]);
-		expect(lines[1]).toEqual({ kind: 'subtitle', text: '4 series to look for · Oct 17, 2026' });
+		expect(lines[1]).toEqual({ kind: 'subtitle', text: '4 series · 1 confirmed · Oct 17, 2026' });
+		expect(lines[2]).toEqual({ kind: 'heading', text: 'Phoenix Next · 3' });
 		expect(lines[3]).toEqual({
 			kind: 'confirmed',
 			name: 'Frieren',
 			detail: 'out up to vol. 16 · also missing 3',
 			volume: '15–16'
 		});
-		expect(lines[6]).toEqual({ kind: 'row', name: 'Ougon', detail: 'missing 2', volume: '5' });
-		expect(lines[7]).toEqual({ kind: 'heading', text: 'Unknown publisher · 1' });
+		expect(lines[5]).toEqual({ kind: 'row', name: 'Ougon', detail: 'missing 2', volume: '5' });
+		expect(lines[6]).toEqual({ kind: 'heading', text: 'Unknown publisher · 1' });
 	});
 
-	it('leaves out the confirmed heading when nothing is confirmed', () => {
-		const lines = hitlistImageLines(groups, [], 'Oct 17, 2026');
-		expect(lines.filter((l) => l.kind === 'confirmed')).toHaveLength(0);
-		expect(lines[2]).toEqual({ kind: 'heading', text: 'Phoenix Next · 2' });
+	it('says nothing about confirmed when none are', () => {
+		const lines = hitlistImageLines(
+			[{ publisher: null, items: [item(4, 'X', 1, null)] }],
+			'Oct 17, 2026'
+		);
+		expect(lines[1]).toEqual({ kind: 'subtitle', text: '1 series · Oct 17, 2026' });
 	});
 
 	it('names the file by day', () => {
