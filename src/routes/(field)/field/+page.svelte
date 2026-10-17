@@ -533,7 +533,7 @@
 								type="button"
 								title={slotTitle(slot)}
 								onclick={() => (readingSlot = slot)}
-								aria-label="{slotTitle(slot)} — reading"
+								aria-label="Reading actions — {slotTitle(slot)}"
 								class="relative flex aspect-square w-full flex-col items-center justify-center rounded-xl border border-border bg-card transition-colors active:bg-accent"
 							>
 								<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
