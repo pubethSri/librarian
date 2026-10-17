@@ -8,7 +8,7 @@ function facts(readStates: ('read' | 'reading' | 'dropped' | 'unread')[]) {
 	const readings = readStates.flatMap((state, i) =>
 		state === 'unread' ? [] : [readingRow({ bookId: i + 1, status: state })]
 	);
-	return buildBookFacts(input({ books, readings }), 'UTC');
+	return buildBookFacts(input({ books, readings }));
 }
 
 describe('completionOf', () => {
@@ -61,7 +61,7 @@ describe('computeTags', () => {
 	});
 
 	it('counts series, books, read books and completion per tag, most books first', () => {
-		const result = computeTags(buildBookFacts(data, 'UTC'), data);
+		const result = computeTags(buildBookFacts(data), data);
 		expect(result.tags).toEqual([
 			{
 				name: 'isekai',
@@ -82,7 +82,7 @@ describe('computeTags', () => {
 	});
 
 	it('folds one-series publishers (and unknown ones) into Other, listed last', () => {
-		const result = computeTags(buildBookFacts(data, 'UTC'), data);
+		const result = computeTags(buildBookFacts(data), data);
 		expect(result.publishers.map((p) => [p.name, p.series, p.books])).toEqual([
 			['Phoenix Next', 2, 3],
 			['Other', 2, 2]

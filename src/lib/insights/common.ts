@@ -7,8 +7,8 @@
 //   times read = number of Read rows.
 // - Extras are real books: they count in owned / bought / spent / read.
 // - A price is a lower bound; an unpriced book is never ฿0 (see Money).
-// - Purchase dates are calendar days stored as UTC midnight (dayOf); read
-//   dates are real instants, bucketed in the viewer's time zone.
+// - Purchase and reading dates are calendar days stored as UTC midnight
+//   (dayOf); only "today" depends on the viewer's time zone.
 
 import { currentStatus, timesRead } from '$lib/reading';
 import { dayOf } from '$lib/console/logic';
@@ -156,8 +156,12 @@ export function countReadStates(books: readonly { readState: ReadState }[]): Rea
 	return counts;
 }
 
-/** One fact per book; books whose series is missing are skipped */
-export function buildBookFacts(input: InsightsInput, timeZone: string): BookFact[] {
+/**
+ * One fact per book; books whose series is missing are skipped. Finish days
+ * are calendar days (stored as UTC midnight, like purchase dates — STATUS.md →
+ * Reading-flow Decisions 2026-10-16), so no time zone is needed.
+ */
+export function buildBookFacts(input: InsightsInput): BookFact[] {
 	const typeBySeries = new Map(input.series.map((s) => [s.id, s.type]));
 	const rowsByBook = new Map<number, InsightsInput['readings']>();
 	for (const row of input.readings) {
@@ -189,7 +193,7 @@ export function buildBookFacts(input: InsightsInput, timeZone: string): BookFact
 			readState: readStateOf(status, times),
 			finishedDays: rows
 				.filter((r) => r.status === 'read' && r.finishedAt)
-				.map((r) => dayInZone(r.finishedAt as string, timeZone))
+				.map((r) => dayOf(r.finishedAt) as string)
 				.sort()
 		});
 	}

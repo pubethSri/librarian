@@ -52,8 +52,7 @@ describe('buyRate', () => {
 					bookRow({ boughtAt: '2025-10-16T00:00:00Z' }), // exactly a year ago: out
 					bookRow({ boughtAt: null })
 				]
-			}),
-			'UTC'
+			})
 		);
 		expect(buyRate(facts, TODAY)).toBe(2 / 12);
 	});
@@ -94,7 +93,7 @@ describe('computeBacklog', () => {
 			],
 			readings: [readingRow({ bookId: 1, status: 'read', finishedAt: '2026-10-02T03:00:00Z' })]
 		});
-		return computeBacklog(buildBookFacts(data, 'UTC'), series, TODAY);
+		return computeBacklog(buildBookFacts(data), series, TODAY);
 	}
 
 	it('measures the pile by type and lists the oldest unread first', () => {

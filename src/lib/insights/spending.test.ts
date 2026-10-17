@@ -41,7 +41,7 @@ function spending() {
 		],
 		readings: [readingRow({ bookId: 1, status: 'read' }), readingRow({ bookId: 3, status: 'read' })]
 	});
-	return computeSpending(buildBookFacts(data, 'UTC'), TODAY);
+	return computeSpending(buildBookFacts(data), TODAY);
 }
 
 describe('computeSpending', () => {
@@ -76,10 +76,7 @@ describe('computeSpending', () => {
 	});
 
 	it('has no cost per read when nothing is read', () => {
-		const s = computeSpending(
-			buildBookFacts(input({ books: [bookRow({ price: '100' })] }), 'UTC'),
-			TODAY
-		);
+		const s = computeSpending(buildBookFacts(input({ books: [bookRow({ price: '100' })] })), TODAY);
 		expect(s.costPerRead).toBeNull();
 		expect(s.monthly).toEqual([]);
 	});

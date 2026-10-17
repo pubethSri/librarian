@@ -40,7 +40,7 @@ export function overviewOf(facts: readonly BookFact[], seriesCount: number): Ins
 
 /**
  * @param now      the moment "this month" / "the last 12 months" are measured from
- * @param timeZone the viewer's IANA time zone (dated reads are bucketed in it)
+ * @param timeZone the viewer's IANA time zone — which calendar day is "today"
  */
 export function computeInsights(
 	input: InsightsInput,
@@ -48,7 +48,7 @@ export function computeInsights(
 	timeZone: string | null | undefined
 ): Insights {
 	const zone = safeTimeZone(timeZone);
-	const facts = buildBookFacts(input, zone);
+	const facts = buildBookFacts(input);
 	// Series with no books own nothing yet
 	const seriesCount = new Set(facts.map((b) => b.seriesId)).size;
 	const today = dayInZone(now, zone);

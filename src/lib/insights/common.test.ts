@@ -83,8 +83,7 @@ describe('buildBookFacts', () => {
 					readingRow({ bookId: 1, status: 'reading', createdAt: '2026-02-01T00:00:00Z' }),
 					readingRow({ bookId: 2, status: 'unread' })
 				]
-			}),
-			'UTC'
+			})
 		);
 		expect(facts.map((f) => [f.status, f.timesRead, f.readState])).toEqual([
 			['reading', 1, 'read'],
@@ -101,8 +100,7 @@ describe('buildBookFacts', () => {
 					bookRow({ price: null }),
 					bookRow({ price: '0.00' })
 				]
-			}),
-			'Asia/Bangkok'
+			})
 		);
 		expect(facts.map((f) => [f.boughtDay, f.price])).toEqual([
 			['2025-10-12', 175],
@@ -111,18 +109,17 @@ describe('buildBookFacts', () => {
 		]);
 	});
 
-	it('lists finish days of dated Read rows only, in the time zone', () => {
+	it('lists finish days of dated Read rows only, as stored calendar days', () => {
 		const book = bookRow({ id: 7 });
 		const [fact] = buildBookFacts(
 			input({
 				books: [book],
 				readings: [
-					readingRow({ bookId: 7, status: 'read', finishedAt: '2026-03-01T18:00:00Z' }),
+					readingRow({ bookId: 7, status: 'read', finishedAt: '2026-03-02T00:00:00.000Z' }),
 					readingRow({ bookId: 7, status: 'read', finishedAt: null }),
 					readingRow({ bookId: 7, status: 'dropped', finishedAt: '2026-04-01T00:00:00Z' })
 				]
-			}),
-			'Asia/Bangkok'
+			})
 		);
 		expect(fact.finishedDays).toEqual(['2026-03-02']);
 	});
@@ -132,8 +129,7 @@ describe('buildBookFacts', () => {
 			input({
 				series: [seriesRow({ id: 1, type: 'manga' })],
 				books: [bookRow({ isExtra: true, volumeNumber: '4.5' }), bookRow({ seriesId: 99 })]
-			}),
-			'UTC'
+			})
 		);
 		expect(facts).toHaveLength(1); // series 99 does not exist
 		expect(facts[0]).toMatchObject({ type: 'manga', isExtra: true, volumeNumber: 4.5 });

@@ -15,6 +15,13 @@
       "when": 1792080275873,
       "tag": "0001_extra_volumes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792244712458,
+      "tag": "0002_reading_days",
+      "breakpoints": true
     }
   ]
 }

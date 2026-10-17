@@ -19,7 +19,7 @@ describe('computePace', () => {
 		const readings = reads.map((r, i) =>
 			readingRow({ bookId: i + 1, status: 'read', finishedAt: `${r.finished}T12:00:00Z` })
 		);
-		return computePace(buildBookFacts(input({ books, readings }), 'UTC'));
+		return computePace(buildBookFacts(input({ books, readings })));
 	}
 
 	it('measures purchase → finish in days, banded', () => {
@@ -67,7 +67,7 @@ describe('computeFunnel', () => {
 			],
 			readings: [readingRow({ bookId: 1, status: 'read' })]
 		});
-		const funnel = computeFunnel(buildBookFacts(data, 'UTC'), data.bookfairs);
+		const funnel = computeFunnel(buildBookFacts(data), data.bookfairs);
 		expect(funnel.map((f) => [f.name, f.bought, f.counts.read, f.counts.unread, f.spent])).toEqual([
 			['Book Expo 2024', 2, 1, 1, { total: 200, priced: 1, of: 2 }],
 			['Book Expo 2025', 1, 0, 1, { total: 95, priced: 1, of: 1 }],

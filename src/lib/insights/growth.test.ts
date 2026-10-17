@@ -8,8 +8,7 @@ function facts(books: ReturnType<typeof bookRow>[]) {
 		input({
 			series: [seriesRow({ id: 1, type: 'light_novel' }), seriesRow({ id: 2, type: 'manga' })],
 			books
-		}),
-		'UTC'
+		})
 	);
 }
 
