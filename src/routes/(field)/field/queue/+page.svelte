@@ -17,7 +17,8 @@
 		createQueueRemoveMutation
 	} from '$lib/queries/queue';
 	import { getFieldSettings } from '$lib/field/settings.svelte';
-	import { moveInQueue, type QueueMove } from '$lib/queue';
+	import { chipLabel, moveInQueue, seriesBar, type QueueMove } from '$lib/queue';
+	import SeriesBar from '$lib/components/queue/SeriesBar.svelte';
 	import type { VolumeSlot } from '$lib/field/logic';
 	import { volumeText } from '$lib/utils/volume';
 	import { BOOK_LOCATION_LABELS, type QueueItem } from '$lib/types';
@@ -125,16 +126,22 @@
 										<span class="block truncate text-sm font-medium text-foreground">
 											{item.seriesShortName}
 										</span>
-										<span class="block text-xs text-muted-foreground">
-											{volumeText(item)}{item.readingStatus === 'read'
-												? ' · re-read'
-												: item.readingStatus === 'dropped'
-													? ' · dropped'
-													: ''}
+										<span class="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+											<span
+												class="shrink-0 rounded-md bg-highlight-soft px-1.5 text-xs leading-5 font-semibold text-highlight-ink tabular-nums"
+											>
+												{chipLabel(item)}
+											</span>
+											<SeriesBar model={seriesBar(books, item)} />
+											{#if item.readingStatus === 'read'}
+												<span class="shrink-0">re-read</span>
+											{:else if item.readingStatus === 'dropped'}
+												<span class="shrink-0">dropped</span>
+											{/if}
 										</span>
 									</span>
 									<span
-										class="shrink-0 rounded border border-border px-1.5 text-[11px] font-semibold text-muted-foreground"
+										class="shrink-0 rounded border border-info/45 px-1.5 text-[11px] font-semibold text-info-ink"
 										title={BOOK_LOCATION_LABELS[item.location]}
 									>
 										{letter(item.location)}

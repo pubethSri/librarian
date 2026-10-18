@@ -73,7 +73,7 @@
 
 	const statusClass: Record<ReadingStatus, string> = {
 		unread: 'text-muted-foreground',
-		reading: 'border-sky-500/40 text-sky-700 dark:text-sky-400',
+		reading: 'border-info/40 text-info-ink',
 		read: 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400',
 		dropped: 'border-zinc-400/40 text-muted-foreground line-through'
 	};

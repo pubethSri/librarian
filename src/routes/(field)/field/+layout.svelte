@@ -40,7 +40,7 @@
 	}
 </script>
 
-<div class="min-h-dvh overflow-x-hidden bg-background">
+<div class="min-h-dvh overflow-x-hidden bg-canvas">
 	<header
 		class="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden"
 	>
@@ -76,7 +76,7 @@
 							: 'font-medium text-muted-foreground active:text-foreground'}"
 					>
 						{#if active}
-							<span class="absolute inset-x-5 top-0 h-0.5 rounded-full bg-foreground"></span>
+							<span class="absolute inset-x-5 top-0 h-0.5 rounded-full bg-highlight"></span>
 						{/if}
 						<tab.icon class="h-6 w-6" strokeWidth={active ? 2.25 : 1.75} />
 						{tab.label}

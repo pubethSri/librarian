@@ -7,7 +7,7 @@
 	let { children } = $props();
 </script>
 
-<div class="flex min-h-screen bg-background">
+<div class="flex min-h-screen bg-canvas">
 	<Sidebar />
 
 	<!-- Main content area — offset by sidebar width, reactive to collapse -->

@@ -44,7 +44,7 @@
 	--chart-3: oklch(0.398 0.07 227.392);
 	--chart-4: oklch(0.828 0.189 84.429);
 	--chart-5: oklch(0.769 0.188 70.08);
-	--sidebar: oklch(0.985 0 0);
+	--sidebar: oklch(1 0 0);
 	--sidebar-foreground: oklch(0.145 0 0);
 	--sidebar-primary: oklch(0.205 0 0);
 	--sidebar-primary-foreground: oklch(0.985 0 0);
@@ -52,6 +52,24 @@
 	--sidebar-accent-foreground: oklch(0.205 0 0);
 	--sidebar-border: oklch(0.922 0 0);
 	--sidebar-ring: oklch(0.708 0 0);
+
+	/*
+	 * App style (chosen 2026-10-18, docs/STATUS.md): Zinc neutrals, light mode only,
+	 * gold for highlights (the volume in question, active tab / page, fair dot) and
+	 * the QSNCC blue for information (location badges, Reading status, links). The
+	 * page ground is Stone with faint diamond tiles (from the QSNCC references);
+	 * cards, tables and lists stay white on top of it.
+	 */
+	--canvas: #f7f7f5;
+	--highlight: #a3852a;
+	--highlight-soft: #f0ebdd;
+	--highlight-ink: #77601e;
+	--info: #2b7de0;
+	--info-ink: #2368bd;
+	--bar-read: #8b8b93;
+	/* Diamond tile, 26×56: grey lines at 3% (canvas) and 1.5% (sidebar) */
+	--tiles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='56' viewBox='0 0 26 56'%3E%3Cg fill='none' stroke='%2318181b' stroke-opacity='0.03' stroke-width='1.1'%3E%3Cpath d='M13 3 23 28 13 53 3 28Z'/%3E%3Cpath d='M0-25 10 0 0 25-10 0Z'/%3E%3Cpath d='M26-25 36 0 26 25 16 0Z'/%3E%3Cpath d='M0 31 10 56 0 81-10 56Z'/%3E%3Cpath d='M26 31 36 56 26 81 16 56Z'/%3E%3C/g%3E%3C/svg%3E");
+	--tiles-faint: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='56' viewBox='0 0 26 56'%3E%3Cg fill='none' stroke='%2318181b' stroke-opacity='0.015' stroke-width='1.1'%3E%3Cpath d='M13 3 23 28 13 53 3 28Z'/%3E%3Cpath d='M0-25 10 0 0 25-10 0Z'/%3E%3Cpath d='M26-25 36 0 26 25 16 0Z'/%3E%3Cpath d='M0 31 10 56 0 81-10 56Z'/%3E%3Cpath d='M26 31 36 56 26 81 16 56Z'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .dark {
@@ -124,6 +142,25 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+	--color-canvas: var(--canvas);
+	--color-highlight: var(--highlight);
+	--color-highlight-soft: var(--highlight-soft);
+	--color-highlight-ink: var(--highlight-ink);
+	--color-info: var(--info);
+	--color-info-ink: var(--info-ink);
+	--color-bar-read: var(--bar-read);
+}
+
+/* The tiled Stone page ground (app shell, Field Mode shell) and the sidebar's fainter tiles */
+@utility bg-canvas {
+	background-color: var(--canvas);
+	background-image: var(--tiles);
+	background-size: 26px 56px;
+}
+@utility bg-sidebar-tiles {
+	background-color: var(--sidebar);
+	background-image: var(--tiles-faint);
+	background-size: 26px 56px;
 }
 
 @layer base {
@@ -133,4 +170,20 @@
 	body {
 		@apply bg-background text-foreground;
 	}
+	/*
+	 * On the tiled canvas, a bordered card / list / table wrapper without a background
+	 * of its own is white, so text never sits on the tiles. Base layer: any bg-*,
+	 * hover:/active: utility still wins; dashed placeholders stay transparent.
+	 */
+	.bg-canvas
+		:is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).border:not(
+			.border-dashed
+		):not([class^='bg-']):not([class*=' bg-']) {
+		background-color: var(--card);
+	}
+}
+
+/* Form fields are transparent by default; on the canvas they get the card white too */
+.bg-canvas :is([data-slot='input'], [data-slot='textarea'], [data-slot='select-trigger']) {
+	background-color: var(--card);
 }

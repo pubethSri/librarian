@@ -92,7 +92,7 @@
 				{/if}
 			</span>
 			<span
-				class="shrink-0 rounded border border-border px-1.5 text-[11px] font-semibold text-muted-foreground"
+				class="shrink-0 rounded border border-info/45 px-1.5 text-[11px] font-semibold text-info-ink"
 				title={BOOK_LOCATION_LABELS[book.location]}
 			>
 				{book.location === 'apartment' ? 'A' : 'H'}

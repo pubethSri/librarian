@@ -32,10 +32,10 @@
 		{#if !settings.ready}
 			<span class="w-24 truncate text-muted-foreground">…</span>
 		{:else if settings.fairId === null}
-			<Store class="h-4 w-4 shrink-0 text-muted-foreground" />
+			<Store class="h-4 w-4 shrink-0 text-highlight" />
 			<span class="truncate">Not at a fair</span>
 		{:else}
-			<MapPin class="h-4 w-4 shrink-0 text-muted-foreground" />
+			<MapPin class="h-4 w-4 shrink-0 text-highlight" />
 			<span class="truncate">{current?.name ?? 'Bookfair'}</span>
 		{/if}
 		<ChevronDown class="h-4 w-4 shrink-0 text-muted-foreground" />

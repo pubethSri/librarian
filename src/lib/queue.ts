@@ -188,3 +188,61 @@ export function buildPile<T extends PileBookLike>(
 		count: groups.reduce((n, g) => n + g.books.length, 0)
 	};
 }
+
+// ─── Series bar (queue rows) ─────────────────────────────────────────────────
+
+export type BarBookLike = Pick<
+	QueueBookLike,
+	'seriesId' | 'volumeNumber' | 'isExtra' | 'readingStatus'
+> & {
+	timesRead: number;
+};
+
+export type SeriesBarModel =
+	| { kind: 'segments'; segments: ('read' | 'this' | 'unread')[] }
+	| { kind: 'continuous'; total: number; read: number; at: number };
+
+/**
+ * Where a queued book sits in its series: one segment per regular volume from 1 to
+ * the latest owned (read = any copy read; a gap counts as unread), the book itself
+ * marked. An extra gets its own segment after the volume it follows. Past
+ * `maxSegments` the bar is continuous: `read` volumes filled, a mark `at` 0…1.
+ * Null when the series has no regular volume to draw.
+ */
+export function seriesBar(
+	books: readonly BarBookLike[],
+	target: Pick<BarBookLike, 'seriesId' | 'volumeNumber' | 'isExtra'>,
+	maxSegments = 20
+): SeriesBarModel | null {
+	const regular = books.filter((b) => b.seriesId === target.seriesId && !b.isExtra);
+	const latest = Math.floor(Math.max(0, ...regular.map((b) => Number(b.volumeNumber))));
+	if (latest < 1) return null;
+	const readVolumes = new Set(
+		regular
+			.filter((b) => b.timesRead > 0 || b.readingStatus === 'read')
+			.map((b) => Math.floor(Number(b.volumeNumber)))
+	);
+	const segments: ('read' | 'this' | 'unread')[] = [];
+	for (let n = 1; n <= latest; n++) segments.push(readVolumes.has(n) ? 'read' : 'unread');
+	const v = Number(target.volumeNumber);
+	let index: number;
+	if (target.isExtra) {
+		index = Math.min(Math.max(Math.floor(v), 0), latest);
+		segments.splice(index, 0, 'this');
+	} else {
+		index = Math.min(Math.max(Math.round(v), 1), latest) - 1;
+		segments[index] = 'this';
+	}
+	if (segments.length <= maxSegments) return { kind: 'segments', segments };
+	return {
+		kind: 'continuous',
+		total: segments.length,
+		read: segments.filter((s) => s === 'read').length,
+		at: (index + 0.5) / segments.length
+	};
+}
+
+/** The volume chip on a queue row: "Vol. 6", or "Extra" */
+export function chipLabel(book: VolumeLike): string {
+	return book.isExtra ? 'Extra' : `Vol. ${Number(book.volumeNumber)}`;
+}

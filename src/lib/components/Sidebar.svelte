@@ -56,7 +56,7 @@
 
 <!-- Desktop sidebar -->
 <aside
-	class="fixed top-0 left-0 z-40 hidden h-screen flex-col border-r border-border bg-sidebar transition-all duration-200 md:flex"
+	class="fixed top-0 left-0 z-40 hidden h-screen flex-col border-r border-border bg-sidebar-tiles transition-all duration-200 md:flex"
 	class:w-44={!collapsed}
 	class:w-12={collapsed}
 >
@@ -78,7 +78,7 @@
 					<a
 						href={item.href}
 						class="block rounded px-2 py-1.5 text-[13px] font-medium transition-colors {active
-							? 'bg-sidebar-accent text-sidebar-accent-foreground'
+							? 'relative bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-highlight'
 							: 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}"
 					>
 						{item.label}
@@ -149,7 +149,7 @@
 							href={item.href}
 							onclick={() => (mobileOpen = false)}
 							class="block rounded px-2 py-1.5 text-[13px] font-medium transition-colors {active
-								? 'bg-accent text-accent-foreground'
+								? 'relative bg-accent text-accent-foreground before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-highlight'
 								: 'text-foreground/70 hover:bg-accent/50 hover:text-foreground'}"
 						>
 							{item.label}

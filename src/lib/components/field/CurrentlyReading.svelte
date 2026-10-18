@@ -6,7 +6,8 @@
 	import { toast } from 'svelte-sonner';
 	import { createLogReadMutation } from '$lib/queries/reading';
 	import { createQueueAddMutation } from '$lib/queries/queue';
-	import { nextToQueue, offerLabel } from '$lib/queue';
+	import { nextToQueue, offerLabel, seriesBar } from '$lib/queue';
+	import SeriesBar from '$lib/components/queue/SeriesBar.svelte';
 	import { currentlyReading, todayLocal } from '$lib/field/logic';
 	import { volumeText } from '$lib/utils/volume';
 	import type { BookListItem } from '$lib/types';
@@ -57,17 +58,16 @@
 		</p>
 		<ul class="space-y-2">
 			{#each reading as book (book.id)}
-				<li class="flex items-stretch gap-2">
+				<li class="flex items-center gap-2 rounded-xl bg-primary p-2 pl-0 text-primary-foreground">
 					<button
 						type="button"
 						onclick={() => onopen(book.seriesId)}
-						class="flex min-h-14 min-w-0 flex-1 items-center rounded-xl border border-border px-4 text-left active:bg-accent"
+						class="flex min-h-12 min-w-0 flex-1 items-center rounded-lg px-4 text-left active:bg-white/10"
 					>
-						<span class="min-w-0">
-							<span class="block truncate text-sm font-medium text-foreground">
-								{book.seriesShortName}
-							</span>
-							<span class="block text-xs text-muted-foreground">{volumeText(book)}</span>
+						<span class="min-w-0 flex-1">
+							<span class="block truncate text-sm font-semibold">{book.seriesShortName}</span>
+							<span class="block text-xs opacity-80">{volumeText(book)}</span>
+							<SeriesBar model={seriesBar(books, book)} tone="dark" class="mt-1.5" />
 						</span>
 					</button>
 					<button
@@ -75,7 +75,7 @@
 						onclick={() => finished(book)}
 						disabled={pendingId !== null}
 						aria-label="Finished {book.seriesShortName} {volumeText(book)} today"
-						class="flex min-h-14 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground active:opacity-80 disabled:opacity-50"
+						class="flex min-h-12 shrink-0 items-center gap-2 rounded-lg bg-primary-foreground px-4 text-sm font-semibold text-primary active:opacity-80 disabled:opacity-50"
 					>
 						{#if pendingId === book.id}
 							<LoaderCircle class="h-5 w-5 animate-spin" />

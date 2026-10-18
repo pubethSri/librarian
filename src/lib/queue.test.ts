@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	buildPile,
+	chipLabel,
 	endPosition,
 	leavesQueue,
 	moveInQueue,
@@ -8,6 +9,7 @@ import {
 	offerLabel,
 	ownedSeries,
 	reorder,
+	seriesBar,
 	type PileBookLike
 } from './queue';
 import type { ReadingStatus } from './types';
@@ -181,5 +183,59 @@ describe('buildPile', () => {
 		const pile = buildPile(done);
 		expect(pile.groups).toEqual([]);
 		expect(pile.continue).toEqual([]);
+	});
+});
+
+describe('seriesBar', () => {
+	const bar = (
+		books: (PileBookLike & { timesRead: number })[],
+		target: PileBookLike,
+		max?: number
+	) => seriesBar(books, target, max);
+
+	it('one segment per volume up to the latest: read, this one, unread', () => {
+		const v1 = book(1, 1, 'read');
+		const v2 = book(1, 2, 'read');
+		const v3 = book(1, 3);
+		const v5 = book(1, 5);
+		const books = [v1, v2, v3, v5].map((b) => ({
+			...b,
+			timesRead: b.readingStatus === 'read' ? 1 : 0
+		}));
+		expect(bar(books, books[2])).toEqual({
+			kind: 'segments',
+			segments: ['read', 'read', 'this', 'unread', 'unread']
+		});
+	});
+
+	it('an extra gets its own segment after the volume it follows', () => {
+		const books = [book(1, 1, 'read'), book(1, 2), book(1, 2.5, 'unread', { isExtra: true })].map(
+			(b) => ({ ...b, timesRead: b.readingStatus === 'read' ? 1 : 0 })
+		);
+		expect(bar(books, books[2])).toEqual({
+			kind: 'segments',
+			segments: ['read', 'unread', 'this']
+		});
+	});
+
+	it('turns continuous past the segment limit', () => {
+		const books = Array.from({ length: 24 }, (_, i) => ({
+			...book(3, i + 1, i < 10 ? 'read' : 'unread'),
+			timesRead: i < 10 ? 1 : 0
+		}));
+		const model = bar(books, books[11]);
+		expect(model).toEqual({ kind: 'continuous', total: 24, read: 10, at: 11.5 / 24 });
+	});
+
+	it('null when the series has only extras', () => {
+		const books = [{ ...book(1, 0.5, 'unread', { isExtra: true }), timesRead: 0 }];
+		expect(bar(books, books[0])).toBeNull();
+	});
+});
+
+describe('chipLabel', () => {
+	it('names the volume or the extra', () => {
+		expect(chipLabel({ volumeNumber: '6.0', isExtra: false })).toBe('Vol. 6');
+		expect(chipLabel({ volumeNumber: '4.5', isExtra: true })).toBe('Extra');
 	});
 });

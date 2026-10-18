@@ -15,7 +15,8 @@
 		createQueueRemoveMutation
 	} from '$lib/queries/queue';
 	import { currentlyReading } from '$lib/field/logic';
-	import { moveInQueue, nextToQueue, offerLabel, type QueueMove } from '$lib/queue';
+	import { moveInQueue, nextToQueue, offerLabel, seriesBar, type QueueMove } from '$lib/queue';
+	import SeriesBar from '$lib/components/queue/SeriesBar.svelte';
 	import { volumeText } from '$lib/utils/volume';
 	import { BOOK_LOCATION_LABELS, type BookListItem, type BookLocation } from '$lib/types';
 
@@ -32,8 +33,8 @@
 	const readingNow = $derived(currentlyReading(books));
 
 	const locationClass: Record<BookLocation, string> = {
-		apartment: 'border-sky-500/40 text-sky-700 dark:text-sky-400',
-		home: 'border-amber-500/40 text-amber-700 dark:text-amber-400'
+		apartment: 'border-info/45 text-info-ink',
+		home: 'border-info/45 text-info-ink'
 	};
 
 	function move(bookId: number, to: QueueMove) {
@@ -146,8 +147,9 @@
 								>
 								<Table.Cell>
 									<a href={resolve(`/series/${item.seriesId}`)} class="font-medium hover:underline"
-										>{label}</a
+										>{item.seriesShortName}</a
 									>
+									<span class="text-muted-foreground">{volumeText(item)}</span>
 									{#if item.readingStatus === 'read'}
 										<Badge variant="outline" class="ml-2 text-xs">re-read</Badge>
 									{/if}
@@ -156,6 +158,7 @@
 											Draft
 										</Badge>
 									{/if}
+									<SeriesBar model={seriesBar(books, item)} class="mt-1.5" />
 								</Table.Cell>
 								<Table.Cell>
 									<Badge variant="outline" class="text-xs {locationClass[item.location]}">
