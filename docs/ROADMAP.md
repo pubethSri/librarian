@@ -8,18 +8,18 @@
 
 `v0.0` = init; each phase completion bumps `v0.x`. A Git tag is created per milestone.
 
-| Version  | Milestone                                       |
-| -------- | ----------------------------------------------- |
-| v0.0     | Scaffolding                                     |
-| v0.1     | Database & CSV fallback                         |
-| v0.2     | Desktop core (tables, CRUD, data entry)         |
-| v0.2.x   | Unified search & filter                         |
-| v0.3.x   | Consolidation / debt paydown (mostly done)      |
-| **v0.3** | **Insights + Bookfair release — current focus** |
-| v0.4     | Reading log flow + reading queue + polish       |
-| v0.5     | Phone app: Field Mode full (PWA, offline)       |
-| v0.6     | Social & playful features                       |
-| v0.7     | Polish, decorative design, production hardening |
+| Version  | Milestone                                          |
+| -------- | -------------------------------------------------- |
+| v0.0     | Scaffolding                                        |
+| v0.1     | Database & CSV fallback                            |
+| v0.2     | Desktop core (tables, CRUD, data entry)            |
+| v0.2.x   | Unified search & filter                            |
+| v0.3.x   | Consolidation / debt paydown (mostly done)         |
+| **v0.3** | **Insights + Bookfair release — current focus**    |
+| v0.4     | Reading queue + polish (reading log shipped early) |
+| v0.5     | Phone app: Field Mode full (PWA, offline)          |
+| v0.6     | Social & playful features                          |
+| v0.7     | Polish, decorative design, production hardening    |
 
 ## Delivered
 
@@ -75,7 +75,7 @@ Found while checking for other secure-context problems after the `crypto.randomU
 | 10  | **Open redirect:** login follows `redirectTo` unchecked (`?redirectTo=https://evil…`). Accept same-origin paths only.                                                                                                 | 🟠 B6                                                               |
 | 11  | Missing `AUTH_PASSWORD` / `AUTH_SECRET` silently fall back to `librarian` / a known secret. Refuse to start instead.                                                                                                  | 🟠 B6                                                               |
 | 12  | No login rate limiting; session tokens never expire.                                                                                                                                                                  | B6                                                                  |
-| 13  | `manifest.json` isn't linked, its icons are missing from `static/`, and it sits behind auth.                                                                                                                          | v0.5                                                                |
+| 13  | ✅ 2026-10-17 — `manifest.json` isn't linked, its icons are missing from `static/`, and it sits behind auth. (Install works; no service worker yet — that stays v0.5.)                                                | v0.5                                                                |
 
 ## After the fair
 
@@ -86,21 +86,23 @@ Found while checking for other secure-context problems after the `crypto.randomU
 - Optional Console polish: series-grouping toggle. (Row selection from the preview shipped 2026-10-13.)
 - **Spreadsheet-style inline editing of the Console preview** (cell edits become staged rows, committed together) — proposed 2026-10-13. Decide after the backfill shows how often per-book edits are needed; a lighter "click a price cell, save immediately" variant is an hour or two.
 
-### v0.4 — Reading log flow + reading queue + insights polish
+### v0.4 — Reading queue + polish
 
-Insights items 4.2–4.7 moved to "Now" as I1–I6 on 2026-10-16.
+Insights items 4.2–4.7 moved to "Now" as I1–I6 on 2026-10-16. The **reading log flow (4.2) shipped early, 2026-10-17** (see `STATUS.md`). Order decided 2026-10-18: **request validation with `drizzle-zod` first** (the gate for the queue table), then the queue, then polish; the step-by-step plan is in `STATUS.md` → "After B7 — v0.4 handoff".
 
-| #   | Sub-feature           | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| --- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.1 | **Reading queue**     | Separate `reading_queue` table (book, position, added at; a book at most once). Behaves as a **pool**: order is a preference, finishing _any_ queued book removes it, so skipping needs no rule. A Read book in the queue means a planned re-read. `/queue` page with location badges; drag to reorder.                                                                                                                                             |
-| 4.2 | **Reading log flow**  | Log a read **after the fact**, whenever you remember, with the date you pick (rules in `STATUS.md` → Reading-flow Decisions 2026-10-16): one "I read this" action (finish _Today · Yesterday · Pick a day · Don't know_, optional start), a re-read logged in one step, reading dates as calendar days, a per-book **reading-history editor**, and in **Field Mode** volume-tile actions + a "Currently reading" strip with a one-tap **Finished**. |
-| 4.8 | **Polish → tag v0.4** |                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| #   | Sub-feature                                        | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1 | **Reading queue**                                  | Separate `reading_queue` table (book, position, added at; a book at most once). Behaves as a **pool**: order is a preference, finishing _any_ queued book removes it, so skipping needs no rule. A Read book in the queue means a planned re-read. `/queue` page with location badges; drag to reorder.                                                                                                                                             |
+| 4.2 | **Reading log flow** ✅ shipped early (2026-10-17) | Log a read **after the fact**, whenever you remember, with the date you pick (rules in `STATUS.md` → Reading-flow Decisions 2026-10-16): one "I read this" action (finish _Today · Yesterday · Pick a day · Don't know_, optional start), a re-read logged in one step, reading dates as calendar days, a per-book **reading-history editor**, and in **Field Mode** volume-tile actions + a "Currently reading" strip with a one-tap **Finished**. |
+| 4.8 | **Polish → tag v0.4**                              |                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## v0.5 — Phone app: Field Mode, full (PWA)
 
+**Not a separate native app:** the phone app is this same SvelteKit web app, installed from Chrome (PWA) — one codebase, one deploy; Install already works since 2026-10-17. v0.5 is about what it does on the phone (offline, the phone screens), not a new build target.
+
 The phone is its own experience, not a squeezed desktop (decided 2026-10-16): the desktop pages (Console, tables, Insights) stay desktop tools that only need to not break on a phone; everything meant for the phone lives in the Field Mode shell that B4 introduces. v0.5 grows that shell into the full phone app: the reading-log tile actions and "Currently reading" strip (v0.4 item 4.2) if not already there, possibly a small Insights summary, and the design pass for the phone (via `.agent/skills/ui-ux-pro-max/`).
 
-Builds on the B3/B4 MVP: 3-button landing ("I bought a book" / "New title" / "Add to Watchlist"), fuzzy search, +/- steppers, draft "Incomplete" badges, offline-tolerant mutations with a retry queue, installable PWA + service worker.
+Builds on the B3/B4 MVP: 3-button landing ("I bought a book" / "New title" / "Add to Watchlist"), fuzzy search, +/- steppers, draft "Incomplete" badges, offline-tolerant mutations with a retry queue, a service worker for offline use (the install part is done).
 
 ## Phase 6 — Social & Playful → v0.6
 

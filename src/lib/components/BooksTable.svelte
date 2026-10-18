@@ -17,7 +17,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
-	import { volumeText } from '$lib/utils/volume';
+	import { volumeLabel, volumeText } from '$lib/utils/volume';
 	import { ArrowUp, ArrowDown, ChevronsUpDown, Trash2, Pencil } from '@lucide/svelte';
 
 	type Props = {
@@ -295,7 +295,7 @@
 						</a>
 					</Table.Cell>
 					<Table.Cell class="font-mono tabular-nums">
-						{#if row.isExtra}<ExtraBadge book={row} />{:else}{row.volumeNumber}{/if}
+						{#if row.isExtra}<ExtraBadge book={row} />{:else}{volumeLabel(row)}{/if}
 					</Table.Cell>
 					<Table.Cell class="text-sm text-muted-foreground">
 						{BOOK_LOCATION_LABELS[row.location]}
