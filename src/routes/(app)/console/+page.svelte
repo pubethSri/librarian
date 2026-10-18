@@ -169,7 +169,9 @@
 	padding) so the two panels scroll independently and the preview's commit
 	bar stays on screen however long the list is.
 -->
-<div class="flex h-[calc(100dvh-6rem)] flex-col gap-0 md:h-[calc(100dvh-7rem)]">
+<div
+	class="flex h-[calc(100dvh-6rem)] flex-col gap-0 overflow-hidden rounded-lg border border-border bg-card md:h-[calc(100dvh-7rem)]"
+>
 	<!-- Scope Bar -->
 	<ScopeBar
 		{scopeType}

@@ -5,7 +5,14 @@
 	// than this phone's location are greyed ("can I grab it?"). Rules in $lib/queue.
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
-	import { ArrowDown, ArrowUp, ListMinus, ListPlus, LoaderCircle } from '@lucide/svelte';
+	import {
+		ArrowDown,
+		ArrowUp,
+		CircleCheck,
+		ListMinus,
+		ListPlus,
+		LoaderCircle
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import CurrentlyReading from '$lib/components/field/CurrentlyReading.svelte';
 	import SwipeRow from '$lib/components/field/SwipeRow.svelte';
@@ -36,7 +43,11 @@
 	let openItem = $state<{ item: QueueItem; position: number } | null>(null);
 	let sheetSlot = $state<VolumeSlot | null>(null);
 
-	function open(item: QueueItem, position: number) {
+	/** The sheet's first step: the actions (tap) or "When did you finish?" (swipe right) */
+	let sheetStep = $state<'actions' | 'finish'>('actions');
+
+	function open(item: QueueItem, position: number, step: 'actions' | 'finish' = 'actions') {
+		sheetStep = step;
 		openItem = { item, position };
 		sheetSlot = {
 			volume: Number(item.volumeNumber),
@@ -109,7 +120,15 @@
 				{#each queue as item, i (item.bookId)}
 					{@const away = item.location !== settings.location}
 					<li>
-						<SwipeRow label="Remove" icon={ListMinus} tone="remove" onswipe={() => remove(item)}>
+						<SwipeRow
+							label="Remove"
+							icon={ListMinus}
+							tone="remove"
+							onswipe={() => remove(item)}
+							rightLabel={item.readingStatus === 'read' ? 'Re-read finished…' : 'Finished…'}
+							rightIcon={CircleCheck}
+							onswiperight={() => open(item, i + 1, 'finish')}
+						>
 							<div class="flex min-h-14 items-center gap-1 pr-1">
 								<button
 									type="button"
@@ -171,7 +190,7 @@
 				{/each}
 			</ol>
 			<p class="mt-2 px-1 text-xs text-muted-foreground">
-				Tap a book to start or finish it — it then leaves the queue. Swipe left to remove.
+				Swipe right when you've finished one, left to remove it; tap for more.
 			</p>
 		{/if}
 
@@ -188,6 +207,7 @@
 		seriesName={openItem?.item.seriesShortName ?? ''}
 		{books}
 		position={openItem?.position ?? null}
+		step={sheetStep}
 		onmovetop={() => openItem && move(openItem.item.bookId, 'top')}
 	/>
 </div>

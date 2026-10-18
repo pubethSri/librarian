@@ -29,6 +29,7 @@
 		seriesName,
 		books = [],
 		position = null,
+		step = 'actions',
 		onmovetop
 	}: {
 		/** The tile tapped; null = closed */
@@ -38,6 +39,8 @@
 		books?: readonly BookListItem[];
 		/** Place in the queue (1 = top), shown on the Queue tab */
 		position?: number | null;
+		/** Open on the actions, or straight on "When did you finish?" (swipe right) */
+		step?: 'actions' | 'finish';
 		/** Queue tab: Move to top */
 		onmovetop?: () => void;
 	} = $props();
@@ -56,7 +59,7 @@
 	// Each opening starts on the actions, with a fresh "today"
 	$effect(() => {
 		if (slot) {
-			finishing = false;
+			finishing = step === 'finish';
 			today = todayLocal();
 		}
 	});

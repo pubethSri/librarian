@@ -1,23 +1,33 @@
 <script lang="ts">
-	// A list row you swipe left to act on (Spotify-style "add to queue"). Vertical
+	// A list row you swipe to act on (Spotify-style). Swipe left = `onswipe` (Queue /
+	// Remove); swipe right = `onswiperight` when given (Finished… on Up next). Vertical
 	// scrolling stays native (touch-action: pan-y); a horizontal drag past THRESHOLD
-	// fires `onswipe`. The click that ends a swipe is swallowed. Rows still need a
-	// visible button for the same action — a swipe is a shortcut, not the only way.
+	// fires the action. The click that ends a swipe is swallowed. Rows still need a
+	// visible way to do the same thing — a swipe is a shortcut, not the only way.
 	import type { Component, Snippet } from 'svelte';
+
+	type Icon = Component<{ class?: string }>;
 
 	let {
 		onswipe,
 		label,
-		icon: Icon,
+		icon: LeftIcon,
 		tone = 'add',
+		onswiperight,
+		rightLabel = '',
+		rightIcon: RightIcon,
 		disabled = false,
 		children
 	}: {
 		onswipe: () => void;
-		/** What the swipe does, shown behind the row: "Queue", "Remove" */
+		/** What the left swipe does, shown behind the row: "Queue", "Remove" */
 		label: string;
-		icon: Component<{ class?: string }>;
+		icon: Icon;
 		tone?: 'add' | 'remove';
+		/** Optional right swipe: "Finished…" */
+		onswiperight?: () => void;
+		rightLabel?: string;
+		rightIcon?: Icon;
 		disabled?: boolean;
 		children: Snippet;
 	} = $props();
@@ -49,7 +59,7 @@
 			axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
 			if (axis === 'h') (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 		}
-		if (axis === 'h') offset = Math.max(-MAX, Math.min(0, dx));
+		if (axis === 'h') offset = Math.max(-MAX, Math.min(onswiperight ? MAX : 0, dx));
 	}
 
 	function up() {
@@ -58,6 +68,7 @@
 		if (axis === 'h') {
 			swallowClick = true;
 			if (offset <= -THRESHOLD) onswipe();
+			else if (offset >= THRESHOLD) onswiperight?.();
 		}
 		axis = null;
 		offset = 0;
@@ -71,25 +82,38 @@
 		}
 	}
 
-	const armed = $derived(offset <= -THRESHOLD);
+	const armed = $derived(Math.abs(offset) >= THRESHOLD);
 </script>
 
 <div class="relative overflow-hidden">
-	<div
-		aria-hidden="true"
-		class="absolute inset-y-0 right-0 flex items-center justify-end gap-1.5 pr-4 text-sm font-semibold transition-colors {tone ===
-		'add'
-			? armed
-				? 'bg-sky-600 text-white'
-				: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200'
-			: armed
-				? 'bg-destructive text-white'
-				: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'}"
-		style="width: {Math.max(-offset, 0)}px; opacity: {offset === 0 ? 0 : 1}"
-	>
-		<Icon class="h-4 w-4 shrink-0" />
-		{#if -offset > 56}<span class="whitespace-nowrap">{label}</span>{/if}
-	</div>
+	{#if offset < 0}
+		<div
+			aria-hidden="true"
+			class="absolute inset-y-0 right-0 flex items-center justify-end gap-1.5 pr-4 text-sm font-semibold transition-colors {tone ===
+			'add'
+				? armed
+					? 'bg-info text-white'
+					: 'bg-info/15 text-info-ink'
+				: armed
+					? 'bg-destructive text-white'
+					: 'bg-red-100 text-red-800'}"
+			style="width: {-offset}px"
+		>
+			<LeftIcon class="h-4 w-4 shrink-0" />
+			{#if -offset > 56}<span class="whitespace-nowrap">{label}</span>{/if}
+		</div>
+	{:else if offset > 0 && RightIcon}
+		<div
+			aria-hidden="true"
+			class="absolute inset-y-0 left-0 flex items-center gap-1.5 pl-4 text-sm font-semibold transition-colors {armed
+				? 'bg-emerald-700 text-white'
+				: 'bg-emerald-100 text-emerald-900'}"
+			style="width: {offset}px"
+		>
+			<RightIcon class="h-4 w-4 shrink-0" />
+			{#if offset > 56}<span class="whitespace-nowrap">{rightLabel}</span>{/if}
+		</div>
+	{/if}
 	<div
 		role="presentation"
 		class="relative bg-background select-none {dragging ? '' : 'transition-transform duration-200'}"

@@ -290,7 +290,10 @@
 <div class="mx-auto max-w-md">
 	{#if selectedId === null}
 		<!-- ─── Search ─────────────────────────────────────────────────────── -->
-		<div class="sticky top-12 z-20 -mx-4 bg-background/95 px-4 pt-1 pb-3 backdrop-blur">
+		<!-- Full-bleed Stone strip: hides rows scrolling under the box without a visible card edge -->
+		<div
+			class="sticky top-12 z-20 mx-[calc(50%-50vw)] bg-(--canvas)/95 px-[calc(50vw-50%)] pt-1 pb-3 backdrop-blur"
+		>
 			<h1 class="sr-only">Field Mode</h1>
 			<label class="relative block">
 				<span class="sr-only">Find a series</span>
