@@ -7,7 +7,7 @@ Click-through test scripts for the parts only a person can check (look, feel, ph
 | Date       | Visual pass                                                                                            | Status                                                 |
 | ---------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
 | 2026-10-21 | [B7 trial run at a bookstore (Oct 21–22)](2026-10-21-b7-trial-run.md)                                  | ⬜ Pending — Oct 21–22                                 |
-| 2026-10-18 | [Hitlist: watchlist as priority, booth signs, bar, ticked off, swipe Bought](2026-10-18-hitlist.md)    | ⬜ Pending — your pass                                 |
+| 2026-10-18 | [Hitlist: watchlist as priority, booth signs, bar, ticked off, swipe Bought](2026-10-18-hitlist.md)    | ✅ Passed 2026-10-18 (gaps fix)                        |
 | 2026-10-18 | [App style (Gold + Blue on Stone, tiles, series bar)](2026-10-18-app-style.md)                         | ✅ Passed 2026-10-18 (iPad, phone, PC)                 |
 | 2026-10-18 | [v0.4 reading queue (Q0–Q4)](2026-10-18-v0.4-reading-queue.md)                                         | ✅ Passed 2026-10-18 (polish ideas noted for after B7) |
 | 2026-10-17 | [Reading log flow (v0.4 item 4.2)](2026-10-17-reading-log.md)                                          | ✅ Checked on the dev server 2026-10-17, merged + live |
