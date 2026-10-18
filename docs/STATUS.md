@@ -110,6 +110,20 @@ Your idea: 1–2 Instagram-story images — ① how tall the unread pile is now,
 
 **Built (branch `feature/pile-stories`, not merged — deploy after Oct 26):** pure `$lib/stories/pile` (`inPile`, `pileOf`, `fairAdd`, `formatHeight`, `compareHeight` — cat 25 cm … two-storey house 7 m, "about as tall as" within 5 % —, `storyFair`, file names) and `$lib/stories/pileImage` (`pileStory` / `fairStory` text, `pxPerCm` fits the taller of the pile and the door, max 8 px/cm; `stackLayout` = one grey per series run, the fair's in gold, a small fixed wobble per book; `drawStory` on a 1080×1920 canvas), 22 tests. Viewer `$lib/components/stories/PileStories.svelte` (draws when opened, after `document.fonts.ready`; object URLs freed on close). Saving moved to `$lib/utils/saveImages` (several files per share; the Hitlist's Save image uses it too). **Checked:** 375 tests (was 353), `check` 0 errors (21 warnings, as before), lint, build. Browser pre-check on the scratch DB (port 5175, test cookie): Queue card "1.78 m · 101 unread"; story ① 1080×1920 PNG (~376 KB), "About as tall as a person"; tap → story ② (scratch fair #12, Thai name in gold, +2 cm); left tap back; Esc closes; bookfair #5 → "+54 cm · 43 new books · 39 already read"; no console errors. Saving itself (share sheet) needs the phone. **Your check:** [`visual-passes/2026-10-27-pile-stories.md`](visual-passes/2026-10-27-pile-stories.md).
 
+- **Follow-up (2026-10-18, your ask):** book thickness in the stack **varies** — each series ±20 %, each book ±15 % (fixed per book, so the image is the same every time), widths too; the stack is rescaled so its height stays the true one. Checked on the scratch DB.
+
+#### Pile pace — "how long to clear the pile?" (your idea 2026-10-18) — design agreed, not built
+
+Mock-ups shown 2026-10-18. A sheet from the Queue tab's pile card, two tabs:
+
+- **My pace:** a pace per type, always in days — LN and manga each toggle between _volumes a day_ and _days a volume_ (manga is fast, a novel isn't). Result as you type: days (+ weeks / months / years), the finish day, how it sits against the spring fair, and the fun lines **(all four of your picks):** Christmases and Songkrans passed, bookfairs passed (two a year), "about X years older" once it's over a year, and slow-pace jokes (10+ years: outlives your phone; 50+: a family heirloom; …).
+- **By the fair:** the pace needed to clear the pile by the **next spring fair**, its date **guessed** from the last spring fair + 1 year (สัปดาห์หนังสือแห่งชาติ 54, 28 Mar 2026 → about 27 Mar 2027), **editable**; a real fair once created wins. A needed pace above **2.5 novels a day** (your record) is flagged as not humanly possible.
+- **Keep buying like usual:** a **toggle, off by default** ("if you stopped buying today"); on, it adds your average buying from purchase dates — buying faster than reading → "never", with a joke.
+- **Make it a story:** the result becomes a third story in the viewer (shareable with the other two).
+- Real pile today (prod copy): **92 LN + 6 manga**.
+
+Waiting for your "build it".
+
 #### B7 trial run (bookstore) — ✅ passed 2026-10-18
 
 Script: [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md). Run on production, ahead of the planned Oct 21–22 slot. **All steps passed** (your report), the v0.4 queue and the Hitlist round included. Step 10: the sheet animations are a little laggy on the Samsung A13 but **didn't cause any problem** → no fix before the fair; a shorter / no sheet animation on small screens or with "reduce motion" stays optional in Q5. Nothing to fix on a branch, so `v0.3` = `main` as deployed (`75f65a0`) plus docs.

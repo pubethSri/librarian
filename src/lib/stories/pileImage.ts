@@ -94,25 +94,39 @@ export function pxPerCm(pileCm: number): number {
 	return Math.min(MAX_PX_PER_CM, (GROUND - STACK_TOP) / Math.max(pileCm, DOOR_CM));
 }
 
+/** Thickness spread: each series a little thicker or thinner (±20 %), each book ±15 % */
+const SERIES_SPREAD = 0.2;
+const BOOK_SPREAD = 0.15;
+
 /**
  * Spines bottom to top as rectangles: one colour per run of a series (greys,
- * the fair's in gold), each book nudged a little so it reads as a real stack.
+ * the fair's in gold). Books vary in thickness and width — a series a bit
+ * thicker or wider than the next, each copy nudged — so it reads as a real
+ * stack; the thicknesses are rescaled so the stack keeps its true height.
  */
 export function stackLayout(spines: readonly Spine[], scale: number): SpineRect[] {
+	const raw = spines.map(
+		(s) =>
+			s.cm * (1 + wobble(s.seriesId, 4) * SERIES_SPREAD) * (1 + wobble(s.bookId, 3) * BOOK_SPREAD)
+	);
+	const rawTotal = raw.reduce((a, b) => a + b, 0);
+	const trueTotal = spines.reduce((a, s) => a + s.cm, 0);
+	const fit = rawTotal > 0 ? (trueTotal / rawTotal) * scale : scale;
+
 	const rects: SpineRect[] = [];
 	let y = GROUND;
 	let run = -1;
 	let prev: { seriesId: number; fair: boolean } | null = null;
-	for (const s of spines) {
+	spines.forEach((s, i) => {
 		if (!prev || prev.seriesId !== s.seriesId || prev.fair !== s.fair) run++;
 		prev = s;
-		const h = s.cm * scale;
-		const w = STACK_W + wobble(s.bookId, 1) * 18;
+		const h = raw[i] * fit;
+		const w = STACK_W * (1 + wobble(s.seriesId, 5) * 0.07) + wobble(s.bookId, 1) * 14;
 		const x = STACK_X + (STACK_W - w) / 2 + wobble(s.bookId, 2) * 10;
 		y -= h;
 		const palette = s.fair ? GOLDS : GREYS;
 		rects.push({ x, y, w, h, color: palette[run % palette.length] });
-	}
+	});
 	return rects;
 }
 

@@ -83,11 +83,25 @@ describe('layout', () => {
 
 	it('stacks spines upward from the floor, one colour per series run', () => {
 		const rects = stackLayout([spine(1, 1), spine(2, 1), spine(3, 2), spine(4, 2, true)], 5);
-		expect(rects.map((r) => r.y)).toEqual([1691, 1682, 1673, 1664]);
-		expect(rects.every((r) => r.h === 9)).toBe(true);
+		// Each rect sits on the one below it
+		expect(rects[0].y + rects[0].h).toBeCloseTo(1700);
+		for (let i = 1; i < rects.length; i++) {
+			expect(rects[i].y + rects[i].h).toBeCloseTo(rects[i - 1].y);
+		}
 		expect(rects[0].color).toBe(rects[1].color);
 		expect(rects[2].color).not.toBe(rects[1].color);
 		expect(rects[3].color).toMatch(/^#(a3852a|c9a94a|8a6d1a)$/);
+	});
+
+	it('varies the thickness but keeps the true height', () => {
+		const spines = Array.from({ length: 40 }, (_, i) => spine(i + 1, 1 + (i % 6)));
+		const rects = stackLayout(spines, 5);
+		const total = rects.reduce((s, r) => s + r.h, 0);
+		expect(total).toBeCloseTo(40 * 1.8 * 5);
+		const heights = new Set(rects.map((r) => r.h.toFixed(2)));
+		expect(heights.size).toBeGreaterThan(20);
+		expect(Math.min(...rects.map((r) => r.h))).toBeGreaterThan(9 * 0.6);
+		expect(Math.max(...rects.map((r) => r.h))).toBeLessThan(9 * 1.5);
 	});
 
 	it('is the same stack every time it is drawn', () => {
