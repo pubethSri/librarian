@@ -3,7 +3,8 @@
 	// preselected; gaps, the confirmed ones and "+ more" to tap), the price each and
 	// where they go. Same rules and request as Find's Select several: source / fair /
 	// today from the chip, one batch with `onlyIfMissing`, one Undo. Nothing is saved
-	// until Save, so a stray swipe at a booth is harmless.
+	// until Save, so a stray swipe at a booth is harmless. Books are saved as drafts,
+	// to review on the desktop after the fair (Drafts tile, Books table's Draft filter).
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { LoaderCircle } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
@@ -79,7 +80,7 @@
 					location: settings.location,
 					price,
 					...purchaseFields(settings.fairId, settings.today),
-					isDraft: false
+					isDraft: true
 				}))
 			});
 			const added = result.books.map((b) => Number(b.volumeNumber));
@@ -89,7 +90,7 @@
 			if (added.length > 0) {
 				const ids = result.books.map((b) => b.id);
 				toast.success(`Added vol. ${volumeRanges(added)}`, {
-					description: [series.shortName, already].filter(Boolean).join(' · '),
+					description: [series.shortName, 'saved as draft', already].filter(Boolean).join(' · '),
 					duration: 6000,
 					action: { label: 'Undo', onClick: () => undo(ids, series.id, added) }
 				});
