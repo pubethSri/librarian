@@ -1,6 +1,6 @@
 # Librarian — Development Status
 
-> **This file is the single source of truth for "where the project is now."**
+> **This file is the single source of truth for "where the project is now."** Visual-pass scripts (the click-through tests you run) live one per file in [`visual-passes/`](visual-passes/README.md).
 > Roadmap / future scope lives in [`ROADMAP.md`](./ROADMAP.md); how to work in the repo lives in [`../CLAUDE.md`](../CLAUDE.md); product vision in [`context.md`](./context.md); design in [`design_direction.md`](./design_direction.md). Update _this_ file at every version bump.
 
 ## State as of 2026-10-18
@@ -9,7 +9,7 @@
 - **Machine:** Windows 11 since 2026-10-13 (see Environment below).
 - **Latest (2026-10-17):** **B6 done — production is live at https://librarian-alpha.vercel.app** (Vercel Hobby `sin1` + Neon Free, Postgres 18, Singapore). Real data migrated from `local` (counts match), daily backups scheduled, auth hardened. Your phone test on mobile data passed (sign-in, Field Mode search, quick add + Undo — Neon shows the add and the undo — Copy, Save image); **only "Install" failed** ("This app cannot be installed": the manifest has no icons yet, audit #13) — use Chrome's **Create shortcut** for the fair, — **fixed and live since `f965a52`**: try Chrome ⋮ → Install (handoff 4).
 - **Branches:** `main` = everything, **pushed** (`origin/main` = `f934f05`, 2026-10-17; Vercel deploys every push to `main`): B6, the **PWA Install fix + book icon** (`f965a52` — 👤 try Chrome ⋮ → Install on the phone) and the **v0.4 reading log flow** (merged early at your call after your check on the dev server; section below). Merged branches `feature/b4-quick-add`, `feature/b5-hitlist`, `feature/field-feedback`, `feature/b6-deploy`, `feature/reading-log`, `claude/musing-gauss-e6b0df` can be deleted.
-- **v0.4 reading queue (2026-10-18): Q0–Q4 built on branch `feature/v0.4-queue`** (not merged, not pushed; `drizzle/0003` applied to the scratch DB only) — **awaiting your visual pass** (script in "v0.4 reading queue — built" below). On your OK: back up Neon → apply 0003 to Neon → merge + push, by Oct 20.
+- **v0.4 reading queue (2026-10-18): Q0–Q4 built on branch `feature/v0.4-queue`** (not merged, not pushed; `drizzle/0003` applied to the scratch DB only) — **awaiting your visual pass** ([`visual-passes/2026-10-18-v0.4-reading-queue.md`](visual-passes/2026-10-18-v0.4-reading-queue.md)). On your OK: back up Neon → apply 0003 to Neon → merge + push, by Oct 20.
 - **Next (reordered 2026-10-18):** **v0.4 reading queue** first (Oct 18–20, handoff "v0.4 handoff" below), then the **B7 trial run** at a bookstore testing it together with the rest (Oct 21–22) → fixes → tag `v0.3`; v0.4 polish + tag after the fair (the reading log flow went live early, 2026-10-17); v0.5 = the phone app (PWA — makes "Install" work).
 
 ### Next session — start here (v0.4 reading queue → B7 trial run → tag v0.3)
@@ -88,38 +88,13 @@ Five commits on `feature/v0.4-queue` (from `main` = `a56061b`), plus this docs c
 
 **Checked:** 343 unit tests (was 313), `check` 0 errors (21 warnings, as on `main`), lint, build. **API checks** on a scratch dev server (port 5175, throwaway test secrets): add 201 / again 200 / unknown book 404 / bad body 400 (readable) / broken JSON 400; reorder with a stale list keeps every book; duplicate ids 400; start → leaves; "I read this" on a never-started book → leaves; Dropped → stays; bulk Read → leaves; a Read book set Read again (no change) → stays as a planned re-read; re-read finished → leaves (×3); remove idempotent; reading routes' 400s; 401 without a session. **Browser pre-check** (scratch): desktop `/queue` — Add box suggested vol. 6 and added it, ▲ moved vol. 8 up, ✓ I read this on vol. 8 → left the queue, toast **Queue vol. 9** → queued; series-page dropdown shows _In queue ✓ · Remove_. Phone 375×812 — Queue tab, pile (Continue + groups, filter "sw"), swipe left queued Arifureta 12 ("Queued … · #4 · Undo"), swipe again removed it, a short drag did nothing; Find tile sheet _In queue ✓_, Started today → moved to Reading now and out of Up next; Up next sheet → Move to top. Scratch DB re-cloned from `local` afterwards (+ 0003).
 
-**Visual pass (you)** — on the branch, scratch server: `node .claude/dev-test-db.mjs --host` (port 5174; the scratch DB already has `0003` and an empty queue), sign in, then on the phone `http://<laptop-IP>:5174/field/queue` and on the PC `http://localhost:5174/queue`:
-
-1. **Phone → Queue tab**: four tabs, Queue marked; "Nothing queued yet" + **Add a book to the queue**. _Red flag:_ the tab bar cramped or a label cut off.
-2. **Add a book to the queue** → Continue your series (5 + "more"), then the Unread pile A→Z, 3 volumes per series + "+N more". Type `sw` → only Silent Witch, all its unread volumes. **Include read** → read volumes appear with "read — queue as a re-read".
-3. **Swipe** a volume left past half a thumb → blue "Queue" behind it, toast "Queued … · #1 · Undo", the row's icon turns blue. Swipe it again → "Remove" (red), toast "removed". A small sideways wiggle while scrolling must not queue anything. Tap a row's queue icon → same as a swipe. **Undo** in the toast takes it out again. _Red flag:_ the page scrolls sideways, or a vertical scroll queues a book.
-4. Queue 4 books, **← Queue**: Up next 1–4 with A/H; one at the other place than the phone's location (Find's add bar toggle) shows greyed; "here: Apartment" top right. ▲▼ reorder at once.
-5. Tap row 3 → sheet "#3 in the queue": **Move to top** → it's #1. Tap it again → **Started today** → it jumps to **Reading now**, Up next is one shorter.
-6. **Reading now → Finished** on it → toast "… read today" with **Queue vol. N** when you own the next volume and it isn't queued → tap it → it appears at the end of Up next.
-7. Swipe an Up next row left → removed.
-8. **Find** → a series with queued volumes: their tiles carry a small blue queue mark; tap one → **In queue ✓ · Remove**; tap an unqueued owned tile → **Add to reading queue** → toast with Undo.
-9. **PC `/queue`**: same order as the phone; ▲▼ ✕ work; the Add box: type a series → its volumes, the next unread one preselected → **Add vol. N**. ✓ (I read this) on a row → it leaves, toast offers the next volume.
-10. **Series page / Books table**: status dropdown → **Add to queue** → a queue mark appears beside the status; dropdown again → **In queue ✓ · Remove**. Start reading a queued book from the dropdown → it leaves the queue.
-11. **Bulk** (Console → Bulk Edit → Set reading status → Read) on a queued book → it leaves the queue. Dropped (dropdown) on a queued book → it stays.
+**Visual pass (you):** [`visual-passes/2026-10-18-v0.4-reading-queue.md`](visual-passes/2026-10-18-v0.4-reading-queue.md)
 
 **To deploy (on your OK):** back up Neon (`npm run db:backup`), apply `drizzle/0003` to Neon (`drizzle-kit migrate` with the unpooled URL, as for 0002), then fast-forward `main` to `feature/v0.4-queue` and push → Vercel redeploys. Then create the Oct 2026 fair in production (handoff 2) and run B7.
 
-#### B7 trial-run script (bookstore, Oct 21–22)
+#### B7 trial run (bookstore, Oct 21–22)
 
-Phone on **mobile data**, the home-screen shortcut (or Chrome) at https://librarian-alpha.vercel.app. Note anything slow, confusing or wrong — those are the B7 fixes.
-
-1. **Cold start:** open the app after it has been idle for hours. Time from tap to a usable search (Neon wakes from suspend once: expect a second or two). If it shows the login, sign in — a session lasts 30 days.
-2. **Chip:** reads **Not at a fair** (source Bookstore). Leave it.
-3. **"Do I own this?"** for 5 series on the shelf — by 2–3 letters, initials, a Thai title. Owned volumes + locations right? Next volume obvious?
-4. **Buy for real** (or pretend and Undo): quick add the next volume with the shelf price; a missing older volume via its tile; two at once with **Select several**. Then check each on the desktop (Books / series page): source Bookstore, today's date, price, location.
-5. **Undo** one add from the toast; tap **+** on the same volume on a second device or tab (it should say it was just added).
-6. **New series:** Add tab → a series you don't own → type → volume(s) → Save. It's a draft; finish it on the desktop later.
-7. **Hitlist:** filter by a tag, **Copy** (paste into Notes), **Save image** (share sheet → Photos).
-8. **Weak signal:** add once somewhere with poor reception — does it fail clearly (error toast) rather than hang, and does a retry work?
-9. **One hand, thumb only:** anything out of reach or too small?
-10. **Install + speed:** the installed app (Chrome ⋮ → Install worked on your Samsung A13, 2026-10-18) — sheets such as the fair chip animate a little laggy on the A13 but smooth on iPad / PC. Note whether it gets in the way at the shelf; if so it is a quick fix (shorter / no sheet animation on small screens or with "reduce motion").
-11. **Reading queue** (new in v0.4): phone **Queue** tab → **Add a book to the queue** → swipe 3–4 unread volumes left (or tap their queue button); back on Queue, reorder with ▲▼; tap one → **Started today** → it moves to Reading now and leaves Up next; **Finished** on it → the toast offers **Queue vol. N+1** when you own it. On the desktop `/queue` shows the same order. Note anything fiddly about the swipe one-handed at the shelf.
-12. **Afterwards (Claude):** check the backup ran (`temp/backups/backup.log`), fix what hurt on a branch, your OK → merge + push → re-test on the phone → tag `v0.3`.
+Script: [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md)
 
 #### B6 checklist — deploy + hardening (done 2026-10-17)
 
@@ -168,15 +143,7 @@ Built from **Reading-flow Decisions 2026-10-16** at your request (pulled ahead o
 
 **Deployed 2026-10-17:** Neon backed up first (`temp/backups/prod-20261017-2134.dump`), then **migration 0002 applied to Neon** with `drizzle-kit migrate` (journal 2 → 3 entries; it changed one row — book 129's read from 21:27 Bangkok tonight → Oct 17), then `feature/reading-log` fast-forwarded into `main` and pushed (`f934f05`).
 
-**Visual pass (after merge, or on the LAN dev server against scratch):**
-
-1. Series page → an Unread volume → ✓ → dialog shows Today selected → pick **Yesterday** → Mark read. Expect toast "…: read (<yesterday>)", the badge turns Read, the ✓ becomes ↻.
-2. Same volume → ↻ → "Read it again" → Today → Log re-read. Expect the badge **Read ×2**.
-3. Dropdown → **Reading history…** → two rows, newest first; change the older one's finish day → Save → toast. Try a finish before the start → red message, Save disabled. Delete the newer row (click twice) → badge back to Read (×1).
-4. Dropdown on an Unread volume → **Reading…** → Pick a day → a date → Start reading. Then ✓ → leave the start hidden → Mark read: the start day is kept (check in Reading history).
-5. Phone `/field` → a series → tap an owned tile → sheet: **Started today** → the tile gets a small book mark. Back to search → **Currently reading** lists it → **Finished** → toast, the strip empties, the tile shows ✓.
-6. Phone: tile of a Read volume → **Re-read finished…** → Yesterday → Log re-read → desktop shows ×2.
-7. Insights still load; reads you logged appear in this month's finished counts.
+**Visual pass:** [`visual-passes/2026-10-17-reading-log.md`](visual-passes/2026-10-17-reading-log.md)
 
 ### B4 checklist — phone shell + quick add (done; visual pass passed 2026-10-17, merged)
 
@@ -224,22 +191,7 @@ From your B4 + B5 visual pass. Decisions (your answers, all as recommended): mul
 - _Found while building:_ after a dev-server hot update the Field pages could lose their settings context (a `Symbol` key duplicated with the module) → the series view rendered blank. The key is now a string. Only the dev server could hit it, but if a Field page ever renders blank after I edit files, reload it.
 - Tests 276 → 292. Pure helpers: `splitMissing` (`$lib/utils/volume`); `pickableVolumes` / `nextRun` / `toggleVolume` / `addVolumes` / `volumeRanges` / `confirmedNew` / `volumeSpan` / `normalizeReleased` / `withReleased` (`$lib/field/logic`); `hitlistImageLines` (`$lib/field/hitlistImage`).
 
-### Field Mode feedback round (2026-10-17) — visual-pass script (passed 2026-10-17)
-
-Same setup as before: scratch server (`dev-test-db`, now started with `--host`) → phone at `http://172.16.10.13:5174/field`, or the pane / Chrome device mode at 375×812.
-
-1. **Select several** — open a series with a gap (scratch: `/field?series=63`, missing 5). Tap **Select several** → the button turns black ("Done"), the grid shows 5 (missing) and 8 (next) … 19 plus **More**; the bar above the tabs says "Select volumes to add" (disabled). _Red flag:_ the bar covers the tabs or the last tile row.
-2. Tap **5**, then **Next 3**, then **12** → tiles turn black with ✓; bar: **Add 5 volumes · vol. 5, 8–10, 12**. **More** → 20–31 appear. **Clear** empties it. Pick a few again.
-3. Tap the bar → one save; toast "Added vol. 5, 8–10, 12 · <series> · Undo"; the grid shows them owned and select mode closes. **Undo** → "Removed vol. …", all gone.
-4. **Skip on another device** — on the PC add vol. 9 to that series; on the phone (no refresh) select 9 + 10 → Add → "Added vol. 10 · already had vol. 9"; the grid shows both. Remove the test books afterwards.
-5. **Price / location in select mode** — the hint says "(฿<price> each)"; switch Home, add two → both H with that price.
-6. **Add tab picker** — type a new name → Create → vol. **1** is preselected; tap 2, 5, 6, 7 (or **1–5** then untap 3, 4) → label "5 (vol. 1–2, 5–7)", button **Save · 5 volumes** (after picking a type) → Save → the series opens in Find with 1, 2, 5, 6, 7 and "Missing: vol. 3, 4"; desktop Drafts = 5. Delete it afterwards.
-7. **Released (phone)** — in a watchlist series: the **Released** card says "Seen a newer volume in a shop?" → tap **Vol. N is out** → "Out up to vol. N — vol. N to buy"; **+** → N+1 ("vol. N–N+1 to buy"); **−** back; reload → kept. **Clear (unknown)** resets.
-8. **Hitlist — Confirmed (inside the publisher groups)** — set Released on one watchlist series and one series **not** on the watchlist (search it in Find). Hitlist → summary "… · 2 confirmed"; each shows as a **black card first in its own publisher group** ("VOL. N–M"; the non-watchlist one says "not on the watchlist" and may create its publisher's group); no separate section on top. Buy the volume (quick add) → the card becomes a normal row (watchlist) or disappears (not watchlist). _Red flag:_ a series listed twice, or a confirmed card outside its publisher.
-9. **Released (desktop)** — Edit Series on that series → "Released up to vol." shows the phone's value; change / clear it → the Hitlist follows.
-10. **Copy** — Copy → pasted text has one heading per publisher; confirmed lines read "- Name — vol. 10–11 out".
-11. **Save image** — tap **Save image**: over the phone's plain-HTTP address it **downloads** `hitlist-<today>.png` (Android: notification / Downloads; iPhone: Files → Downloads, or a preview to long-press → Save to Photos). Open it: title + "N series · M confirmed · date", publisher groups with their black confirmed cards first, volumes right-aligned, Thai names readable, nothing cut off at the bottom. (After B6's HTTPS it opens the share sheet instead.)
-12. **Old flows still fine** — single + Vol. N, missing-tile tap, Undo, 409 message (B4 steps 5–8) behave as before.
+**Feedback round visual-pass script** (passed 2026-10-17): [`visual-passes/2026-10-17-field-feedback-round.md`](visual-passes/2026-10-17-field-feedback-round.md)
 
 ### Visual-pass finding (2026-10-17) — phone froze after several adds + undos (fixed)
 
@@ -248,58 +200,25 @@ Same setup as before: scratch server (`dev-test-db`, now started with `--host`) 
 - **Fix:** quick add / Undo now **patch the cached lists** from the server's reply (`toBookListItem` / `withBook` / `withoutBook` / `withBookCount` in `$lib/field/logic`, tested) — **1 request per tap**; fair pages, insights and series details are only marked stale. A 409 still refetches. The list fetchers take TanStack's abort `signal`. Field's fresh queries now trust data for **15 s** (`FRESH_MS`) instead of 0, so switching tabs doesn't re-download every list (focus after 15 s still refetches; the server guard still blocks duplicates). Re-check: 5 adds + 5 Undos = 10 small requests, max 1 in flight (was 20 / 6).
 - **Re-test:** repeat step 5 on the phone with a burst of quick adds and Undos (e.g. 5 adds, then Undo each toast).
 
-### Field Mode (B4 + B5) visual-pass script (passed 2026-10-17)
-
-Planned for Oct 17 — one run covers both. Where:
-
-- **Phone, scratch data (recommended):** run `node .claude/dev-test-db.mjs --host` in a terminal (the scratch server on port 5174, now also on the LAN), then open `http://<laptop-IP>:5174/field` on the phone and sign in. Test adds stay out of the real collection.
-- **Or** the Claude browser pane / desktop Chrome device mode at 375×812 on `http://localhost:5174` (the `dev-test-db` launch config).
-- Over `npm run dev -- --host` (port **5173**) you are on the **real DB**: every add is real (Undo removes it).
-
-Scratch has a fair dated Oct 16, "B4 test fair (scratch only)" — still inside its +10-day window on the 17th, so the chip suggests it.
-
-Where: the **scratch server** keeps test adds out of real data — start `dev-test-db` (port 5174) and use the Claude browser pane or desktop Chrome device mode at 375×812. On the real phone over LAN (`npm run dev -- --host`, port 5173) you are on the **real DB**: every add is real (Undo removes it). Scratch has a fair dated today, "B4 test fair (scratch only)", so the chip has something to suggest.
-
-**B4 — shell, chip, quick add, Add tab**
-
-1. **Banner** — `/` at phone width → "Open Field Mode" banner on the dashboard. ✕ hides it; it stays hidden after a reload. At desktop width: no banner. _Red flag:_ a redirect, or the banner back after reload.
-2. **Shell** — tap the banner → `/field`: no sidebar / breadcrumb; top = fair chip + "Desktop"; bottom = Find · Add · Hitlist with Find marked. Tap each tab; Desktop → dashboard. Nothing scrolls sideways; the tab bar clears the phone's home indicator. _Red flag:_ the end of a long list hidden under the tab bar.
-3. **Fair chip** — shows "B4 test fair (scratch only)" (suggested; a pick from today is forgotten tomorrow, by design). Tap → sheet: Not at a fair + fairs newest first (มหกรรม 31 on top). Pick **Not at a fair** → chip changes; reload → still Not at a fair. Pick the test fair again.
-4. **Find still works** — type `sw` / `silent` → Silent Witch; open it; the phone's back button returns to the results with the query kept.
-5. **Quick add** — in Silent Witch: price pre-filled (510), Apartment selected. Tap **+ Vol. 10** → spinner, then tile 10 shows **A**, the next tile becomes **+ Vol. 11**, toast "Added Vol. 10 · Silent Witch · Undo" under the header. Tap **Undo** within 6 s → "Removed Vol. 10", tile 10 gone, + Vol. 10 back. _Red flag:_ the tile flickers back to missing, the toast covers the chip, no Undo.
-6. **Owned tiles are inert** — tapping vols. 1–9 does nothing.
-7. **Missing tile** — a series with a gap (scratch: `/field?series=63`, missing 4 and 5). Switch to **Home**, type `฿99`, tap **4 / + missing** → tile 4 shows **H**. Type `abc` as the price → red hint, tiles disabled. Clear it → blank = no price, tiles enabled again.
-8. **Two devices (409)** — open the same series in two tabs. Add + Vol. N in tab A; in tab B (no refresh) tap + Vol. N → "Vol. N was just added on another device" and tab B's grid updates. Only one book exists.
-9. **Desktop check** — `/bookfairs/13` (the test fair) lists the added books with price and location; the Books table shows Source Bookfair and today's date. Remove the test books afterwards (Undo, or delete on desktop).
-10. **Add tab** — type `silent witch` → Silent Witch under "Already in the collection" with the "already exists" hint; tap it → opens in Find. Back to Add, type a new name → **Create "…"** → Save says "Pick a type" (disabled) → **Manga**, vol. 1 (−/+ work), optional price → **Save** → toast "Created … · saved as a draft"; the new series opens in Find with vol. 1. Desktop: listed on the Series page; dashboard **Drafts** = 1. Delete the test series afterwards.
-11. **Private window** (optional) — Field Mode works; choices just aren't remembered.
-
-**B5 — Hitlist**
-
-12. **List** — Hitlist tab: "14 watchlist series · next volume to buy"; groups **Animag · 2**, **Phoenix Next · 11**, **Siam Inter Comic · 1**, names A→Z; each row shows **VOL. N** big on the right, gaps underneath (สัมพันธ์ลับสัปดาห์ละครั้ง: "missing 4, 5"). The last row clears the tab bar. _Red flag:_ a non-watchlist series, a wrong next volume (compare 2–3 with Find).
-13. **Tag filter** — the chip row scrolls sideways on its own (the page doesn't). Tap **Romance** → "9 of 14"; add **Yuri** → 5 (only series with both); **Clear** → 14.
-14. **Row → Find** — tap Silent Witch → Find opens it with **+ Vol. 10**; add it (step 5), go back to Hitlist → Silent Witch now says **VOL. 11**. Undo / delete afterwards.
-15. **Copy** — on the phone over `http://<IP>:5174` (not HTTPS) tap **Copy** → either "Copied 14 series" (paste into Notes/LINE to check: title line, publishers as headings, "- Name — vol. N (missing …)") or a panel "This browser won't copy here" with the text to select. Both are OK; nothing at all is the red flag.
-16. **Print** — tap the printer (phone: Print / Save as PDF; desktop: Ctrl+P) → only the list: title with today's date, publisher headings, compact rows; **no** header chip, tab bar, chips or buttons. Save it as a PDF — that's the offline fallback for the fair.
-17. **Empty states** (optional, desktop) — un-star every watchlist series on scratch → "The watchlist is empty" with the hint; re-star after.
+**B4 + B5 visual-pass script** (passed 2026-10-17): [`visual-passes/2026-10-17-field-mode-b4-b5.md`](visual-passes/2026-10-17-field-mode-b4-b5.md)
 
 ### Bookfair release progress (v0.3)
 
-| #     | Item                                                         | Status                               |
-| ----- | ------------------------------------------------------------ | ------------------------------------ |
-| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)     |
-| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)         |
-| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)         |
-| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)     |
-| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                   |
-| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)  |
-| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16)  |
-| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done (PC + phone pass 2026-10-16) |
-| B4    | Field Mode 2 — phone shell + quick add                       | ✅ Done (visual pass 2026-10-17)     |
-| B4+   | Feedback round: multi-add, Confirmed, Save image             | ✅ Done (visual pass 2026-10-17)     |
-| B5    | Bookfair Hitlist (simple)                                    | ✅ Done (visual pass 2026-10-17)     |
-| B6    | Deploy + hardening (Vercel + Neon)                           | ✅ Done (phone pass 2026-10-17)      |
-| B7    | Trial run + fixes → tag `v0.3`                               | ⬜ **Next** — script above           |
+| #     | Item                                                         | Status                                                                                               |
+| ----- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)                                                                     |
+| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)                                                                         |
+| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)                                                                         |
+| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)                                                                     |
+| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                                                                                   |
+| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)                                                                  |
+| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16)                                                                  |
+| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done (PC + phone pass 2026-10-16)                                                                 |
+| B4    | Field Mode 2 — phone shell + quick add                       | ✅ Done (visual pass 2026-10-17)                                                                     |
+| B4+   | Feedback round: multi-add, Confirmed, Save image             | ✅ Done (visual pass 2026-10-17)                                                                     |
+| B5    | Bookfair Hitlist (simple)                                    | ✅ Done (visual pass 2026-10-17)                                                                     |
+| B6    | Deploy + hardening (Vercel + Neon)                           | ✅ Done (phone pass 2026-10-17)                                                                      |
+| B7    | Trial run + fixes → tag `v0.3`                               | ⬜ **Next** — [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md) |
 
 ### Insights progress (I1–I6, merged 2026-10-16)
 
@@ -314,27 +233,9 @@ Timebox: through **Oct 17** (user's call 2026-10-16); whatever is done then ship
 | I5  | Spending                                                | ✅ Done (Claude-checked on scratch DB) |
 | I6  | Reading pace & bookfair funnel                          | ✅ Done (Claude-checked on scratch DB) |
 
-**Your visual pass — Insights.** Use `localhost:5174` (scratch DB) or your real dev server; Insights only reads, so either is safe. Numbers below are from the scratch DB (= your real data on 2026-10-16).
+**Visual pass — Insights** (passed 2026-10-16): [`visual-passes/2026-10-16-insights.md`](visual-passes/2026-10-16-insights.md)
 
-1. Sidebar → **Insights**. ✅ Overview tiles: Books 385 (incl. 5 extras), Series 57, Read 264 (69%), Reading 0, Unread pile 121, Spent ≥ ฿95,533 "from 369 of 385 books". Chart _Books by type and reading state_: Light Novel mostly grey, Manga mostly blue. ❌ Red flag: "Loading" skeleton that never ends, or a ฿0 where prices exist.
-2. **Hide ฿** (top right) on → every baht amount on the page reads "฿ •••" (tiles, by-source table, fair table, spend chart axis and tooltip); chart bar shapes stay. Off → amounts back. Reload the page → it starts **shown** again.
-3. **Backlog:** Buying 6.8 / month; Reading "—" ("0 dated reads so far"); Time to clear "—". The bought-vs-read chart's last 12 months match what you remember buying; note under it says reads need dating. _Waiting longest_ lists your five oldest unread purchases (links open the series). _Owned but never started_: 8 series, Strange Fake first; World Teacher carries a Dropped chip.
-4. **Growth:** Since Dec 2020; busiest month Dec 2023 (98 books). Bars stacked violet (LN) / yellow (manga); _Books owned over time_ climbs to ~381; note says 4 books without a purchase date.
-5. **Tags & completion:** tags sorted by books (Contemporary top, ~214 books, 145 read). Completion by tag / publisher: 100% bars, blue = Finished, green = In progress, grey = Not started, orange = Abandoned (series you dropped). Does each publisher's picture match your sense of it?
-6. **Spending:** Sitting unread ≥ ฿39,634 (105 of 121 unread priced); Cost per book read ≥ ฿362; Average ฿371 per LN · ฿177 per manga. By source: Bookfair 190 / ฿42,069, Unknown 124 (108 priced), Online 68, Bookstore 3.
-7. **Pace & fairs:** _Time from purchase to finish_ shows the dashed "needs 5+ dated reads" box. Funnel: 7 fairs oldest first, each label with its read %; the table's Bought column sums to 190 and links open each fair.
-8. **Show data** under any chart opens a table of the same numbers. Hovering a bar shows a dark tooltip.
-9. On **5174 (scratch DB)**, **mark one book Read** from a series page and come back to Insights → Read goes up by one and _Reading_ under Backlog says "1 dated read so far" (the page refetches on every visit).
-
-**Your visual pass — Field Mode (B3).** Best on your phone: `npm run dev -- --host` on the laptop, then `http://<laptop-IP>:5173/field` (Field Mode only reads, so the real DB is safe). On desktop: sidebar → Tools → **Field Mode**.
-
-1. `/field` opens with the cursor in a big "Do I own…?" box and your **Watchlist** below it, each with its next volume. ✅ Silent Witch says **next 10**.
-2. Type `sw` → Silent Witch (initials). Type `ดาบ` → เกิดใหม่เป็นดาบ (any part of a Thai name). Type `zzz` → "Not in the collection". The ✕ clears the box.
-3. Tap **Silent Witch** → big black **Next to buy · Vol. 10**, "own 1–9", tiles 1–9 each marked **A** (Apartment) with a ✓ on read ones, an outlined **10 next** tile, and **Extras**: "Extra (after vol. 4)", "Extra (after vol. 9)".
-4. Open **สัมพันธ์ลับสัปดาห์ละครั้ง** → "latest vol. 7", a dashed **Missing: vol. 4, 5** line and dashed _missing_ tiles 4 and 5. **Arifureta** → tile 8 reads **A ×2** (two copies), next 15.
-5. Phone **back** (or ← Search) → the results come back with your query still typed.
-6. Add a book on the laptop (any series), then switch back to the phone's tab → Field Mode shows it within a second (refetch on focus). ❌ Red flag: the phone still shows the old next volume after switching back.
-7. Nothing scrolls sideways at phone width; the tiles are readable at arm's length.
+**Visual pass — Field Mode (B3)** (passed 2026-10-16): [`visual-passes/2026-10-16-field-mode-b3.md`](visual-passes/2026-10-16-field-mode-b3.md)
 
 - **Direction reset 2026-10-13:** Activity Log dropped; old feature-brainstorm items triaged (see Direction Decisions below and `ROADMAP.md` → "Not adopted").
 
@@ -402,54 +303,7 @@ Branch `consolidation/console-step3`, one commit per item:
 
 Gate: 116 tests (was 107) · `svelte-check` 0 errors / 29 warnings (was 6 / 31) · lint clean · build ✅. Claude browser-checked each item on a scratch DB (`librarian_test`, served on `localhost:5174`); counts were cross-checked with SQL.
 
-**Your visual pass — run before merging the branch.** Use the test server at `localhost:5174` while it is up: it uses the scratch DB, so committing and bulk-editing there is harmless. (On `localhost:5173` you are on the real DB; commits are real — there is a backup at `temp/backups/local-20261013-2030.dump`.)
-
-**A. Scope switching (the Step 3 bug)**
-
-1. `/console` (All Books) → scope dropdown → pick the bookfair. ✅ The preview shows that fair's books within a second, the 📍 chip and the "Bookfair mode" banner appear. ❌ Red flag: endless skeleton rows.
-2. Switch back to All Books, then to the bookfair again. ✅ Each switch updates the list; the URL follows (`?scope=bookfair&id=…` / none).
-
-**B. Commits refresh everything (hooks + cache invalidation)**
-
-3. In bookfair scope, stage one volume → **Commit All**. ✅ Toast "Created 1 book", the row appears in the scoped list without a reload.
-4. Click the home icon (client-side navigation, no reload) → dashboard. ✅ _Total Books_ and _Recent Additions_ already include it.
-5. Bulk Edit in bookfair scope: _Set draft status → Draft_, no conditions → Execute → Apply. ✅ "Draft" badges appear on the rows; dashboard _Drafts_ count goes up.
-
-**C. Preview filter keys**
-
-6. Type each into the preview filter and compare with what you know of your collection: `publisher:"Phoenix Next"`, `type:manga status:ended`, `tag:romance`, `tag:!=romance`. ✅ Each narrows the list sensibly; the bottom bar reads "x / y shown". ❌ Red flag: zero rows for a key you know matches.
-7. Autocomplete: type `ta` → `tag:` is suggested.
-
-**D. Add Books**
-
-8. Bookfair scope → pick a series that is **not** part of that fair but that you own (e.g. Arifureta). ✅ Volume box suggests _one past your highest owned volume_, not 1.
-9. Set From/To to a volume you already own → Add to Preview. ✅ Toast "Volume N … already exists", nothing staged.
-10. Location buttons: Apartment is preselected; click Home, stage a volume. ✅ The staged row says Home; the next one staged after clicking Apartment says Apartment.
-11. Price `0` → stage. ✅ Row shows ฿0 (not "—"). Blank price still shows "—".
-12. Range 1 → 50 is accepted; 1 → 51 gives "Maximum 50 volumes per batch". (Clear All afterwards.)
-
-**E. Bulk Edit**
-
-13. Add a condition, switch its column to **volume**. ✅ Operator list offers `= != > < >= <=`; value box is numeric. Set `>= 15`. ✅ "N affected" matches your expectation.
-14. Switch that condition's column back to **location**. ✅ Value clears; an ordering operator resets to `=`.
-15. Execute. ✅ Dialog button says **Apply** in the normal dark style (not red "Delete"); "Applying..." while running.
-
-**F. Layout**
-
-16. `/console` in All Books scope (300+ rows). ✅ The page itself does not scroll — the preview scrolls inside its panel, and the bottom bar ("N books") stays visible at the bottom. The right-hand panel scrolls independently.
-17. Narrow the window to tablet width. Note anything cramped (the condition row is tight) — polish candidate, not a blocker.
-
-**G. Book dialogs (type-error fix)**
-
-18. Dashboard → _Add Book_ → Source _Bookfair_ → the event dropdown lists the fair; choosing it shows its name in the trigger. Cancel.
-19. Open _Edit_ on a book that came from the bookfair (Books page or a series page). ✅ The event dropdown is pre-filled with the fair's name; change nothing, Save → no error.
-
-**H. Regressions**
-
-20. Console tab switching: amber EDIT badges disappear on the Add tab and return on Bulk Edit; the Add form keeps its values (Step 2 checks 5–6).
-21. Any delete dialog (e.g. delete a book) still shows a red **Delete** button.
-
-Report back pass/fail per letter; anything failing gets fixed on the branch before merge.
+**Visual pass (A–H)** (passed 2026-10-13): [`visual-passes/2026-10-13-console-step3.md`](visual-passes/2026-10-13-console-step3.md)
 
 ## Completed Phases
 

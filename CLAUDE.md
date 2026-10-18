@@ -11,6 +11,7 @@ Librarian is a personal full-stack web app for cataloging a physical collection 
 - `docs/STATUS.md` — **single source of truth for current state**: version, what's done, decisions log, changelog, next step
 - `docs/ROADMAP.md` — forward roadmap (phases, versioning, open-item recommendations); no completion checkboxes
 - `docs/design_direction.md` — visual identity, layout, theming rules
+- `docs/visual-passes/` — the user's click-through test scripts, one per feature (index in its `README.md`)
 - `docs/context.md` — original requirements / data model rationale
 
 ## Commands
@@ -93,6 +94,7 @@ This project follows a strict phased workflow (plan the phase → get approval �
 
 - **The build must pass after every change** (`npm run build`, 0 errors) and tests must pass.
 - **Update `docs/STATUS.md` at each version bump** — it is the _only_ file that tracks current state (record decisions there; `ROADMAP.md` changes only when the plan itself changes).
+- **Visual-pass scripts** (the click-through tests the user runs) go in `docs/visual-passes/`, one file per feature named `YYYY-MM-DD-<feature>.md`, listed in its `README.md` index and linked from the feature's STATUS section — never inline in STATUS.
 
 > Currently mid-`v0.3`. **Insights** (I1–I6; pure `src/lib/insights/` behind `GET /api/insights`, charts via the `use:chart` Chart.js action) and **Field Mode** B3–B5 + the 2026-10-17 feedback round (phone shell `src/routes/(field)/field/`, pure `src/lib/field/logic.ts`; quick add / select several / Undo with the `onlyIfMissing` guard; Hitlist with confirmed new volumes = `series.totalVolumes` "Released up to vol. N"; Save image) are merged into `main`. **B6 is deployed:** production = Vercel (`adapter-vercel` when `VERCEL` is set, else `adapter-node`) + Neon Postgres 18 at https://librarian-alpha.vercel.app — every push to `main` deploys, the real data lives in Neon (the laptop's `local` is a dev copy; never test against Neon), production values in untracked `.env.prod`, daily dumps via `scripts/backup.ps1`. Auth: tokens expire after 30 days, `/api/*` without a session → 401 JSON (client toast in `$lib/session.ts`), login rate-limited, pure helpers in `src/lib/server/authCore.ts`. The **v0.4 reading queue** (Q0–Q4) is built on `feature/v0.4-queue`, awaiting the visual pass + merge (with `drizzle/0003` applied to Neon first) before B7, then **B7** — the bookstore trial run that tests both → tag `v0.3`. See `docs/STATUS.md` → "Next session — start here" for the handoff.
 
