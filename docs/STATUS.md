@@ -5,14 +5,17 @@
 
 ## State as of 2026-10-18 (evening)
 
-- **Current version:** v0.3 — **in progress**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Done: B1–B6, Insights I1–I6 and the Field Mode feedback round. **Deployed 2026-10-17** (target was Oct 20). Left: **B7 trial run**, tag `v0.3`.
+- **Current version:** v0.3 — **complete, tag pending**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Done: B1–B7, Insights I1–I6 and the Field Mode feedback round. **Deployed 2026-10-17** (target was Oct 20); **B7 trial run passed 2026-10-18** (ahead of the Oct 21–22 slot), no fixes needed. Left: tag `v0.3` (on the docs commit that records B7) on your OK.
 - **Machine:** Windows 11 since 2026-10-13 (see Environment below).
-- **Latest (2026-10-18):** **v0.4 reading queue + app style + Hitlist round deployed** (`75f65a0`): Neon backed up (`temp/backups/prod-20261018-1717.dump`), **migration 0003 applied to Neon** (journal 3 → 4 entries; `reading_queue` empty; 388 books / 66 series untouched), `main` fast-forwarded from `feature/v0.4-queue` (19 commits) and pushed — Vercel redeployed. Live: reading queue (desktop `/queue`, phone Queue tab with swipe right = finished / left = remove, the grouped pile), app style (Gold + Blue on Stone, faint diamond tiles, Google Sans, series bars), Hitlist (watchlist = priority: black + blue diamond / black / white, booth signs + jump, series bar, ticked off today, swipe left = Bought → drafts). Earlier (2026-10-17): B6 — production at https://librarian-alpha.vercel.app (Vercel + Neon), PWA Install fixed (`f965a52`).
+- **Latest (2026-10-18, later):** **B7 trial run passed** — every step of [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md) on production, queue and Hitlist round included. The sheet-animation lag on the Samsung A13 (step 10) **didn't get in the way** → no fix; it stays an optional Q5 item (A13 tweak). **v0.6 social / playful proposals** written in `ROADMAP.md` → Phase 6 (to pick from, nothing decided).
+- **Before that (2026-10-18):** **v0.4 reading queue + app style + Hitlist round deployed** (`75f65a0`): Neon backed up (`temp/backups/prod-20261018-1717.dump`), **migration 0003 applied to Neon** (journal 3 → 4 entries; `reading_queue` empty; 388 books / 66 series untouched), `main` fast-forwarded from `feature/v0.4-queue` (19 commits) and pushed — Vercel redeployed. Live: reading queue (desktop `/queue`, phone Queue tab with swipe right = finished / left = remove, the grouped pile), app style (Gold + Blue on Stone, faint diamond tiles, Google Sans, series bars), Hitlist (watchlist = priority: black + blue diamond / black / white, booth signs + jump, series bar, ticked off today, swipe left = Bought → drafts). Earlier (2026-10-17): B6 — production at https://librarian-alpha.vercel.app (Vercel + Neon), PWA Install fixed (`f965a52`).
 - **Branches:** `main` = everything, **pushed** (`origin/main` = `75f65a0`, 2026-10-18; Vercel deploys every push to `main`). Merged and safe to delete: `feature/v0.4-queue`, `docs/queue-before-b7`, `fix/books-table-volume`, `feature/b4-quick-add`, `feature/b5-hitlist`, `feature/field-feedback`, `feature/b6-deploy`, `feature/reading-log`, `claude/musing-gauss-e6b0df`.
 - **v0.4 reading queue (2026-10-18):** Q0–Q4 built, visual pass passed, **deployed** with the app style and the Hitlist round (sections below). Q5 polish after the fair.
-- **Next:** 👤 **create the Oct 2026 fair in production** (Bookfairs page: มหกรรมหนังสือระดับชาติ 31, 2026-10-23) → **B7 trial run** at a bookstore on production (Oct 21–22, script [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md)) → fixes on a branch → tag `v0.3`; the fair Oct 23–26; then v0.4 Q5 polish + tag; v0.5 = the phone app (offline).
+- **Next:** tag `v0.3` (your OK) → 👤 **create the Oct 2026 fair in production** if not done yet (Bookfairs page: มหกรรมหนังสือระดับชาติ 31, 2026-10-23) → the fair Oct 23–26 → v0.4 Q5 polish + tag → v0.5 = the phone app (offline) → v0.6 social & playful (pick from the proposals in `ROADMAP.md`).
 
-### Next session — start here (v0.4 reading queue → B7 trial run → tag v0.3)
+### Next session — start here (B7 passed → tag v0.3 → the fair → v0.4 Q5)
+
+**B7 passed 2026-10-18** — the app you trial-ran is the fair app; don't push feature work to `main` before Oct 26 unless something breaks at the fair. After the fair: drafts from the Hitlist's Bought sheet are reviewed on the desktop (Drafts tile), then Q5.
 
 **Schedule to the fair** (fair opens Oct 23, you attend 24–26):
 
@@ -20,7 +23,7 @@
 | --------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Oct 16–17 | ~~B4, B5, feedback round, **B6 deploy**~~ ✅                                                                                |
 | Oct 18–20 | **v0.4 reading queue** Q0–Q4 (handoff below) → your visual pass → merge + push. Create the Oct 2026 fair **in production**. |
-| Oct 21–22 | **B7** trial run at a bookstore on https://librarian-alpha.vercel.app — **queue included** → fixes → `v0.3`                 |
+| Oct 21–22 | ~~**B7** trial run at a bookstore~~ ✅ passed early, 2026-10-18 (queue included, no fixes) → tag `v0.3`                     |
 | After 26  | v0.4 **Q5 polish** → tag `v0.4`                                                                                             |
 
 #### Handoff — what the next session needs to know
@@ -93,9 +96,9 @@ Five commits on `feature/v0.4-queue` (from `main` = `a56061b`), plus this docs c
 
 **To deploy (on your OK):** back up Neon (`npm run db:backup`), apply `drizzle/0003` to Neon (`drizzle-kit migrate` with the unpooled URL, as for 0002), then fast-forward `main` to `feature/v0.4-queue` and push → Vercel redeploys. Then create the Oct 2026 fair in production (handoff 2) and run B7.
 
-#### B7 trial run (bookstore, Oct 21–22)
+#### B7 trial run (bookstore) — ✅ passed 2026-10-18
 
-Script: [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md)
+Script: [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md). Run on production, ahead of the planned Oct 21–22 slot. **All steps passed** (your report), the v0.4 queue and the Hitlist round included. Step 10: the sheet animations are a little laggy on the Samsung A13 but **didn't cause any problem** → no fix before the fair; a shorter / no sheet animation on small screens or with "reduce motion" stays optional in Q5. Nothing to fix on a branch, so `v0.3` = `main` as deployed (`75f65a0`) plus docs.
 
 #### B6 checklist — deploy + hardening (done 2026-10-17)
 
@@ -205,21 +208,21 @@ From your B4 + B5 visual pass. Decisions (your answers, all as recommended): mul
 
 ### Bookfair release progress (v0.3)
 
-| #     | Item                                                         | Status                                                                                               |
-| ----- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)                                                                     |
-| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)                                                                         |
-| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)                                                                         |
-| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)                                                                     |
-| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                                                                                   |
-| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)                                                                  |
-| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16)                                                                  |
-| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done (PC + phone pass 2026-10-16)                                                                 |
-| B4    | Field Mode 2 — phone shell + quick add                       | ✅ Done (visual pass 2026-10-17)                                                                     |
-| B4+   | Feedback round: multi-add, Confirmed, Save image             | ✅ Done (visual pass 2026-10-17)                                                                     |
-| B5    | Bookfair Hitlist (simple)                                    | ✅ Done (visual pass 2026-10-17)                                                                     |
-| B6    | Deploy + hardening (Vercel + Neon)                           | ✅ Done (phone pass 2026-10-17)                                                                      |
-| B7    | Trial run + fixes → tag `v0.3`                               | ⬜ **Next** — [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md) |
+| #     | Item                                                         | Status                                       |
+| ----- | ------------------------------------------------------------ | -------------------------------------------- |
+| B1    | Reading status per book (mark read, re-read)                 | ✅ Done (visual pass 2026-10-13)             |
+| B2    | Bulk Set reading status + Set price                          | ✅ Done (checked 2026-10-13)                 |
+| B2+   | Backfill ergonomics (selection, autocomplete, series picker) | ✅ Done (checked 2026-10-13)                 |
+| B2+   | Backfill-session additions (2026-10-15, see Decisions below) | ✅ Done (Claude-checked, in use)             |
+| B2+   | Real-data backfill (you)                                     | ✅ Done 2026-10-16                           |
+| B2+   | Extra volumes (`is_extra`, Extra chip)                       | ✅ Done (awaiting your visual pass)          |
+| I1–I6 | **Insights** (pulled forward from v0.4 on 2026-10-16)        | ✅ Done (PC visual pass 2026-10-16)          |
+| B3    | Field Mode 1 — "Do I own this?"                              | ✅ Done (PC + phone pass 2026-10-16)         |
+| B4    | Field Mode 2 — phone shell + quick add                       | ✅ Done (visual pass 2026-10-17)             |
+| B4+   | Feedback round: multi-add, Confirmed, Save image             | ✅ Done (visual pass 2026-10-17)             |
+| B5    | Bookfair Hitlist (simple)                                    | ✅ Done (visual pass 2026-10-17)             |
+| B6    | Deploy + hardening (Vercel + Neon)                           | ✅ Done (phone pass 2026-10-17)              |
+| B7    | Trial run + fixes → tag `v0.3`                               | ✅ Passed 2026-10-18, no fixes — tag pending |
 
 ### Insights progress (I1–I6, merged 2026-10-16)
 
@@ -356,9 +359,9 @@ Gate: 116 tests (was 107) · `svelte-check` 0 errors / 29 warnings (was 6 / 31) 
 - **Books API** updated to include `seriesTags` per book for tag chip filtering
 - Old `AdvancedFilter.svelte` and `advancedFilterUtils.ts` removed (replaced by unified system)
 
-### Phase 3 — Bookfair & Bulk Workflows 🔵 `v0.3` (in progress)
+### Phase 3 — Bookfair & Bulk Workflows ✅ `v0.3` (B7 passed 2026-10-18, tag pending)
 
-Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linking, and the unified Console (`/console`) with _Add Books_ (staged batch create) and _Bulk Edit_ (condition builder → bulk PATCH) tabs. Remaining: the rest of Consolidation (`drizzle-zod`), then Bookfair Hitlist and polish. (Activity Log dropped 2026-10-13.) See the progress table above and `ROADMAP.md`.
+Delivered: bookfairs CRUD + card grid, bookfair detail page, source/event linking, and the unified Console (`/console`) with _Add Books_ (staged batch create) and _Bulk Edit_ (condition builder → bulk PATCH) tabs; then the Bookfair release B1–B7 (reading status, backfill tools, Field Mode, Hitlist, deploy) and Insights I1–I6. (Activity Log dropped 2026-10-13.) See the progress tables above and `ROADMAP.md`.
 
 ## Decisions Log
 
@@ -707,3 +710,4 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 | 2026-10-16 | Backfill done; real DB backed up (`local-end-of-backfill-20261016-0038.dump`); `bookfair-release` merged into `main` and pushed. Plan change: Insights (I1–I6) pulled forward ahead of B3–B7. Found: all 241 read dates are 2026-10-15 backfill stamps (decide before date-based insights).                                                                                                                                                                                                                                                                                                                                   |
 | 2026-10-18 | **v0.4 reading queue Q0–Q4** on branch `feature/v0.4-queue` (awaiting your visual pass): `drizzle-zod` request validation for the reading + queue routes (readable 400s); `reading_queue` table (`drizzle/0003`); `$lib/queue` rules + `/api/queue` (GET/POST/DELETE/order); starting or finishing a queued book (incl. bulk) takes it out in the same transaction; desktop `/queue` with Add box + status-dropdown entry points; phone **Queue** tab (Reading now, Up next with ▲▼ / swipe / sheet, the grouped unread pile with filter + swipe to queue); finishing offers to queue the next owned volume. Tests 313 → 343. |
 | 2026-10-18 | **Deployed** (`75f65a0`, 19 commits): v0.4 reading queue, app style (Stone + diamond tiles, gold / blue, Google Sans, light only), swipe right = finished on Up next, Hitlist round (watchlist = priority, booth signs + jump, series bar, ticked off today, swipe left = Bought as drafts; gaps count as volumes out). Neon backed up, migration 0003 applied (4 entries), data untouched. Visual-pass scripts moved to `docs/visual-passes/`. Tests 313 → 353.                                                                                                                                                              |
+| 2026-10-18 | **B7 trial run passed** (your run on production, ahead of the Oct 21–22 slot): every step OK, queue + Hitlist round included; the A13 sheet lag didn't get in the way (no fix). v0.3 complete, tag pending. **v0.6 social & playful proposals** added to `ROADMAP.md` → Phase 6 (haul receipt, milestones, year in review, read-only share link, playful extras), nothing decided.                                                                                                                                                                                                                                            |

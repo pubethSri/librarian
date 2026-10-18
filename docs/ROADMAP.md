@@ -15,8 +15,8 @@
 | v0.2     | Desktop core (tables, CRUD, data entry)            |
 | v0.2.x   | Unified search & filter                            |
 | v0.3.x   | Consolidation / debt paydown (mostly done)         |
-| **v0.3** | **Insights + Bookfair release — current focus**    |
-| v0.4     | Reading queue + polish (reading log shipped early) |
+| v0.3     | Insights + Bookfair release (B7 passed 2026-10-18) |
+| **v0.4** | **Reading queue + polish — current focus**         |
 | v0.5     | Phone app: Field Mode full (PWA, offline)          |
 | v0.6     | Social & playful features                          |
 | v0.7     | Polish, decorative design, production hardening    |
@@ -25,7 +25,9 @@
 
 Phases 0–2, unified search/filter (2C), and most of Phase 3 (bookfairs CRUD + detail, source/event linking, Console _Add Books_ + _Bulk Edit_) are shipped, along with most of the Consolidation milestone. `STATUS.md` has the authoritative breakdown and the decisions log.
 
-## Now — Insights, then the Bookfair release (→ v0.3), deadline 2026-10-20
+## Done — Insights, then the Bookfair release (→ v0.3), deadline 2026-10-20
+
+Deployed 2026-10-17, B7 trial run passed 2026-10-18 (see `STATUS.md`). Kept below for the record of what the release contained.
 
 ### Insights (pulled forward from v0.4 on 2026-10-16)
 
@@ -106,7 +108,33 @@ Builds on the B3/B4 MVP: 3-button landing ("I bought a book" / "New title" / "Ad
 
 ## Phase 6 — Social & Playful → v0.6
 
-The Aesthetic Receipt (shareable haul image), shareable/printable Hitlist, collection-milestone toasts ("100th manga!").
+Original scope: the Aesthetic Receipt (shareable haul image), shareable/printable Hitlist, collection-milestone toasts ("100th manga!"). The **shareable Hitlist is already delivered** (Copy + Save image, 2026-10-17).
+
+**Social here means sharing outward** — images and, at most, a read-only link. The app stays single-user: no accounts, followers or feeds.
+
+### Proposals (2026-10-18) — pick before building, nothing decided
+
+Each one fits the existing pieces: the canvas PNG renderer behind the Hitlist's Save image (`$lib/field/hitlistImage`, Thai OK, no dependency), the pure `$lib/insights` calculations, the reading days (real since 2026-10-17) and the queue. Effort: **S** ≈ one session, **M** ≈ two or three.
+
+**Core (recommended):**
+
+| #   | Feature                        | What it is                                                                                                                                                                                                                                                                                                                                                                                                      | Effort |
+| --- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 6.1 | **Haul receipt**               | A thermal-receipt-style PNG of one fair or one day: the fair's name and date at the top, one line per series ("Silent Witch vol. 8–9 … ฿350"), item count, total (with the "n of m priced" rule), and a playful footer — "pile +12 · est. 9 weeks to read". From the fair page and from Field Mode ("Today's haul"). The Oct 2026 fair's data will already be there, so its receipt can be made any time after. | S      |
+| 6.2 | **Milestones**                 | Toasts when a write crosses a line: 100th / 400th / 500th book, 100th manga or LN, first book from a new publisher, a **series complete** (own every volume up to "Released up to vol. N"), a series **finished** (read all you own), 50th read. Pure `milestonesCrossed(before, after)` on the counts the client already holds; a **Milestones** shelf on Insights lists the ones reached, with the day.       | S–M    |
+| 6.3 | **Year in review ("Wrapped")** | A swipeable set of story cards on the phone each December (and on demand): books bought / read, busiest month, the biggest fair haul, top publisher and tag, the series you read most, the longest unread book, money (respecting **Hide ฿**). Each card saves as an image. Reading cards say "since Oct 2026" until a full year of dated reads exists.                                                         | M      |
+| 6.4 | **Read-only share link**       | A signed link (`/share/<token>`) to a **read-only** page — your Hitlist ("what I'm still missing", for a friend at the fair or a gift) or the owned-volumes list of chosen series (so nobody buys you a duplicate). Revocable, expiry like the session token, no prices or locations unless switched on. The only proposal that touches auth (`PUBLIC_PATHS`), so it gets the most care.                        | M      |
+
+**Playful extras (pick any, each S):**
+
+- **Pile height** — the unread pile as a stack ("2.4 m of unread — taller than a door"), with the stack drawn growing / shrinking on Insights → Backlog.
+- **"What should I read next?"** — a spin from the unread pile **at this device's location** (Apartment / Home), weighted toward series in progress; the pick drops into the queue with one tap.
+- **On this day** — on the dashboard: "a year ago you bought X at <fair>", "you finished Y two years ago".
+- **Fair vs fair** — after a fair, a card comparing it with the previous edition (มหกรรมหนังสือระดับชาติ 30 → 31): books, spend, series started, how much of last year's haul is read.
+- **Small celebrations** — a burst of gold diamonds (the app's tile motif) on a series complete or the last owned volume finished; off with "reduce motion", light on the Samsung A13.
+- **Monthly reading goal** — "read 6 this month" with a ring on the Queue tab and a streak of months met. Only once dated reads have built up (after a few months).
+
+**Suggested order:** 6.1 (smallest, the fair's haul makes the first one) → 6.2 → 6.3 for December → 6.4 only if sharing turns out to be wanted. Each new screen gets a mock-up round before code, as usual. Open questions for that session: which milestones count; whether milestones need a table (to record the day reached) or can be derived each time; receipt style (plain monochrome thermal vs the gold / blue app style); what a share link may show.
 
 ## Phase 7 — Polish & Production → v0.7
 
@@ -127,7 +155,7 @@ Insights and the Bookfair release add no tables, so they do not wait for `drizzl
 ## Open-item recommendations (decide closer to implementation)
 
 - **Charts (Insights):** see the Charts note under "Now" → Insights.
-- **Aesthetic Receipt (Phase 6):** start client-side (`html2canvas` → PNG); upgrade to server-rendered (Satori + Sharp) only if shareable URLs are wanted.
+- **Aesthetic Receipt (Phase 6):** draw it on a canvas like the Hitlist's Save image (`$lib/field/hitlistImage` — no dependency, Thai OK, share sheet → Photos) instead of `html2canvas`; server-rendered (Satori + Sharp) only if the share link (6.4) needs preview images.
 - **Auth (only if multi-user is ever needed):** the hooks-based middleware pattern stays; swap the single password gate for a real user/session store. Not needed for single-user.
 
 ## Verification per phase
@@ -138,5 +166,5 @@ Insights and the Bookfair release add no tables, so they do not wait for `drizzl
 | v0.3          | Insight calculations unit-tested, charts render real data; phone reaches the deployed app; own-check + quick add work in a bookstore trial; reading status + prices backfilled; Hitlist prints |
 | v0.4          | A read (and a re-read) can be logged days later with a picked date, from the phone; history dates editable; queue reorders and persists                                                        |
 | v0.5          | PWA installs on mobile; offline mutations queue and retry; forms are fast                                                                                                                      |
-| v0.6          | Receipt image generates and downloads; milestones trigger                                                                                                                                      |
+| v0.6          | Receipt image generates and saves from the phone; milestones trigger once each (unit-tested crossings); the chosen extras pass a visual pass on the A13                                        |
 | v0.7          | Lighthouse PWA ≥ 90; accessibility audit passes; production Docker works                                                                                                                       |
