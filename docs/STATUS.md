@@ -9,17 +9,18 @@
 - **Machine:** Windows 11 since 2026-10-13 (see Environment below).
 - **Latest (2026-10-17):** **B6 done — production is live at https://librarian-alpha.vercel.app** (Vercel Hobby `sin1` + Neon Free, Postgres 18, Singapore). Real data migrated from `local` (counts match), daily backups scheduled, auth hardened. Your phone test on mobile data passed (sign-in, Field Mode search, quick add + Undo — Neon shows the add and the undo — Copy, Save image); **only "Install" failed** ("This app cannot be installed": the manifest has no icons yet, audit #13) — use Chrome's **Create shortcut** for the fair, — **fixed and live since `f965a52`**: try Chrome ⋮ → Install (handoff 4).
 - **Branches:** `main` = everything, **pushed** (`origin/main` = `f934f05`, 2026-10-17; Vercel deploys every push to `main`): B6, the **PWA Install fix + book icon** (`f965a52` — 👤 try Chrome ⋮ → Install on the phone) and the **v0.4 reading log flow** (merged early at your call after your check on the dev server; section below). Merged branches `feature/b4-quick-add`, `feature/b5-hitlist`, `feature/field-feedback`, `feature/b6-deploy`, `feature/reading-log`, `claude/musing-gauss-e6b0df` can be deleted.
-- **Next:** **B7 trial run** at a bookstore (Oct 21–22, script below) → fixes → tag `v0.3`. Then **v0.4 = Reading queue + polish** (handoff "After B7 — v0.4" below: the next session builds it on a branch, merged after the fair; the reading log flow went live early, 2026-10-17); v0.5 = the phone app (PWA — makes "Install" work).
+- **Next (reordered 2026-10-18):** **v0.4 reading queue** first (Oct 18–20, handoff "v0.4 handoff" below), then the **B7 trial run** at a bookstore testing it together with the rest (Oct 21–22) → fixes → tag `v0.3`; v0.4 polish + tag after the fair (the reading log flow went live early, 2026-10-17); v0.5 = the phone app (PWA — makes "Install" work).
 
-### Next session — start here (B7: trial run → tag v0.3)
+### Next session — start here (v0.4 reading queue → B7 trial run → tag v0.3)
 
 **Schedule to the fair** (fair opens Oct 23, you attend 24–26):
 
-| Day       | Work                                                                                   |
-| --------- | -------------------------------------------------------------------------------------- |
-| Oct 16–17 | ~~B4, B5, feedback round, **B6 deploy**~~ ✅                                           |
-| Oct 18–20 | Spare. Create the Oct 2026 fair **in production**. Optional small fixes (handoff 4).   |
-| Oct 21–22 | **B7** trial run at a bookstore on https://librarian-alpha.vercel.app → fixes → `v0.3` |
+| Day       | Work                                                                                                                        |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Oct 16–17 | ~~B4, B5, feedback round, **B6 deploy**~~ ✅                                                                                |
+| Oct 18–20 | **v0.4 reading queue** Q0–Q4 (handoff below) → your visual pass → merge + push. Create the Oct 2026 fair **in production**. |
+| Oct 21–22 | **B7** trial run at a bookstore on https://librarian-alpha.vercel.app — **queue included** → fixes → `v0.3`                 |
+| After 26  | v0.4 **Q5 polish** → tag `v0.4`                                                                                             |
 
 #### Handoff — what the next session needs to know
 
@@ -30,6 +31,32 @@
 5. **If production breaks at the fair:** Vercel → Deployments → the last good one → **⋯ → Promote to Production** (instant rollback). Neon keeps its own restore history (Free plan: a few hours) plus the daily dumps in `temp/backups/`. Last resort, home only: the LAN dev server.
 6. **Field Mode behaviour to keep** (decisions in this file): phone purchases are dated **today**, the fair is suggested from its day → +10 days, a chip pick lasts the day; one request per tap; `onlyIfMissing` on `POST /api/books` and `/api/books/batch`; an owned tile opens the reading sheet (Started today · Finished… · Re-read finished…), live since 2026-10-17.
 7. **Working agreement** (unchanged): Claude runs build / check / lint / tests and browser pre-checks on the scratch DB only, you do the visual pass. Never merge or push without your OK.
+
+#### v0.4 handoff — build the reading queue first (not started; written 2026-10-18, reordered the same day)
+
+**Decided 2026-10-18 (you):** next feature work = **v0.4 Reading queue**, built in the next session **before B7**, so the bookstore trial run tests the queue together with everything else (one bundled test instead of two). **Recommendation recorded:** do v0.4 now, but take **one** clean-up item first — request validation with `drizzle-zod` — because the roadmap made it the gate for the reading-queue table. The rest of the clean-up list (relational queries, moving `filterEngine.ts`, the 20 warnings, the `total_volumes` rename, `npm audit`) waits: none of it blocks anything.
+
+**Timing rules (reordered 2026-10-18):** Q0–Q4 are built **Oct 18–20** on branch **`feature/v0.4-queue`** from `main` (data only in the scratch DB `librarian_test`), you do a quick visual pass, then — on your OK — merge + push **by Oct 20**, with `drizzle/0003` applied to Neon right before (backup first, same routine as 0002). **B7 (Oct 21–22) then tests the queue along with the rest**, and its fixes go to `main` as usual; the fair (Oct 23–26) runs on that tested app. **Q5 polish waits until after the fair.** If Q0–Q4 aren't ready and checked by Oct 20, the queue stays on its branch and B7 runs without it — the fair app must be the one you trial-ran.
+
+**Scope to fit three days (recommended):** Q0 validates the **new queue routes and the reading routes** only; extending it to every other write route is after the fair. The phone part of Q4 only if question 2 says so.
+
+**Run rules** (as B4 / B6): read this plan and the code it touches, ask **every** open question below in **one** batch, record the answers here, then one commit per step with `npm test` / `npm run check` (0 errors) / `npm run lint` / `npm run build` green before each commit; browser pre-check on scratch; leave a visual-pass script.
+
+- [ ] **Q0 Validation (`drizzle-zod`):** install it; schemas generated from `schema.ts` (`createInsertSchema` / `createUpdateSchema`) validate request bodies, for the routes the queue touches (queue, reading) before B7; the other write routes (`POST` / `PATCH /api/books`, batch, bulk, series, bookfairs) follow in Q5, after the fair. A bad body → **400 with a readable message**, not a 500. `types.ts` stays hand-kept for now (deriving it is later clean-up). Unit tests for the schemas' edge cases.
+- [ ] **Q1 Table:** `reading_queue` (`id`, `book_id` **unique** FK → books `on delete cascade`, `position` with gaps allowed, `added_at`) + `drizzle/0003` + types. A book at most once.
+- [ ] **Q2 Rules + API** (pure logic in `$lib/queue.ts`, tested): `GET /api/queue` (books with series name, volume, location, reading status, times read — in order); `POST /api/queue` `{ bookId }` adds at the end (already queued → no-op, 200); `DELETE /api/queue/[bookId]`; `PUT /api/queue/order` `{ bookIds }`. **Pool rule:** finishing any queued book removes it, inside the same transaction as "I read this" / status → Read (`$lib/server/reading.ts`). A Read book in the queue = a planned re-read.
+- [ ] **Q3 `/queue` page** (desktop, sidebar link): the list in order with location badges (Apartment / Home — "can I grab it?"), status, ×N; reorder (drag on desktop + ▲▼ buttons that also work by touch); remove; **I read this** inline (same dialog → the book leaves the queue).
+- [ ] **Q4 Entry points:** "Add to queue" / "In queue ✓" in the status dropdown (series page, Books table); maybe a `queue:yes` filter in the booru search; Field Mode: "Add to reading queue" in the tile sheet + the Currently reading strip shows the next queued book (only if you want the queue on the phone — question 2).
+- [ ] **Q5 Polish → tag `v0.4` (after the fair):** Q0 validation extended to the remaining write routes, whatever B7 left, the A13 sheet-animation tweak if wanted, Insights touches using the new reading days (e.g. reads per month now that dates are real days), and a visual-pass script. Then update ROADMAP / STATUS and tag.
+
+**Questions to ask first (one batch):**
+
+1. `drizzle-zod` scope: validation of the queue + reading routes only before B7 (recommended), or more? (Deriving `types.ts` stays later clean-up.)
+2. Queue on the phone now (add from the tile sheet, "next up" in the Currently reading strip — B7 would test it), or desktop only until v0.5?
+3. Reorder on touch: ▲▼ buttons only (simple, recommended) or real drag too (needs a library such as `svelte-dnd-action`)?
+4. Bulk edit "Set reading status → Read" on queued books: remove them from the queue too (recommended: yes, same pool rule)?
+5. Can a book you don't own yet be queued? (Recommended: no — the queue holds `books` rows, i.e. owned copies; wanting a series is the Watchlist / Hitlist.)
+6. What does "insights polish" mean to you — anything you have missed on the Insights page?
 
 #### B7 trial-run script (bookstore, Oct 21–22)
 
@@ -45,31 +72,8 @@ Phone on **mobile data**, the home-screen shortcut (or Chrome) at https://librar
 8. **Weak signal:** add once somewhere with poor reception — does it fail clearly (error toast) rather than hang, and does a retry work?
 9. **One hand, thumb only:** anything out of reach or too small?
 10. **Install + speed:** the installed app (Chrome ⋮ → Install worked on your Samsung A13, 2026-10-18) — sheets such as the fair chip animate a little laggy on the A13 but smooth on iPad / PC. Note whether it gets in the way at the shelf; if so it is a quick fix (shorter / no sheet animation on small screens or with "reduce motion").
-11. **Afterwards (Claude):** check the backup ran (`temp/backups/backup.log`), fix what hurt on a branch, your OK → merge + push → re-test on the phone → tag `v0.3`.
-
-#### After B7 — v0.4 handoff (not started; plan only, written 2026-10-18)
-
-**Decided 2026-10-18 (you):** next feature work = **v0.4 Reading queue + polish**, built in the next session. **Recommendation recorded:** do v0.4 now, but take **one** clean-up item first — request validation with `drizzle-zod` — because the roadmap made it the gate for the reading-queue table. The rest of the clean-up list (relational queries, moving `filterEngine.ts`, the 20 warnings, the `total_volumes` rename, `npm audit`) waits: none of it blocks anything.
-
-**Timing rules:** B7 (Oct 21–22) and its fixes come first and go to `main` as usual. v0.4 is built on branch **`feature/v0.4-queue`** from `main` and is **not merged before the fair is over (Oct 26)** unless you say so — the fair runs on the app you trial-ran. Data only in the scratch DB (`librarian_test`); `drizzle/0003` is applied to Neon only at merge, after a backup (same routine as 0002).
-
-**Run rules** (as B4 / B6): read this plan and the code it touches, ask **every** open question below in **one** batch, record the answers here, then one commit per step with `npm test` / `npm run check` (0 errors) / `npm run lint` / `npm run build` green before each commit; browser pre-check on scratch; leave a visual-pass script.
-
-- [ ] **Q0 Validation (`drizzle-zod`):** install it; schemas generated from `schema.ts` (`createInsertSchema` / `createUpdateSchema`) validate request bodies, starting with the routes the queue touches (reading, queue) and the write routes (`POST` / `PATCH /api/books`, batch, bulk, series, bookfairs). A bad body → **400 with a readable message**, not a 500. `types.ts` stays hand-kept for now (deriving it is later clean-up). Unit tests for the schemas' edge cases.
-- [ ] **Q1 Table:** `reading_queue` (`id`, `book_id` **unique** FK → books `on delete cascade`, `position` with gaps allowed, `added_at`) + `drizzle/0003` + types. A book at most once.
-- [ ] **Q2 Rules + API** (pure logic in `$lib/queue.ts`, tested): `GET /api/queue` (books with series name, volume, location, reading status, times read — in order); `POST /api/queue` `{ bookId }` adds at the end (already queued → no-op, 200); `DELETE /api/queue/[bookId]`; `PUT /api/queue/order` `{ bookIds }`. **Pool rule:** finishing any queued book removes it, inside the same transaction as "I read this" / status → Read (`$lib/server/reading.ts`). A Read book in the queue = a planned re-read.
-- [ ] **Q3 `/queue` page** (desktop, sidebar link): the list in order with location badges (Apartment / Home — "can I grab it?"), status, ×N; reorder (drag on desktop + ▲▼ buttons that also work by touch); remove; **I read this** inline (same dialog → the book leaves the queue).
-- [ ] **Q4 Entry points:** "Add to queue" / "In queue ✓" in the status dropdown (series page, Books table); maybe a `queue:yes` filter in the booru search; Field Mode: "Add to reading queue" in the tile sheet + the Currently reading strip shows the next queued book (only if you want the queue on the phone — question 2).
-- [ ] **Q5 Polish → tag `v0.4`:** whatever B7 left, the A13 sheet-animation tweak if wanted, Insights touches using the new reading days (e.g. reads per month now that dates are real days), and a visual-pass script. Then update ROADMAP / STATUS and tag.
-
-**Questions to ask first (one batch):**
-
-1. `drizzle-zod` scope: validation only (recommended) or also derive `types.ts` now?
-2. Queue on the phone in v0.4 (add from the tile sheet, "next up" in the strip), or desktop only until v0.5?
-3. Reorder on touch: ▲▼ buttons only (simple, recommended) or real drag too (needs a library such as `svelte-dnd-action`)?
-4. Bulk edit "Set reading status → Read" on queued books: remove them from the queue too (recommended: yes, same pool rule)?
-5. Can a book you don't own yet be queued? (Recommended: no — the queue holds `books` rows, i.e. owned copies; wanting a series is the Watchlist / Hitlist.)
-6. What does "insights polish" mean to you — anything you have missed on the Insights page?
+11. **Reading queue** (new in v0.4): on the desktop add 3–4 books to the queue (status dropdown → Add to queue), reorder them on `/queue`, then mark one read (from `/queue`, or on the phone if the queue is there) — it should leave the queue. A queued Read book shows as a planned re-read.
+12. **Afterwards (Claude):** check the backup ran (`temp/backups/backup.log`), fix what hurt on a branch, your OK → merge + push → re-test on the phone → tag `v0.3`.
 
 #### B6 checklist — deploy + hardening (done 2026-10-17)
 
@@ -769,6 +773,7 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 | 2026-10-15 | Bookfair page: **By series** tab (default) — one card per series with a chip per volume (`×2` for duplicate copies), count, locations and spend (lower bound, "n/m priced") — plus the **Haul** tab with the full list and Remove-from-fair. Pure `$lib/utils/haul` (`groupHaulBySeries`, `volumeChips`), tested. Tests 165 → 170.                                                                                                                                                                                                                                                               |
 | 2026-10-15 | Edit Bookfair: changing the date can also move linked books still dated the old fair day ("Also move N linked books…", on by default; other dates untouched).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-15 | **Extra volumes:** `books.is_extra` + migration `0001` (existing `.5` volumes flagged; order unchanged); Extra chip in place of the number across series page, books table, Console preview, home, bookfair page and haul chips; Extra switch in Add Volume / Edit Book; extras skipped by Latest Volume and next-volume suggestions. Edit Book volume-number save fixed. Add Volume / New Series default location → Apartment; Add Volume / Edit Book date follows the picked fair.                                                                                                             |
+| 2026-10-18 | **Plan reordered (you):** v0.4 reading queue (Q0–Q4) is built Oct 18–20 and merged before B7, so the Oct 21–22 trial run tests it with everything else; Q5 polish + the `v0.4` tag after the fair. Q0 validation scoped to the queue + reading routes before B7 (the rest after the fair). If not ready by Oct 20, B7 runs without the queue.                                                                                                                                                                                                                                                    |
 | 2026-10-18 | Books table shows regular volumes as "10", not "10.0" (`volumeLabel`, on `fix/books-table-volume`). Install confirmed on your Samsung A13 (sheets a bit laggy there). **v0.4 handoff written** (Q0 `drizzle-zod` validation → Q1–Q4 reading queue → Q5 polish; six questions for the next session). ROADMAP: reading log + Install marked delivered early; v0.5 spelled out as the same web app, installed.                                                                                                                                                                                      |
 | 2026-10-17 | **Reading log flow built + live (v0.4 4.2, `f934f05`; Neon backed up, migration 0002 applied):** "I read this" with picked days (Today · Yesterday · Pick a day · Don't know, optional start), re-read logged in one step, per-book Reading history editor (edit days, delete), Field Mode tile sheet + "Currently reading" strip with one-tap Finished; reading dates are calendar days (migration `0002_reading_days`, scratch only); insights bucket finish days with `dayOf`. App icon redrawn as an open book (Lucide `book-open`) + matching favicon.                                      |
 | 2026-10-17 | **Install works (audit #13, merged + pushed `f965a52`):** app icons in `static/` (open book — Lucide `book-open` — via `scripts/make-icons.mjs`, plus a matching favicon; 192/512 `any` + `maskable`, `apple-touch-icon.png`), manifest `start_url` `/field` + `scope` `/`, apple-touch-icon linked. No service worker. DevTools reports no installability errors on a local production build.                                                                                                                                                                                                   |
