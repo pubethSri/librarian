@@ -229,6 +229,28 @@ export type LogReadPayload = { finishedOn: string | null; startedOn?: string | n
 /** A book's derived reading state, returned by every reading write */
 export type ReadingSummary = { bookId: number; readingStatus: ReadingStatus; timesRead: number };
 
+// ─── Reading Queue ──────────────────────────────────────────────────────────
+
+/**
+ * A queued book — GET /api/queue returns them top first. The queue is a pool: a
+ * book leaves it when started or finished (rules in $lib/queue). A Read book in
+ * the queue is a planned re-read.
+ */
+export type QueueItem = {
+	bookId: number;
+	position: number;
+	addedAt: string;
+	seriesId: number;
+	seriesShortName: string;
+	seriesFullName: string;
+	volumeNumber: string;
+	isExtra: boolean;
+	location: BookLocation;
+	isDraft: boolean;
+	readingStatus: ReadingStatus;
+	timesRead: number;
+};
+
 // ─── Console Types ──────────────────────────────────────────────────────────
 
 /** Staged book entry (for Console preview — new additions) */

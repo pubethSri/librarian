@@ -97,6 +97,28 @@ export const readingRelations = relations(reading, ({ one }) => ({
 	})
 }));
 
+// ─── Reading queue ───────────────────────────────────────────────────────────
+
+// What to read next — a pool, not a strict line: `position` is a preference (gaps
+// allowed, lowest first), and a book leaves the queue when it is started or
+// finished (rules in $lib/queue). A book is queued at most once.
+export const readingQueue = pgTable('reading_queue', {
+	id: serial('id').primaryKey(),
+	bookId: integer('book_id')
+		.references(() => books.id, { onDelete: 'cascade' })
+		.notNull()
+		.unique(),
+	position: integer('position').notNull(),
+	addedAt: timestamp('added_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+export const readingQueueRelations = relations(readingQueue, ({ one }) => ({
+	book: one(books, {
+		fields: [readingQueue.bookId],
+		references: [books.id]
+	})
+}));
+
 // ─── Bookfairs ───────────────────────────────────────────────────────────────
 
 export const bookfairs = pgTable('bookfairs', {

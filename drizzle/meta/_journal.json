@@ -22,6 +22,13 @@
       "when": 1792244712458,
       "tag": "0002_reading_days",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792302775279,
+      "tag": "0003_reading_queue",
+      "breakpoints": true
     }
   ]
 }
