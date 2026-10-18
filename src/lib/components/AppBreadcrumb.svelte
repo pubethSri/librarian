@@ -9,6 +9,7 @@
 		books: 'Books',
 		bookfairs: 'Bookfairs',
 		insights: 'Insights',
+		fun: 'Fun',
 		queue: 'Reading queue',
 		tags: 'Tags',
 		field: 'Field Mode'

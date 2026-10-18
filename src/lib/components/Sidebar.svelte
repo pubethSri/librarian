@@ -39,7 +39,10 @@
 		},
 		{
 			label: 'ANALYTICS',
-			items: [{ href: resolve('/insights'), label: 'Insights' }]
+			items: [
+				{ href: resolve('/insights'), label: 'Insights' },
+				{ href: resolve('/fun'), label: 'Fun' }
+			]
 		}
 	];
 

@@ -110,6 +110,8 @@ Builds on the B3/B4 MVP: 3-button landing ("I bought a book" / "New title" / "Ad
 
 Original scope: the Aesthetic Receipt (shareable haul image), shareable/printable Hitlist, collection-milestone toasts ("100th manga!"). The **shareable Hitlist is already delivered** (Copy + Save image, 2026-10-17).
 
+**Where it lives (2026-10-18):** a **Fun** page (`/fun`, below Insights) holds the fun features — "analytics with a gimmick" — with shortcuts where they help (Queue tab pile card, bookfair page). Desktop first; a phone / story version only when wanted or when the feature is made for stories (the pile height). Built so far: pile-height stories, **pile pace** ("how long to clear the pile?").
+
 **Social here means sharing outward** — images and, at most, a read-only link. The app stays single-user: no accounts, followers or feeds.
 
 ### Proposals (2026-10-18) — pick before building, nothing decided
