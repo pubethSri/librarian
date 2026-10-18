@@ -75,6 +75,8 @@ export type OwnedBookLike = {
 	location: BookLocation;
 	readingStatus: ReadingStatus;
 	timesRead: number;
+	/** In the reading queue */
+	queued?: boolean;
 };
 
 export type VolumeSlot = {
@@ -91,6 +93,8 @@ export type VolumeSlot = {
 	bookId: number | null;
 	/** That copy's current reading status */
 	status: ReadingStatus;
+	/** The copy in the reading queue, if any (normally the same as `bookId`) */
+	queuedId: number | null;
 };
 
 export type OwnedVolumes = {
@@ -129,7 +133,8 @@ function slotOf(volume: number, isExtra: boolean, books: readonly OwnedBookLike[
 		locations: books.map((b) => b.location),
 		read: books.some((b) => b.timesRead > 0),
 		bookId: target?.id ?? null,
-		status: target?.readingStatus ?? 'unread'
+		status: target?.readingStatus ?? 'unread',
+		queuedId: books.find((b) => b.queued)?.id ?? null
 	};
 }
 

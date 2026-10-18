@@ -120,7 +120,7 @@
 		if (!form) return;
 		if (form.kind === 'start') return setStatus('reading', result.startedOn ?? null);
 		const reread = isRead;
-		const offer = nextOffer?.(reread) ?? null;
+		const offer = nextOffer?.(timesRead > 0) ?? null;
 		try {
 			await logMutation.mutateAsync({
 				bookId,

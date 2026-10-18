@@ -8,7 +8,6 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import LocationToggle from '$lib/components/field/LocationToggle.svelte';
-	import CurrentlyReading from '$lib/components/field/CurrentlyReading.svelte';
 	import VolumeReadingSheet from '$lib/components/field/VolumeReadingSheet.svelte';
 	import { toast } from 'svelte-sonner';
 	import {
@@ -16,6 +15,7 @@
 		BookOpen,
 		Check,
 		ListChecks,
+		ListOrdered,
 		LoaderCircle,
 		Megaphone,
 		Minus,
@@ -367,7 +367,6 @@
 				</ul>
 			{/if}
 		{:else}
-			<CurrentlyReading books={booksQuery.data ?? []} onopen={open} />
 			<p class="px-1 pb-4 text-sm text-muted-foreground">
 				Type 2–3 letters of a series — any word, or its initials.
 			</p>
@@ -545,6 +544,11 @@
 								{/if}
 								{#if slot.read}
 									<Check class="absolute top-1 right-1 h-3 w-3 text-muted-foreground" />
+								{/if}
+								{#if slot.queuedId !== null}
+									<ListOrdered
+										class="absolute right-1 bottom-1 h-3 w-3 text-sky-600 dark:text-sky-400"
+									/>
 								{/if}
 							</button>
 						</li>
@@ -749,6 +753,9 @@
 									{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
 								</span>
 								{#if slot.read}<Check class="h-3 w-3 text-muted-foreground" />{/if}
+								{#if slot.queuedId !== null}
+									<ListOrdered class="h-3 w-3 text-sky-600 dark:text-sky-400" />
+								{/if}
 							</button>
 						</li>
 					{/each}
@@ -757,7 +764,8 @@
 
 			<p class="mt-6 text-xs text-muted-foreground">
 				A = Apartment · H = Home · <Check class="inline h-3 w-3" /> read ·
-				<BookOpen class="inline h-3 w-3" /> reading · tap a volume to log a read
+				<BookOpen class="inline h-3 w-3" /> reading ·
+				<ListOrdered class="inline h-3 w-3" /> queued · tap a volume to log a read or queue it
 			</p>
 			<a
 				href={resolve(`/series/${selected.id}`)}
@@ -765,7 +773,11 @@
 			>
 				Open series page
 			</a>
-			<VolumeReadingSheet bind:slot={readingSlot} seriesName={selected.shortName} />
+			<VolumeReadingSheet
+				bind:slot={readingSlot}
+				seriesName={selected.shortName}
+				books={booksQuery.data ?? []}
+			/>
 		{/if}
 	{/if}
 </div>

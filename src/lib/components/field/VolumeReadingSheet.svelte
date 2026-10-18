@@ -1,29 +1,54 @@
 <script lang="ts">
-	// Bottom sheet behind an owned volume tile: Started today · Finished… ·
-	// Re-read finished… (STATUS.md → Reading-flow Decisions 2026-10-16).
-	// One request per tap: the reply is patched into the cached books list.
+	// Bottom sheet behind an owned volume tile (and an Up next row): Started today ·
+	// Finished… · Re-read finished… (STATUS.md → Reading-flow Decisions 2026-10-16),
+	// then the reading queue: Add to queue / Remove, and Move to top on the Queue tab.
+	// Starting or finishing takes a queued book out; a finish offers the next volume.
+	// One request per tap: the reply is patched into the cached lists.
 	import * as Sheet from '$lib/components/ui/sheet';
-	import { BookOpen, CircleCheck, LoaderCircle, RotateCcw } from '@lucide/svelte';
+	import {
+		ArrowUpToLine,
+		BookOpen,
+		CircleCheck,
+		ListMinus,
+		ListPlus,
+		LoaderCircle,
+		RotateCcw
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import ReadForm, { type ReadFormResult } from '$lib/components/reading/ReadForm.svelte';
 	import { createLogReadMutation, createReadingStatusMutation } from '$lib/queries/reading';
+	import { createQueueAddMutation, createQueueRemoveMutation } from '$lib/queries/queue';
+	import { nextToQueue, offerLabel } from '$lib/queue';
 	import { formatDay } from '$lib/console/logic';
 	import { todayLocal, type VolumeSlot } from '$lib/field/logic';
 	import { volumeText } from '$lib/utils/volume';
-	import { READING_STATUS_LABELS } from '$lib/types';
+	import { READING_STATUS_LABELS, type BookListItem } from '$lib/types';
 
 	let {
 		slot = $bindable(),
-		seriesName
+		seriesName,
+		books = [],
+		position = null,
+		onmovetop
 	}: {
 		/** The tile tapped; null = closed */
 		slot: VolumeSlot | null;
 		seriesName: string;
+		/** The books list — finds the next volume to offer after a finish */
+		books?: readonly BookListItem[];
+		/** Place in the queue (1 = top), shown on the Queue tab */
+		position?: number | null;
+		/** Queue tab: Move to top */
+		onmovetop?: () => void;
 	} = $props();
 
 	const statusMutation = createReadingStatusMutation({ patch: true });
 	const logMutation = createLogReadMutation({ patch: true });
-	const busy = $derived(statusMutation.isPending || logMutation.isPending);
+	const queueAdd = createQueueAddMutation();
+	const queueRemove = createQueueRemoveMutation();
+	const busy = $derived(
+		statusMutation.isPending || logMutation.isPending || queueAdd.isPending || queueRemove.isPending
+	);
 
 	let finishing = $state(false);
 	let today = $state(todayLocal());
@@ -56,9 +81,46 @@
 		}
 	}
 
+	async function toggleQueue() {
+		if (!slot?.bookId || busy) return;
+		try {
+			if (slot.queuedId !== null) {
+				await queueRemove.mutateAsync(slot.queuedId);
+				toast.success(`${name}: removed from the queue`);
+			} else {
+				const item = await queueAdd.mutateAsync(slot.bookId);
+				toast.success(`${name}: added to the queue`, {
+					action: { label: 'Undo', onClick: () => queueRemove.mutate(item.bookId) }
+				});
+			}
+			close();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'Failed to update the queue');
+		}
+	}
+
+	/** Toast options offering the next volume after finishing this one (`nextToQueue`) */
+	function offerAfterFinish(bookId: number) {
+		const book = books.find((b) => b.id === bookId);
+		const next = book && nextToQueue(books, book, { reread: book.timesRead > 0 });
+		if (!next) return undefined;
+		return {
+			action: {
+				label: offerLabel(next),
+				onClick: () =>
+					queueAdd.mutate(next.id, {
+						onSuccess: () => toast.success('Added to the queue'),
+						onError: (err) => toast.error(err.message)
+					})
+			},
+			duration: 8000
+		};
+	}
+
 	async function finish(result: ReadFormResult) {
 		if (!slot?.bookId || busy) return;
 		const reread = isRead;
+		const offer = offerAfterFinish(slot.bookId);
 		try {
 			await logMutation.mutateAsync({
 				bookId: slot.bookId,
@@ -66,7 +128,7 @@
 				startedOn: result.startedOn
 			});
 			const when = result.finishedOn ? ` (${formatDay(result.finishedOn)})` : '';
-			toast.success(`${name}: ${reread ? 're-read logged' : 'read'}${when}`);
+			toast.success(`${name}: ${reread ? 're-read logged' : 'read'}${when}`, offer);
 			close();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to log the read');
@@ -85,7 +147,11 @@
 				<Sheet.Description class="text-xs">
 					{READING_STATUS_LABELS[slot.status]}{slot.copies > 1
 						? ` · ${slot.copies} copies (applies to one)`
-						: ''}
+						: ''}{position
+						? ` · #${position} in the queue`
+						: slot.queuedId !== null
+							? ' · in the queue'
+							: ''}
 				</Sheet.Description>
 			</Sheet.Header>
 			<div class="overflow-y-auto px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
@@ -122,6 +188,42 @@
 								<CircleCheck class="h-5 w-5 text-muted-foreground" /> Finished…
 							{/if}
 						</button>
+						<div class="flex gap-2 pt-2">
+							{#if onmovetop && slot.queuedId !== null}
+								<button
+									type="button"
+									class="{action} flex-1 justify-center"
+									disabled={busy || position === 1}
+									onclick={() => {
+										onmovetop?.();
+										close();
+									}}
+								>
+									<ArrowUpToLine class="h-5 w-5 text-muted-foreground" /> Move to top
+								</button>
+							{/if}
+							<button
+								type="button"
+								class="{action} flex-1 {onmovetop ? 'justify-center' : ''}"
+								disabled={busy}
+								onclick={toggleQueue}
+							>
+								{#if queueAdd.isPending || queueRemove.isPending}
+									<LoaderCircle class="h-5 w-5 animate-spin text-muted-foreground" />
+								{:else if slot.queuedId !== null}
+									<ListMinus class="h-5 w-5 text-muted-foreground" />
+								{:else}
+									<ListPlus class="h-5 w-5 text-muted-foreground" />
+								{/if}
+								{#if slot.queuedId === null}
+									Add to reading queue
+								{:else if onmovetop}
+									Remove
+								{:else}
+									In queue ✓ · Remove
+								{/if}
+							</button>
+						</div>
 					</div>
 				{/if}
 			</div>

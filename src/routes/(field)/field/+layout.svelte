@@ -9,7 +9,7 @@
 	import FairPicker from '$lib/components/field/FairPicker.svelte';
 	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import { createFieldSettings, setFieldSettings } from '$lib/field/settings.svelte';
-	import { CirclePlus, ListChecks, Monitor, Search } from '@lucide/svelte';
+	import { CirclePlus, ListChecks, ListOrdered, Monitor, Search } from '@lucide/svelte';
 
 	let { children } = $props();
 
@@ -28,10 +28,16 @@
 	const tabs = [
 		{ href: resolve('/field'), label: 'Find', icon: Search },
 		{ href: resolve('/field/add'), label: 'Add', icon: CirclePlus },
+		{ href: resolve('/field/queue'), label: 'Queue', icon: ListOrdered },
 		{ href: resolve('/field/hitlist'), label: 'Hitlist', icon: ListChecks }
 	];
 
 	const pathname = $derived(page.url.pathname.replace(/\/$/, ''));
+
+	/** A tab stays marked on its sub-pages (Queue → Add to queue); Find only on /field */
+	function isActive(href: string): boolean {
+		return pathname === href || (href !== resolve('/field') && pathname.startsWith(`${href}/`));
+	}
 </script>
 
 <div class="min-h-dvh overflow-x-hidden bg-background">
@@ -57,9 +63,9 @@
 		aria-label="Field Mode"
 		class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/85 print:hidden"
 	>
-		<ul class="mx-auto grid max-w-md grid-cols-3">
+		<ul class="mx-auto grid max-w-md grid-cols-4">
 			{#each tabs as tab (tab.href)}
-				{@const active = pathname === tab.href}
+				{@const active = isActive(tab.href)}
 				<li>
 					<!-- eslint-disable svelte/no-navigation-without-resolve -- resolved in `tabs` -->
 					<a
@@ -70,7 +76,7 @@
 							: 'font-medium text-muted-foreground active:text-foreground'}"
 					>
 						{#if active}
-							<span class="absolute inset-x-6 top-0 h-0.5 rounded-full bg-foreground"></span>
+							<span class="absolute inset-x-5 top-0 h-0.5 rounded-full bg-foreground"></span>
 						{/if}
 						<tab.icon class="h-6 w-6" strokeWidth={active ? 2.25 : 1.75} />
 						{tab.label}

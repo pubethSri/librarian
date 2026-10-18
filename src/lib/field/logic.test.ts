@@ -140,7 +140,8 @@ describe('ownedVolumes', () => {
 				locations: ['apartment'],
 				read: true,
 				bookId: 1,
-				status: 'read'
+				status: 'read',
+				queuedId: null
 			},
 			{
 				volume: 2,
@@ -149,7 +150,8 @@ describe('ownedVolumes', () => {
 				locations: ['home', 'apartment'],
 				read: false,
 				bookId: 2,
-				status: 'unread'
+				status: 'unread',
+				queuedId: null
 			},
 			{
 				volume: 3,
@@ -158,7 +160,8 @@ describe('ownedVolumes', () => {
 				locations: [],
 				read: false,
 				bookId: null,
-				status: 'unread'
+				status: 'unread',
+				queuedId: null
 			},
 			{
 				volume: 4,
@@ -167,13 +170,23 @@ describe('ownedVolumes', () => {
 				locations: ['apartment'],
 				read: false,
 				bookId: 4,
-				status: 'unread'
+				status: 'unread',
+				queuedId: null
 			}
 		]);
 		expect(owned.latest).toBe(4);
 		expect(owned.next).toBe(5);
 		expect(owned.missing).toEqual([3]);
 		expect(owned.total).toBe(4);
+	});
+
+	it('marks the queued copy of a volume', () => {
+		const owned = ownedVolumes([
+			book({ id: 11, volumeNumber: '1.0' }),
+			book({ id: 12, volumeNumber: '1.0', queued: true }),
+			book({ id: 13, volumeNumber: '2.0' })
+		]);
+		expect(owned.volumes.map((v) => v.queuedId)).toEqual([12, null]);
 	});
 
 	it('keeps extras apart: they are never the latest volume nor a gap', () => {
