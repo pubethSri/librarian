@@ -49,14 +49,22 @@
 - [ ] **Q4 Entry points:** "Add to queue" / "In queue ✓" in the status dropdown (series page, Books table); maybe a `queue:yes` filter in the booru search; Field Mode: "Add to reading queue" in the tile sheet + the Currently reading strip shows the next queued book (only if you want the queue on the phone — question 2).
 - [ ] **Q5 Polish → tag `v0.4` (after the fair):** Q0 validation extended to the remaining write routes, whatever B7 left, the A13 sheet-animation tweak if wanted, Insights touches using the new reading days (e.g. reads per month now that dates are real days), and a visual-pass script. Then update ROADMAP / STATUS and tag.
 
-**Questions to ask first (one batch):**
+**Answers (2026-10-18, these override the checklist where they differ):**
 
-1. `drizzle-zod` scope: validation of the queue + reading routes only before B7 (recommended), or more? (Deriving `types.ts` stays later clean-up.)
-2. Queue on the phone now (add from the tile sheet, "next up" in the Currently reading strip — B7 would test it), or desktop only until v0.5?
-3. Reorder on touch: ▲▼ buttons only (simple, recommended) or real drag too (needs a library such as `svelte-dnd-action`)?
-4. Bulk edit "Set reading status → Read" on queued books: remove them from the queue too (recommended: yes, same pool rule)?
-5. Can a book you don't own yet be queued? (Recommended: no — the queue holds `books` rows, i.e. owned copies; wanting a series is the Watchlist / Hitlist.)
-6. What does "insights polish" mean to you — anything you have missed on the Insights page?
+1. **Validation:** queue + reading routes only before B7; the other write routes in Q5.
+2. **Queue on the phone too** — B7 tests it.
+3. **Reorder:** ▲▼ buttons only (desktop and phone), no drag library.
+4. **Pool rule:** a queued book leaves the queue when it is **finished** (any path: "I read this", status → Read, the phone's Finished, **bulk** → Read — whether or not it was ever started) **or started** (Started today / start re-read / status → Reading, bulk included — it moves to _Reading now_). **Dropped** leaves it queued.
+5. **Owned books only** (the queue holds `books` rows; drafts count, they are owned).
+6. **Insights polish:** nothing specific — only if B7 / the fair shows a need.
+
+**Phone design (agreed 2026-10-18 after a mock-up round):**
+
+- **New Queue tab** in Field Mode: Find · Add · **Queue** · Hitlist. Top: **Reading now** (the Currently reading strip **moves here** from Find, with its Finished button). Then **Up next** (numbered, ▲▼, location badge, greyed when the book is at the other place than the device's location setting — "here: Apartment", a Read book marked _re-read_). Tapping an Up next row opens the **same reading sheet as a tile** (Started today → Reading now · Finished… → leaves the queue) plus **Move to top** and **Remove**.
+- **Add a book to the queue** (button in the Queue tab) opens a Spotify-style list of the **unread pile grouped by series**: a filter box on top (same matching as Find: name, initials, part of a Thai title), chip **Unread** (default) / **Include read** (for re-reads), a **Continue your series** section (per series you're partway through, the next unread owned volume), then series **A→Z** with their volumes under them (first few + "+N more"). Each volume row: location, a queue button, and **swipe left to queue** (swipe again on a queued row removes it). Not-owned volumes are not listed (Hitlist's job).
+- **Find stays the buying view**; its tile sheet gets **Add to queue / In queue ✓**, and queued tiles show a small queue mark.
+- **Finished offers the next volume:** after any single finish (Reading now button, a sheet, the desktop "I read this") the toast offers **Queue vol. N+1** when that volume is owned and not queued yet. Not after bulk edits.
+- **Desktop:** `/queue` (sidebar) with the same Up next list, ▲▼, remove, "I read this", and an **Add box** (search a series → suggests its next unread owned volume, pick another → Add); **Add to queue / In queue ✓** in the status dropdown (series page, Books table).
 
 #### B7 trial-run script (bookstore, Oct 21–22)
 
