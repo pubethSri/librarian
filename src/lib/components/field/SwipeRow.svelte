@@ -20,11 +20,11 @@
 		children
 	}: {
 		onswipe: () => void;
-		/** What the left swipe does, shown behind the row: "Queue", "Remove" */
+		/** What the left swipe does, shown behind the row — one short word: "Queue", "Remove" */
 		label: string;
 		icon: Icon;
 		tone?: 'add' | 'remove';
-		/** Optional right swipe: "Finished…" */
+		/** Optional right swipe, one short word: "Finished" */
 		onswiperight?: () => void;
 		rightLabel?: string;
 		rightIcon?: Icon;
@@ -33,7 +33,9 @@
 	} = $props();
 
 	const THRESHOLD = 72;
-	const MAX = 120;
+	const MAX = 140;
+	/** The label shows only once the strip is wide enough for icon + word (keep labels short) */
+	const LABEL_AT = 104;
 
 	let offset = $state(0);
 	let dragging = $state(false);
@@ -89,7 +91,7 @@
 	{#if offset < 0}
 		<div
 			aria-hidden="true"
-			class="absolute inset-y-0 right-0 flex items-center justify-end gap-1.5 pr-4 text-sm font-semibold transition-colors {tone ===
+			class="absolute inset-y-0 right-0 flex items-center justify-end gap-1.5 overflow-hidden pr-4 text-sm font-semibold transition-colors {tone ===
 			'add'
 				? armed
 					? 'bg-info text-white'
@@ -100,18 +102,18 @@
 			style="width: {-offset}px"
 		>
 			<LeftIcon class="h-4 w-4 shrink-0" />
-			{#if -offset > 56}<span class="whitespace-nowrap">{label}</span>{/if}
+			{#if -offset >= LABEL_AT}<span class="whitespace-nowrap">{label}</span>{/if}
 		</div>
 	{:else if offset > 0 && RightIcon}
 		<div
 			aria-hidden="true"
-			class="absolute inset-y-0 left-0 flex items-center gap-1.5 pl-4 text-sm font-semibold transition-colors {armed
+			class="absolute inset-y-0 left-0 flex items-center gap-1.5 overflow-hidden pl-4 text-sm font-semibold transition-colors {armed
 				? 'bg-emerald-700 text-white'
 				: 'bg-emerald-100 text-emerald-900'}"
 			style="width: {offset}px"
 		>
 			<RightIcon class="h-4 w-4 shrink-0" />
-			{#if offset > 56}<span class="whitespace-nowrap">{rightLabel}</span>{/if}
+			{#if offset >= LABEL_AT}<span class="whitespace-nowrap">{rightLabel}</span>{/if}
 		</div>
 	{/if}
 	<div

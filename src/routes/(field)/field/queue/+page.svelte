@@ -125,7 +125,7 @@
 							icon={ListMinus}
 							tone="remove"
 							onswipe={() => remove(item)}
-							rightLabel={item.readingStatus === 'read' ? 'Re-read finished…' : 'Finished…'}
+							rightLabel={item.readingStatus === 'read' ? 'Re-read' : 'Finished'}
 							rightIcon={CircleCheck}
 							onswiperight={() => open(item, i + 1, 'finish')}
 						>
