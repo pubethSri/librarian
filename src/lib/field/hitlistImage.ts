@@ -4,6 +4,7 @@
 // phone's own fonts. `hitlistImageLines` (what to draw) is pure and tested;
 // `drawHitlist` / `saveHitlistImage` touch the DOM.
 
+import { canvasToPng, saveImages } from '$lib/utils/saveImages';
 import { hitlistCounts, volumeSpan, type HitlistGroup } from './logic';
 
 export type ImageLine =
@@ -189,34 +190,10 @@ export function drawHitlist(lines: readonly ImageLine[]): HTMLCanvasElement {
 	return canvas;
 }
 
-/**
- * Save the canvas as a PNG: the share sheet where the browser offers it
- * (HTTPS — "Save image" to the gallery), else a download (Android →
- * Downloads; iPhone → Files / long-press). Returns how it was saved.
- */
+/** Save the canvas as a PNG (share sheet, else a download) — see $lib/utils/saveImages */
 export async function saveHitlistImage(
 	canvas: HTMLCanvasElement,
 	fileName: string
 ): Promise<'shared' | 'downloaded' | 'cancelled'> {
-	const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
-	if (!blob) throw new Error("Couldn't create the image");
-	const file = new File([blob], fileName, { type: 'image/png' });
-	try {
-		if (navigator.canShare?.({ files: [file] })) {
-			await navigator.share({ files: [file], title: 'Hitlist' });
-			return 'shared';
-		}
-	} catch (err) {
-		if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
-		// Share refused (not a user gesture, no permission): fall back to a download
-	}
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement('a');
-	a.href = url;
-	a.download = fileName;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(url), 10_000);
-	return 'downloaded';
+	return saveImages([{ blob: await canvasToPng(canvas), fileName }], 'Hitlist');
 }

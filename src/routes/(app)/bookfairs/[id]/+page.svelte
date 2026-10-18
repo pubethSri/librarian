@@ -3,7 +3,10 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { createBookfairDetailQuery, createBookfairDeleteMutation } from '$lib/queries/bookfairs';
-	import { createBooksByEventQuery } from '$lib/queries/books';
+	import { createBooksByEventQuery, createBooksListQuery } from '$lib/queries/books';
+	import { createSeriesListQuery } from '$lib/queries/series';
+	import PileStories from '$lib/components/stories/PileStories.svelte';
+	import { todayLocal } from '$lib/field/logic';
 	import { createBulkBookUpdateMutation } from '$lib/queries/bulk';
 	import EditBookfairDialog from '$lib/components/forms/EditBookfairDialog.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
@@ -24,6 +27,7 @@
 		ShoppingCart,
 		Terminal,
 		BookPlus,
+		Layers,
 		Unlink
 	} from '@lucide/svelte';
 	import { BOOK_LOCATION_LABELS } from '$lib/types';
@@ -53,6 +57,11 @@
 		if (entries.length === 1) return BOOK_LOCATION_LABELS[entries[0][0]];
 		return entries.map(([loc, n]) => `${BOOK_LOCATION_LABELS[loc]} ${n}`).join(' · ');
 	}
+
+	// Pile stories: ① the unread pile now, ② what this fair added to it
+	const allBooksQuery = createBooksListQuery();
+	const seriesQuery = createSeriesListQuery();
+	let storiesOpen = $state(false);
 
 	let showEditDialog = $state(false);
 	let showDeleteConfirm = $state(false);
@@ -141,6 +150,13 @@
 	</div>
 {:else if detailQuery.data}
 	{@const bf = detailQuery.data}
+	<PileStories
+		bind:open={storiesOpen}
+		books={allBooksQuery.data ?? []}
+		series={seriesQuery.data ?? []}
+		fair={{ id: bf.id, name: bf.name }}
+		today={todayLocal()}
+	/>
 	<div class="space-y-8">
 		<!-- Header -->
 		<div class="flex items-start justify-between gap-4">
@@ -168,6 +184,18 @@
 					<BookPlus class="h-3.5 w-3.5" />
 					Add books from your collection
 				</Button>
+				{#if bf.bookCount > 0}
+					<Button
+						variant="outline"
+						size="sm"
+						class="gap-1.5"
+						disabled={!allBooksQuery.data || !seriesQuery.data}
+						onclick={() => (storiesOpen = true)}
+					>
+						<Layers class="h-3.5 w-3.5" />
+						Pile story
+					</Button>
+				{/if}
 				<Button variant="outline" size="sm" onclick={() => (showEditDialog = true)} class="gap-1.5">
 					<Pencil class="h-3.5 w-3.5" />
 					Edit

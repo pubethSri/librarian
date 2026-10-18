@@ -6,6 +6,7 @@ Click-through test scripts for the parts only a person can check (look, feel, ph
 
 | Date       | Visual pass                                                                                            | Status                                                 |
 | ---------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| 2026-10-27 | [Pile-height stories (Queue card, viewer, bookfair page)](2026-10-27-pile-stories.md)                  | ⬜ Pending — after the fair                            |
 | 2026-10-21 | [B7 trial run at a bookstore (Oct 21–22)](2026-10-21-b7-trial-run.md)                                  | ✅ Passed 2026-10-18 (early, no fixes)                 |
 | 2026-10-18 | [Hitlist: watchlist as priority, booth signs, bar, ticked off, swipe Bought](2026-10-18-hitlist.md)    | ✅ Passed 2026-10-18 (gaps fix)                        |
 | 2026-10-18 | [App style (Gold + Blue on Stone, tiles, series bar)](2026-10-18-app-style.md)                         | ✅ Passed 2026-10-18 (iPad, phone, PC)                 |

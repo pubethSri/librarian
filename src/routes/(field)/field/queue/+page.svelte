@@ -3,6 +3,7 @@
 	// order. Tap a row for the reading sheet (Started today / Finished… take it out,
 	// Move to top, Remove); ▲▼ reorder; swipe left removes. Books at the other place
 	// than this phone's location are greyed ("can I grab it?"). Rules in $lib/queue.
+	// At the end, the unread pile's height opens the pile stories.
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import {
@@ -10,6 +11,7 @@
 		ArrowUp,
 		CircleCheck,
 		ListMinus,
+		ChevronRight,
 		ListPlus,
 		LoaderCircle
 	} from '@lucide/svelte';
@@ -17,7 +19,10 @@
 	import CurrentlyReading from '$lib/components/field/CurrentlyReading.svelte';
 	import SwipeRow from '$lib/components/field/SwipeRow.svelte';
 	import VolumeReadingSheet from '$lib/components/field/VolumeReadingSheet.svelte';
+	import PileStories from '$lib/components/stories/PileStories.svelte';
 	import { createBooksListQuery } from '$lib/queries/books';
+	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
+	import { createSeriesListQuery } from '$lib/queries/series';
 	import {
 		createQueueOrderMutation,
 		createQueueQuery,
@@ -28,7 +33,8 @@
 	import SeriesBar from '$lib/components/queue/SeriesBar.svelte';
 	import type { VolumeSlot } from '$lib/field/logic';
 	import { volumeText } from '$lib/utils/volume';
-	import { BOOK_LOCATION_LABELS, type QueueItem } from '$lib/types';
+	import { formatHeight, pileOf, storyFair } from '$lib/stories/pile';
+	import { BOOK_LOCATION_LABELS, type QueueItem, type SeriesType } from '$lib/types';
 
 	const settings = getFieldSettings();
 	const booksQuery = createBooksListQuery({ fresh: true });
@@ -36,8 +42,20 @@
 	const orderMutation = createQueueOrderMutation();
 	const removeMutation = createQueueRemoveMutation();
 
+	const seriesQuery = createSeriesListQuery();
+	const fairsQuery = createBookfairsListQuery();
+
 	const queue = $derived(queueQuery.data ?? []);
 	const books = $derived(booksQuery.data ?? []);
+
+	// The unread pile card → the pile stories (② is about the chip's fair, else the latest)
+	let storiesOpen = $state(false);
+	const pile = $derived(
+		booksQuery.data && seriesQuery.data
+			? pileOf(books, new Map<number, SeriesType>(seriesQuery.data.map((s) => [s.id, s.type])))
+			: null
+	);
+	const fair = $derived(storyFair(fairsQuery.data ?? [], settings.fairId));
 
 	/** The Up next row whose sheet is open */
 	let openItem = $state<{ item: QueueItem; position: number } | null>(null);
@@ -201,6 +219,39 @@
 			<ListPlus class="h-5 w-5" /> Add a book to the queue
 		</a>
 	</section>
+
+	{#if pile}
+		<button
+			type="button"
+			onclick={() => (storiesOpen = true)}
+			class="mt-4 flex min-h-16 w-full items-center gap-3 rounded-xl border border-highlight px-4 py-3 text-left active:bg-accent"
+		>
+			<span class="flex w-4 shrink-0 flex-col gap-px" aria-hidden="true">
+				<span class="h-1 bg-highlight"></span>
+				<span class="h-1 bg-zinc-700"></span>
+				<span class="h-1 bg-zinc-400"></span>
+				<span class="h-1 bg-zinc-800"></span>
+				<span class="h-1 bg-zinc-500"></span>
+			</span>
+			<span class="min-w-0 flex-1">
+				<span class="block text-base font-semibold text-foreground tabular-nums">
+					Your pile · {formatHeight(pile.cm)}
+				</span>
+				<span class="block text-xs text-muted-foreground tabular-nums">
+					{pile.books} unread · Pile story
+				</span>
+			</span>
+			<ChevronRight class="h-5 w-5 shrink-0 text-muted-foreground" />
+		</button>
+	{/if}
+
+	<PileStories
+		bind:open={storiesOpen}
+		{books}
+		series={seriesQuery.data ?? []}
+		fair={fair ? { id: fair.id, name: fair.name } : null}
+		today={settings.today}
+	/>
 
 	<VolumeReadingSheet
 		bind:slot={sheetSlot}
