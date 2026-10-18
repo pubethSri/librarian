@@ -3,21 +3,15 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { reading } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { checkReadDays, dayToDate, isDay, latestDay, rowDay } from '$lib/reading';
+import { checkReadDays, dayToDate, latestDay, rowDay } from '$lib/reading';
 import { readingSummary } from '$lib/server/reading';
+import { idParam, parseBody, readingDaysBody } from '$lib/server/validation';
 
 function parseIds(params: { id: string; readingId: string }) {
-	const bookId = Number(params.id);
-	const readingId = Number(params.readingId);
-	if (isNaN(bookId) || isNaN(readingId)) throw error(400, 'Invalid ID');
-	return { bookId, readingId };
-}
-
-/** A day field of the body: undefined = unchanged, null = cleared, else a valid day */
-function dayField(value: unknown, name: string): string | null | undefined {
-	if (value === undefined || value === null) return value;
-	if (!isDay(value)) throw error(400, `Invalid ${name} day`);
-	return value;
+	return {
+		bookId: idParam(params.id, 'book ID'),
+		readingId: idParam(params.readingId, 'reading ID')
+	};
 }
 
 // PATCH /api/books/[id]/reading/[readingId] — Edit a read-through's days (history
@@ -31,9 +25,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 	});
 	if (!existing) throw error(404, 'Reading entry not found');
 
-	const body = await request.json().catch(() => ({}));
-	const startedOn = dayField(body.startedOn, 'start');
-	const finishedOn = dayField(body.finishedOn, 'finish');
+	const { startedOn, finishedOn } = await parseBody(request, readingDaysBody, { optional: true });
 	if (finishedOn && existing.status !== 'read') {
 		throw error(400, 'Only a finished read has a finish day');
 	}

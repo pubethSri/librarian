@@ -3,11 +3,12 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { reading, books } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { dayToDate, isDay } from '$lib/reading';
+import { createReadingBody, idParam, parseBody } from '$lib/server/validation';
 
 // GET /api/books/[id]/reading — Get reading history for a book
 export const GET: RequestHandler = async ({ params }) => {
-	const bookId = Number(params.id);
-	if (isNaN(bookId)) throw error(400, 'Invalid book ID');
+	const bookId = idParam(params.id, 'book ID');
 
 	const bookExists = await db.query.books.findFirst({ where: eq(books.id, bookId) });
 	if (!bookExists) throw error(404, 'Book not found');
@@ -22,22 +23,23 @@ export const GET: RequestHandler = async ({ params }) => {
 
 // POST /api/books/[id]/reading — Create a new reading entry
 export const POST: RequestHandler = async ({ params, request }) => {
-	const bookId = Number(params.id);
-	if (isNaN(bookId)) throw error(400, 'Invalid book ID');
+	const bookId = idParam(params.id, 'book ID');
 
 	const bookExists = await db.query.books.findFirst({ where: eq(books.id, bookId) });
 	if (!bookExists) throw error(404, 'Book not found');
 
-	const body = await request.json();
+	const body = await parseBody(request, createReadingBody);
+	const instant = (value: string | null | undefined) =>
+		value ? (isDay(value) ? dayToDate(value) : new Date(value)) : null;
 
 	const [created] = await db
 		.insert(reading)
 		.values({
 			bookId,
-			status: body.status || 'unread',
-			startedAt: body.startedAt ? new Date(body.startedAt) : null,
-			finishedAt: body.finishedAt ? new Date(body.finishedAt) : null,
-			rating: body.rating || null,
+			status: body.status ?? 'unread',
+			startedAt: instant(body.startedAt),
+			finishedAt: instant(body.finishedAt),
+			rating: body.rating ?? null,
 			notes: body.notes || null
 		})
 		.returning();
