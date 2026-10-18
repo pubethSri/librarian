@@ -1,13 +1,13 @@
 <script lang="ts">
-	// One Hitlist row (rules in $lib/field/logic): released → black card, with a
-	// light-blue diamond when the series is on the watchlist (= priority); watchlist
-	// only → white row; bought today with nothing left → faded, struck through in
+	// One Hitlist row (rules in $lib/field/logic): volumes out you don't own
+	// (confirmed new ones or gaps, `hasOut`) → black card, with a light-blue diamond
+	// when the series is on the watchlist (= priority); watchlist only → white row; bought today with nothing left → faded, struck through in
 	// gold ("ticked off"). Tap opens the series in Find; swipe left = "Bought".
 	import { resolve } from '$app/paths';
 	import { Check, ShoppingBag } from '@lucide/svelte';
 	import SwipeRow from '$lib/components/field/SwipeRow.svelte';
 	import HitlistBar from '$lib/components/field/HitlistBar.svelte';
-	import { hitlistBar, volumeRanges, volumeSpan, type HitlistItem } from '$lib/field/logic';
+	import { hasOut, hitlistBar, volumeRanges, volumeSpan, type HitlistItem } from '$lib/field/logic';
 	import { SERIES_STATUS_LABELS, type SeriesListItem } from '$lib/types';
 
 	let {
@@ -19,7 +19,12 @@
 		onbought: () => void;
 	} = $props();
 
-	const released = $derived(item.confirmedTo !== null);
+	const out = $derived(hasOut(item));
+	/** Only gaps out (nothing confirmed beyond): the gaps are the headline */
+	const gapsOnly = $derived(item.confirmedTo === null && item.missing.length > 0);
+	const headline = $derived(
+		gapsOnly ? volumeRanges(item.missing) : volumeSpan(item.next, item.confirmedTo ?? item.next)
+	);
 	const boughtNote = $derived(
 		item.boughtToday.length > 0 ? `bought vol. ${volumeRanges(item.boughtToday)} today` : ''
 	);
@@ -52,13 +57,13 @@
 				<Check class="h-4 w-4" /> today
 			</span>
 		</a>
-	{:else if released}
+	{:else if out}
 		<a
 			href={resolve(`/field?series=${item.series.id}`)}
-			aria-label="{item.series.shortName}: vol. {volumeSpan(
-				item.next,
-				item.confirmedTo ?? item.next
-			)} out{item.series.watchlist ? ', on the watchlist' : ''}"
+			aria-label="{item.series.shortName}: vol. {headline} {gapsOnly ? 'missing' : 'out'}{item
+				.series.watchlist
+				? ', on the watchlist'
+				: ''}"
 			class="flex min-h-14 items-center gap-3 rounded-xl bg-primary px-4 py-2 text-primary-foreground transition-opacity active:opacity-80 print:min-h-0 print:rounded-none print:border-b print:bg-transparent print:px-1 print:py-1 print:text-black"
 		>
 			<span class="min-w-0 flex-1">
@@ -72,11 +77,12 @@
 					{/if}{item.series.shortName}
 				</span>
 				<span class="block truncate text-xs opacity-75">
-					out up to vol. {item.confirmedTo}{item.series.watchlist
-						? ''
-						: ' · not on the watchlist'}{item.missing.length > 0
-						? ` · also missing ${item.missing.join(', ')}`
-						: ''}
+					{#if gapsOnly}missing · next vol. {item.next}{:else}out up to vol. {item.confirmedTo}{item
+							.series.watchlist
+							? ''
+							: ' · not on the watchlist'}{item.missing.length > 0
+							? ` · also missing ${item.missing.join(', ')}`
+							: ''}{/if}
 				</span>
 				{#if boughtNote}<span class="block truncate text-xs text-[#d8c27a]">{boughtNote}</span>{/if}
 				<span class="block print:hidden"><HitlistBar model={bar} dark /></span>
@@ -84,7 +90,7 @@
 			<span class="shrink-0 text-xl font-bold tabular-nums print:text-base">
 				<span class="mr-1 align-middle text-[10px] font-normal tracking-wide uppercase opacity-75"
 					>vol.</span
-				>{volumeSpan(item.next, item.confirmedTo ?? item.next)}
+				>{headline}
 			</span>
 		</a>
 	{:else}

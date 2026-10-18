@@ -367,10 +367,20 @@ export type HitlistItem<T extends HitlistSeriesLike = HitlistSeriesLike> = {
 	done: boolean;
 };
 
-/** Hitlist order within a group: 0 watchlist + released, 1 released, 2 watchlist, 3 ticked off */
-export function hitlistRank(item: Pick<HitlistItem, 'series' | 'confirmedTo' | 'done'>): number {
+/**
+ * Volumes certainly out that you don't own: confirmed new ones, or gaps below
+ * the latest owned (a gap sits below a volume you have, so it's released too)
+ */
+export function hasOut(item: Pick<HitlistItem, 'confirmedTo' | 'missing'>): boolean {
+	return item.confirmedTo !== null || item.missing.length > 0;
+}
+
+/** Hitlist order within a group: 0 watchlist + out, 1 out, 2 watchlist, 3 ticked off */
+export function hitlistRank(
+	item: Pick<HitlistItem, 'series' | 'confirmedTo' | 'missing' | 'done'>
+): number {
 	if (item.done) return 3;
-	if (item.confirmedTo !== null) return item.series.watchlist ? 0 : 1;
+	if (hasOut(item)) return item.series.watchlist ? 0 : 1;
 	return 2;
 }
 
@@ -507,9 +517,15 @@ export function boughtChoices(
 export function hitlistCounts(groups: readonly HitlistGroup[]): {
 	series: number;
 	confirmed: number;
+	/** Series with volumes out you don't own (confirmed or gaps) — `hasOut` */
+	out: number;
 } {
 	const items = groups.flatMap((g) => g.items);
-	return { series: items.length, confirmed: items.filter((i) => i.confirmedTo !== null).length };
+	return {
+		series: items.length,
+		confirmed: items.filter((i) => i.confirmedTo !== null).length,
+		out: items.filter(hasOut).length
+	};
 }
 
 /** Tags of the series on a Hitlist (build it unfiltered), by name — the filter chips */

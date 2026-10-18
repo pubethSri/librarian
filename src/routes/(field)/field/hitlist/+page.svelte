@@ -112,9 +112,9 @@
 				{#if loading}
 					Loading…
 				{:else}
-					{count}{selectedTags.length > 0 ? ` of ${totalSize}` : ''} series to look for{counts.confirmed >
+					{count}{selectedTags.length > 0 ? ` of ${totalSize}` : ''} series to look for{counts.out >
 					0
-						? ` · ${counts.confirmed} confirmed`
+						? ` · ${counts.out} with volumes out`
 						: ''}
 				{/if}
 				<span class="hidden print:inline"> · {formatDay(todayLocal())}</span>

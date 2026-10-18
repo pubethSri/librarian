@@ -21,6 +21,7 @@ import {
 	boughtChoices,
 	hitlistBar,
 	hitlistRank,
+	hasOut,
 	hitlistTags,
 	hitlistText,
 	currentFairId,
@@ -575,7 +576,7 @@ describe('hitlist', () => {
 
 	it('counts series and confirmed ones, and lists their tags', () => {
 		const groups = buildHitlist(series, books);
-		expect(hitlistCounts(groups)).toEqual({ series: 5, confirmed: 2 });
+		expect(hitlistCounts(groups)).toEqual({ series: 5, confirmed: 2, out: 2 });
 		expect(hitlistTags(groups)).toEqual([isekai, romance]);
 	});
 
@@ -638,6 +639,19 @@ describe('hitlist', () => {
 		expect(items.map((i) => i.series.id)).toEqual([1, 2, 3, 4]);
 		expect(items.map(hitlistRank)).toEqual([0, 1, 2, 3]);
 		expect(items[3]).toMatchObject({ boughtToday: [1], done: true });
+	});
+
+	it('counts gaps as volumes out: a watchlist series with gaps ranks with the released', () => {
+		const list = [s(1, 'B plain', 'P'), s(2, 'A gaps only', 'P')];
+		const owned = new Map([
+			[1, [vol(1, 1)]],
+			[2, [vol(2, 1), vol(3, 3)]]
+		]);
+		const items = buildHitlist(list, owned)[0].items;
+		expect(items.map((i) => i.series.id)).toEqual([2, 1]);
+		expect(items.map(hitlistRank)).toEqual([0, 2]);
+		expect(hasOut(items[0])).toBe(true);
+		expect(hitlistCounts(buildHitlist(list, owned))).toMatchObject({ confirmed: 0, out: 1 });
 	});
 
 	it('ticks off only when nothing known is left to buy', () => {
