@@ -9,6 +9,7 @@
 		books: 'Books',
 		bookfairs: 'Bookfairs',
 		insights: 'Insights',
+		queue: 'Reading queue',
 		tags: 'Tags',
 		field: 'Field Mode'
 	};

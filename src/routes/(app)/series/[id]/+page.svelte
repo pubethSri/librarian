@@ -21,6 +21,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import { latestVolume, volumeText } from '$lib/utils/volume';
+	import { nextToQueue, offerLabel, type QueueBookLike } from '$lib/queue';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Table from '$lib/components/ui/table';
 	import { Pencil, Trash2, Plus, Star, Tag, BookOpen } from '@lucide/svelte';
@@ -268,6 +269,15 @@
 											status={currentStatus(book.readings)}
 											timesRead={timesRead(book.readings)}
 											label="{s.shortName} {volumeText(book)}"
+											queued={book.queued}
+											nextOffer={(reread) => {
+												const list: QueueBookLike[] = s.books.map((b) => ({
+													...b,
+													readingStatus: currentStatus(b.readings)
+												}));
+												const next = nextToQueue(list, book, { reread });
+												return next && { bookId: next.id, action: offerLabel(next) };
+											}}
 										/>
 									</Table.Cell>
 									<Table.Cell>

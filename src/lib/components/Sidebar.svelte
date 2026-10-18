@@ -24,7 +24,8 @@
 			label: 'COLLECTION',
 			items: [
 				{ href: resolve('/series'), label: 'Series' },
-				{ href: resolve('/books'), label: 'Books' }
+				{ href: resolve('/books'), label: 'Books' },
+				{ href: resolve('/queue'), label: 'Reading queue' }
 			]
 		},
 		{

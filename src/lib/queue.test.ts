@@ -5,6 +5,8 @@ import {
 	leavesQueue,
 	moveInQueue,
 	nextToQueue,
+	offerLabel,
+	ownedSeries,
 	reorder,
 	type PileBookLike
 } from './queue';
@@ -112,10 +114,28 @@ describe('nextToQueue', () => {
 		expect(nextToQueue([v4, readCopy, book(1, 5, 'unread', { queued: true })], v4)).toBeNull();
 	});
 
-	it('offers a Read next volume during a re-read run', () => {
+	it('skips a Read next volume, unless the finish was a re-read', () => {
 		const v4 = book(1, 4, 'read');
 		const v5 = book(1, 5, 'read');
-		expect(nextToQueue([v4, v5], v4)).toBe(v5);
+		expect(nextToQueue([v4, v5], v4)).toBeNull();
+		expect(nextToQueue([v4, v5], v4, { reread: true })).toBe(v5);
+	});
+});
+
+describe('ownedSeries', () => {
+	it('lists each series once with its book count', () => {
+		const list = ownedSeries([book(1, 1), book(1, 2), book(3, 1)]);
+		expect(list.map((s) => [s.shortName, s.bookCount])).toEqual([
+			['Silent Witch', 2],
+			['86', 1]
+		]);
+	});
+});
+
+describe('offerLabel', () => {
+	it('names the volume, or the extra', () => {
+		expect(offerLabel({ volumeNumber: '5.0', isExtra: false })).toBe('Queue vol. 5');
+		expect(offerLabel({ volumeNumber: '4.5', isExtra: true })).toBe('Queue the extra');
 	});
 });
 

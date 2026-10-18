@@ -1,11 +1,20 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Check, ChevronDown, History, RotateCcw } from '@lucide/svelte';
+	import {
+		Check,
+		ChevronDown,
+		History,
+		ListMinus,
+		ListOrdered,
+		ListPlus,
+		RotateCcw
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import ReadForm, { type ReadFormResult } from '$lib/components/reading/ReadForm.svelte';
 	import ReadingHistoryDialog from '$lib/components/reading/ReadingHistoryDialog.svelte';
 	import { createLogReadMutation, createReadingStatusMutation } from '$lib/queries/reading';
+	import { createQueueAddMutation, createQueueRemoveMutation } from '$lib/queries/queue';
 	import { formatDay } from '$lib/console/logic';
 	import { todayLocal } from '$lib/field/logic';
 	import { READING_STATUS_LABELS, type ReadingStatus } from '$lib/types';
@@ -14,7 +23,10 @@
 		bookId,
 		status,
 		timesRead,
-		label
+		label,
+		queued,
+		queueMark = true,
+		nextOffer
 	}: {
 		bookId: number;
 		/** Current status — derived from the reading rows (see $lib/reading) */
@@ -22,11 +34,40 @@
 		timesRead: number;
 		/** For the toast, e.g. "Arifureta vol. 3" */
 		label: string;
+		/** In the reading queue; leave out to hide the queue items */
+		queued?: boolean;
+		/** Show a small queue icon when queued (off on /queue itself) */
+		queueMark?: boolean;
+		/** After "I read this": the next volume to offer for the queue (`nextToQueue`) */
+		nextOffer?: (reread: boolean) => { bookId: number; action: string } | null;
 	} = $props();
 
 	const statusMutation = createReadingStatusMutation();
 	const logMutation = createLogReadMutation();
+	const queueAdd = createQueueAddMutation();
+	const queueRemove = createQueueRemoveMutation();
 	const busy = $derived(statusMutation.isPending || logMutation.isPending);
+
+	async function toggleQueue() {
+		try {
+			if (queued) {
+				await queueRemove.mutateAsync(bookId);
+				toast.success(`${label}: removed from the queue`);
+			} else {
+				await queueAdd.mutateAsync(bookId);
+				toast.success(`${label}: added to the queue`);
+			}
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'Failed to update the queue');
+		}
+	}
+
+	function queueOffered(offeredId: number) {
+		queueAdd.mutate(offeredId, {
+			onSuccess: () => toast.success('Added to the queue'),
+			onError: (err) => toast.error(err.message)
+		});
+	}
 
 	const STATUSES: ReadingStatus[] = ['unread', 'reading', 'read', 'dropped'];
 
@@ -79,13 +120,19 @@
 		if (!form) return;
 		if (form.kind === 'start') return setStatus('reading', result.startedOn ?? null);
 		const reread = isRead;
+		const offer = nextOffer?.(reread) ?? null;
 		try {
 			await logMutation.mutateAsync({
 				bookId,
 				finishedOn: result.finishedOn ?? null,
 				startedOn: result.startedOn
 			});
-			toast.success(`${label}: ${reread ? 're-read logged' : 'read'}${onDay(result.finishedOn)}`);
+			toast.success(`${label}: ${reread ? 're-read logged' : 'read'}${onDay(result.finishedOn)}`, {
+				...(offer && {
+					action: { label: offer.action, onClick: () => queueOffered(offer.bookId) },
+					duration: 8000
+				})
+			});
 			form = null;
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to log the read');
@@ -146,12 +193,29 @@
 				{/if}
 			{/each}
 			<DropdownMenu.Separator />
+			{#if queued !== undefined}
+				<DropdownMenu.Item onclick={toggleQueue}>
+					{#if queued}
+						<ListMinus class="mr-2 h-3.5 w-3.5" />
+						In queue ✓ · Remove
+					{:else}
+						<ListPlus class="mr-2 h-3.5 w-3.5" />
+						Add to queue
+					{/if}
+				</DropdownMenu.Item>
+			{/if}
 			<DropdownMenu.Item onclick={() => (historyOpen = true)}>
 				<History class="mr-2 h-3.5 w-3.5" />
 				Reading history…
 			</DropdownMenu.Item>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
+
+	{#if queued && queueMark}
+		<span class="text-muted-foreground" title="In the reading queue">
+			<ListOrdered class="h-3.5 w-3.5" aria-label="In the reading queue" />
+		</span>
+	{/if}
 
 	<!-- One-tap action: I read this, or log a re-read once it's read -->
 	<button

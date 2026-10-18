@@ -7,6 +7,7 @@
 
 import type { ReadingStatus } from '$lib/types';
 import { matchScore, type SearchableSeries } from '$lib/field/logic';
+import type { VolumeLike } from '$lib/utils/volume';
 
 /** Whether a reading change to `target` takes a queued book out (start or finish) */
 export function leavesQueue(target: ReadingStatus): boolean {
@@ -66,12 +67,14 @@ export type QueueBookLike = {
 /**
  * After finishing `finished`: the book to offer for the queue — the next book of
  * the series in reading order (extras included: 4.5 follows 4), when owned and
- * not queued yet. Null when it isn't owned, any copy is queued, or it is already
- * being read. With several copies, the first unread one.
+ * not queued yet. Null when it isn't owned, any copy is queued or being read, or
+ * it is already Read — unless the finish was itself a re-read (`reread`): then a
+ * Read next volume continues the re-read run. With several copies, an unread one.
  */
 export function nextToQueue<T extends QueueBookLike>(
 	books: readonly T[],
-	finished: Pick<QueueBookLike, 'id' | 'seriesId' | 'volumeNumber'>
+	finished: Pick<QueueBookLike, 'id' | 'seriesId' | 'volumeNumber'>,
+	options: { reread?: boolean } = {}
 ): T | null {
 	const after = Number(finished.volumeNumber);
 	const later = books.filter(
@@ -82,7 +85,32 @@ export function nextToQueue<T extends QueueBookLike>(
 	const next = Math.min(...later.map((b) => Number(b.volumeNumber)));
 	const copies = later.filter((b) => Number(b.volumeNumber) === next);
 	if (copies.some((b) => b.queued || b.readingStatus === 'reading')) return null;
-	return copies.find((b) => b.readingStatus !== 'read') ?? copies[0];
+	const unread = copies.find((b) => b.readingStatus !== 'read');
+	return unread ?? (options.reread ? copies[0] : null);
+}
+
+/** Series you own books of, searchable like Find (desktop Add box) */
+export function ownedSeries(
+	books: readonly Pick<PileBookLike, 'seriesId' | 'seriesShortName' | 'seriesFullName'>[]
+): (SearchableSeries & { bookCount: number })[] {
+	const map = new Map<number, SearchableSeries & { bookCount: number }>();
+	for (const b of books) {
+		const s = map.get(b.seriesId);
+		if (s) s.bookCount++;
+		else
+			map.set(b.seriesId, {
+				id: b.seriesId,
+				shortName: b.seriesShortName,
+				fullName: b.seriesFullName,
+				bookCount: 1
+			});
+	}
+	return [...map.values()];
+}
+
+/** The toast button offering the next volume: "Queue vol. 5" / "Queue the extra" */
+export function offerLabel(book: VolumeLike): string {
+	return book.isExtra ? 'Queue the extra' : `Queue vol. ${Number(book.volumeNumber)}`;
 }
 
 // ─── The pile (phone: Add to queue) ──────────────────────────────────────────

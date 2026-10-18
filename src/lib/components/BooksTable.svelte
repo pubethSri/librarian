@@ -18,6 +18,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import { volumeLabel, volumeText } from '$lib/utils/volume';
+	import { nextToQueue, offerLabel } from '$lib/queue';
 	import { ArrowUp, ArrowDown, ChevronsUpDown, Trash2, Pencil } from '@lucide/svelte';
 
 	type Props = {
@@ -312,6 +313,11 @@
 							status={row.readingStatus}
 							timesRead={row.timesRead}
 							label="{row.seriesShortName} {volumeText(row)}"
+							queued={row.queued}
+							nextOffer={(reread) => {
+								const next = nextToQueue(data, row, { reread });
+								return next && { bookId: next.id, action: offerLabel(next) };
+							}}
 						/>
 					</Table.Cell>
 					<Table.Cell>
