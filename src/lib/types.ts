@@ -88,6 +88,8 @@ export type BookWithReadings = {
 	createdAt: string;
 	updatedAt: string;
 	readings: ReadingEntry[];
+	/** In the reading queue */
+	queued: boolean;
 };
 
 /** Tag */
@@ -157,6 +159,8 @@ export type BookListItem = {
 	/** Derived from the reading rows — see $lib/reading */
 	readingStatus: ReadingStatus;
 	timesRead: number;
+	/** In the reading queue (GET /api/queue has the order) */
+	queued: boolean;
 };
 
 // ─── Mutation Payloads ───────────────────────────────────────────────────────
@@ -226,8 +230,16 @@ export type UpdateReadingPayload = { startedOn?: string | null; finishedOn?: str
 /** "I read this" (POST /api/books/[id]/reading/log) — see `LogRead` in $lib/reading */
 export type LogReadPayload = { finishedOn: string | null; startedOn?: string | null };
 
-/** A book's derived reading state, returned by every reading write */
-export type ReadingSummary = { bookId: number; readingStatus: ReadingStatus; timesRead: number };
+/**
+ * A book's derived reading state, returned by every reading write. `queued` is
+ * false after a start or finish took the book out of the reading queue.
+ */
+export type ReadingSummary = {
+	bookId: number;
+	readingStatus: ReadingStatus;
+	timesRead: number;
+	queued: boolean;
+};
 
 // ─── Reading Queue ──────────────────────────────────────────────────────────
 

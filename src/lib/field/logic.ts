@@ -466,10 +466,10 @@ export function normalizeReleased(value: number | null): number | null {
 /** A book as POST /api/books returns it (the bare row) */
 export type BookRow = Omit<
 	BookListItem,
-	'seriesShortName' | 'seriesFullName' | 'seriesTags' | 'readingStatus' | 'timesRead'
+	'seriesShortName' | 'seriesFullName' | 'seriesTags' | 'readingStatus' | 'timesRead' | 'queued'
 >;
 
-/** A just-created book row as a books-list item (new books have no reads) */
+/** A just-created book row as a books-list item (new books have no reads, aren't queued) */
 export function toBookListItem(
 	row: BookRow,
 	series: Pick<SeriesListItem, 'shortName' | 'fullName' | 'tags'>
@@ -480,7 +480,8 @@ export function toBookListItem(
 		seriesFullName: series.fullName,
 		seriesTags: series.tags,
 		readingStatus: 'unread',
-		timesRead: 0
+		timesRead: 0,
+		queued: false
 	};
 }
 

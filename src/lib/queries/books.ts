@@ -86,6 +86,7 @@ export function createBookUpdateMutation() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['books'] });
 			queryClient.invalidateQueries({ queryKey: ['series'] });
+			queryClient.invalidateQueries({ queryKey: ['queue'] });
 		}
 	}));
 }
@@ -102,6 +103,7 @@ export function createBookDeleteMutation() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['books'] });
 			queryClient.invalidateQueries({ queryKey: ['series'] });
+			queryClient.invalidateQueries({ queryKey: ['queue'] });
 		}
 	}));
 }

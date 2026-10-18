@@ -7,6 +7,7 @@ import {
 import type {
 	BookListItem,
 	LogReadPayload,
+	QueueItem,
 	ReadingEntry,
 	ReadingStatus,
 	ReadingSummary,
@@ -21,20 +22,37 @@ import type {
 export type ReadingCacheMode = { patch?: boolean };
 
 function afterReadingWrite(qc: QueryClient, summary: ReadingSummary, mode: ReadingCacheMode) {
+	// Starting or finishing takes a book out of the reading queue ($lib/queue)
+	if (!summary.queued) {
+		qc.setQueryData<QueueItem[]>(['queue'], (list) =>
+			list?.filter((item) => item.bookId !== summary.bookId)
+		);
+	}
 	if (mode.patch) {
 		qc.setQueryData<BookListItem[]>(['books'], (list) =>
 			list?.map((b) =>
 				b.id === summary.bookId
-					? { ...b, readingStatus: summary.readingStatus, timesRead: summary.timesRead }
+					? {
+							...b,
+							readingStatus: summary.readingStatus,
+							timesRead: summary.timesRead,
+							queued: summary.queued
+						}
 					: b
 			)
 		);
-		for (const queryKey of [['series'], ['insights'], ['reading', summary.bookId]]) {
+		for (const queryKey of [['series'], ['insights'], ['reading', summary.bookId], ['queue']]) {
 			qc.invalidateQueries({ queryKey, refetchType: 'none' });
 		}
 		return;
 	}
-	for (const queryKey of [['books'], ['series'], ['insights'], ['reading', summary.bookId]]) {
+	for (const queryKey of [
+		['books'],
+		['series'],
+		['insights'],
+		['reading', summary.bookId],
+		['queue']
+	]) {
 		qc.invalidateQueries({ queryKey });
 	}
 }

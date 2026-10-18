@@ -12,6 +12,8 @@ import {
 	type LogRead,
 	type ReadingChange
 } from '$lib/reading';
+import { leavesQueue } from '$lib/queue';
+import { dequeue, isQueued } from '$lib/server/queue';
 import type { ReadingStatus, ReadingSummary } from '$lib/types';
 
 export const READING_STATUSES: readonly ReadingStatus[] = ['unread', 'reading', 'read', 'dropped'];
@@ -24,7 +26,8 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Set the current reading status of each book, following the rules in
- * `$lib/reading`. Runs inside the caller's transaction.
+ * `$lib/reading`. Runs inside the caller's transaction. A queued book that this
+ * starts or finishes leaves the reading queue (`$lib/queue`).
  *
  * @param now timestamp to stamp, or null for "date unknown" (backfill)
  * @param options.allowReread whether Read → Reading may start a re-read (a new
@@ -48,13 +51,14 @@ export async function applyReadingStatus(
 		byBook.set(r.bookId, list);
 	}
 
-	let changed = 0;
+	const changed: number[] = [];
 	for (const bookId of bookIds) {
 		const latest = latestReading(byBook.get(bookId) ?? []);
 		if (!options.allowReread && latest?.status === 'read' && target === 'reading') continue;
-		if (await applyChange(tx, bookId, planReadingChange(latest, target, now))) changed++;
+		if (await applyChange(tx, bookId, planReadingChange(latest, target, now))) changed.push(bookId);
 	}
-	return changed;
+	if (leavesQueue(target)) await dequeue(tx, changed);
+	return changed.length;
 }
 
 async function applyChange(tx: Tx, bookId: number, change: ReadingChange): Promise<boolean> {
@@ -74,7 +78,8 @@ export class ReadingDaysError extends Error {}
 
 /**
  * "I read this" for one book: completes the current read-through or, on a
- * Read book, adds a re-read (see `planLogRead`). Throws `ReadingDaysError`.
+ * Read book, adds a re-read (see `planLogRead`); a queued book leaves the queue.
+ * Throws `ReadingDaysError`.
  */
 export async function logRead(tx: Tx, bookId: number, log: LogRead, now: Date): Promise<void> {
 	const rows = await tx.select().from(reading).where(eq(reading.bookId, bookId));
@@ -82,10 +87,16 @@ export async function logRead(tx: Tx, bookId: number, log: LogRead, now: Date): 
 	const problem = checkReadDays(startedOn, log.finishedOn, latestDay(now));
 	if (problem) throw new ReadingDaysError(problem);
 	await applyChange(tx, bookId, change);
+	await dequeue(tx, [bookId]);
 }
 
 /** A book's derived reading state after a change — what the client patches in */
 export async function readingSummary(tx: Tx, bookId: number): Promise<ReadingSummary> {
 	const rows = await tx.select().from(reading).where(eq(reading.bookId, bookId));
-	return { bookId, readingStatus: currentStatus(rows), timesRead: timesRead(rows) };
+	return {
+		bookId,
+		readingStatus: currentStatus(rows),
+		timesRead: timesRead(rows),
+		queued: await isQueued(tx, bookId)
+	};
 }

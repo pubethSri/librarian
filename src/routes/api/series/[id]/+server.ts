@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { series } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { queuedAmong } from '$lib/server/queue';
 
 // GET /api/series/[id] — Get single series with books, tags, and reading data
 export const GET: RequestHandler = async ({ params }) => {
@@ -28,9 +29,15 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	if (!result) throw error(404, 'Series not found');
 
+	const queued = await queuedAmong(
+		db,
+		result.books.map((b) => b.id)
+	);
+
 	// Flatten tags for cleaner response
 	const response = {
 		...result,
+		books: result.books.map((b) => ({ ...b, queued: queued.has(b.id) })),
 		tags: result.seriesTags.map((st) => st.tag),
 		seriesTags: undefined
 	};

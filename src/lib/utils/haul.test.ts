@@ -21,6 +21,7 @@ function book(overrides: Partial<BookListItem> = {}): BookListItem {
 		seriesTags: [],
 		readingStatus: 'unread',
 		timesRead: 0,
+		queued: false,
 		...overrides
 	};
 }

@@ -23,6 +23,8 @@ export function createBulkBookUpdateMutation() {
 			queryClient.invalidateQueries({ queryKey: ['books'] });
 			queryClient.invalidateQueries({ queryKey: ['series'] });
 			queryClient.invalidateQueries({ queryKey: ['bookfairs'] });
+			// A bulk start / finish takes queued books out of the reading queue
+			queryClient.invalidateQueries({ queryKey: ['queue'] });
 		}
 	}));
 }

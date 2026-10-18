@@ -49,6 +49,7 @@ function book(overrides: Partial<BookListItem> = {}): BookListItem {
 		seriesTags: [{ id: 1, name: 'isekai' }],
 		readingStatus: 'unread',
 		timesRead: 0,
+		queued: false,
 		...overrides
 	};
 }

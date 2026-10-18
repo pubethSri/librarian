@@ -6,6 +6,7 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import { currentStatus, timesRead } from '$lib/reading';
 import { findSameVolume } from '$lib/utils/volume';
 import { lockSeriesInserts } from '$lib/server/locks';
+import { queuedAmong } from '$lib/server/queue';
 
 // GET /api/books — List all books with optional filters
 export const GET: RequestHandler = async ({ url }) => {
@@ -107,13 +108,19 @@ export const GET: RequestHandler = async ({ url }) => {
 		readingMap.set(row.bookId, list);
 	}
 
+	const queued = await queuedAmong(
+		db,
+		rows.map((r) => r.id)
+	);
+
 	const result = rows.map((r) => {
 		const bookReadings = readingMap.get(r.id) || [];
 		return {
 			...r,
 			seriesTags: tagMap.get(r.seriesId) || [],
 			readingStatus: currentStatus(bookReadings),
-			timesRead: timesRead(bookReadings)
+			timesRead: timesRead(bookReadings),
+			queued: queued.has(r.id)
 		};
 	});
 
