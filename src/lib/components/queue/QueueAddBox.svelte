@@ -126,7 +126,7 @@
 							: b.readingStatus === 'read'
 								? 'Read — queue it as a re-read'
 								: volumeText(b)}
-						class="inline-flex h-8 min-w-10 items-center justify-center gap-1 rounded-md border px-2 font-mono text-sm tabular-nums transition-colors disabled:opacity-50 {picked ===
+						class="inline-flex h-8 min-w-10 items-center justify-center gap-1 rounded-md border px-2 text-sm tabular-nums transition-colors disabled:opacity-50 {picked ===
 						b.id
 							? 'border-foreground bg-foreground text-background'
 							: 'border-border hover:bg-accent'} {b.readingStatus === 'read' && picked !== b.id

@@ -148,7 +148,7 @@
 								{#if book.isExtra}
 									<ExtraBadge {book} class="ml-2" />
 								{:else}
-									<span class="ml-2 font-mono text-sm text-muted-foreground">
+									<span class="ml-2 text-sm text-muted-foreground tabular-nums">
 										Vol. {book.volumeNumber}
 									</span>
 								{/if}

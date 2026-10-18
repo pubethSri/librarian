@@ -236,7 +236,7 @@
 								>
 									<Plus class="h-4 w-4" />
 								</Button>
-								<span class="ml-1 font-mono text-sm text-muted-foreground tabular-nums">
+								<span class="ml-1 text-sm text-muted-foreground tabular-nums">
 									{volumeRangeLabel}
 								</span>
 							</div>

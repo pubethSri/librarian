@@ -295,7 +295,7 @@
 							{row.seriesShortName}
 						</a>
 					</Table.Cell>
-					<Table.Cell class="font-mono tabular-nums">
+					<Table.Cell class="tabular-nums">
 						{#if row.isExtra}<ExtraBadge book={row} />{:else}{volumeLabel(row)}{/if}
 					</Table.Cell>
 					<Table.Cell class="text-sm text-muted-foreground">

@@ -236,7 +236,7 @@
 													: ''}
 											</span>
 										</span>
-										<span class="shrink-0 font-mono text-xl font-bold tabular-nums print:text-base">
+										<span class="shrink-0 text-xl font-bold tabular-nums print:text-base">
 											<span
 												class="mr-1 align-middle font-sans text-[10px] font-normal tracking-wide uppercase opacity-75"
 												>vol.</span
@@ -261,13 +261,12 @@
 														]}{item.missing.length > 0
 															? ' · '
 															: ''}{/if}{#if item.missing.length > 0}missing
-														<span class="font-mono tabular-nums">{item.missing.join(', ')}</span
-														>{/if}
+														<span class="tabular-nums">{item.missing.join(', ')}</span>{/if}
 												</span>
 											{/if}
 										</span>
 										<span
-											class="shrink-0 font-mono text-xl font-semibold text-foreground tabular-nums print:text-base"
+											class="shrink-0 text-xl font-semibold text-foreground tabular-nums print:text-base"
 										>
 											<span
 												class="mr-1 align-middle font-sans text-[10px] font-normal tracking-wide text-muted-foreground uppercase"

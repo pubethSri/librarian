@@ -222,7 +222,7 @@
 									onclick={() => (volumes = toggleVolume(volumes, v))}
 									aria-pressed={on}
 									aria-label="Vol. {v}"
-									class="relative flex aspect-square w-full items-center justify-center rounded-lg border font-mono text-base font-semibold tabular-nums transition-colors {on
+									class="relative flex aspect-square w-full items-center justify-center rounded-lg border text-base font-semibold tabular-nums transition-colors {on
 										? 'border-primary bg-primary text-primary-foreground'
 										: 'border-dashed border-border text-muted-foreground'}"
 								>
@@ -252,7 +252,7 @@
 						autocomplete="off"
 						placeholder="none"
 						aria-invalid={price === null}
-						class="h-12 w-full rounded-xl border border-input bg-background px-3 font-mono text-lg tabular-nums outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
+						class="h-12 w-full rounded-xl border border-input bg-background px-3 text-lg tabular-nums outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
 					/>
 				</label>
 

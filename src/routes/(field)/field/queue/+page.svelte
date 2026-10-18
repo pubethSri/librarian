@@ -138,7 +138,7 @@
 										? 'opacity-50'
 										: ''}"
 								>
-									<span class="w-5 shrink-0 font-mono text-sm text-muted-foreground tabular-nums">
+									<span class="w-5 shrink-0 text-sm text-muted-foreground tabular-nums">
 										{i + 1}
 									</span>
 									<span class="min-w-0 flex-1">

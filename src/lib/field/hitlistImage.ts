@@ -61,8 +61,10 @@ export function hitlistFileName(day: string): string {
 
 const WIDTH = 1080;
 const PAD = 64;
-const FONT = '-apple-system, "Segoe UI", Roboto, "Noto Sans Thai", "Leelawadee UI", sans-serif';
-const MONO = 'ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace';
+// The app font (already loaded by the page that draws), then system fallbacks
+const FONT =
+	'"Google Sans Variable", -apple-system, "Segoe UI", Roboto, "Noto Sans Thai", "Leelawadee UI", sans-serif';
+const MONO = FONT;
 const INK = '#18181b';
 const MUTED = '#71717a';
 const LINE = '#e4e4e7';

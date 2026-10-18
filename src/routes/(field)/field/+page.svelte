@@ -360,7 +360,7 @@
 								</div>
 								<div class="shrink-0 text-right">
 									<p class="text-[10px] tracking-wide text-muted-foreground uppercase">Next</p>
-									<p class="font-mono text-xl font-semibold text-foreground tabular-nums">
+									<p class="text-xl font-semibold text-foreground tabular-nums">
 										{o.next}
 									</p>
 								</div>
@@ -391,7 +391,7 @@
 								<span class="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
 									{s.shortName}
 								</span>
-								<span class="shrink-0 font-mono text-sm text-muted-foreground tabular-nums">
+								<span class="shrink-0 text-sm text-muted-foreground tabular-nums">
 									next {o.next}
 								</span>
 							</button>
@@ -439,7 +439,7 @@
 			>
 				<div>
 					<p class="text-xs font-medium tracking-wide uppercase opacity-70">Next to buy</p>
-					<p class="font-mono text-5xl leading-none font-bold tabular-nums">Vol. {owned.next}</p>
+					<p class="text-5xl leading-none font-bold tabular-nums">Vol. {owned.next}</p>
 				</div>
 				<p class="pb-1 text-right text-sm opacity-80">
 					{#if owned.total === 0}
@@ -459,7 +459,7 @@
 					class="mt-3 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-foreground"
 				>
 					<span class="font-medium">Missing:</span>
-					<span class="font-mono tabular-nums">vol. {owned.missing.join(', ')}</span>
+					<span class="tabular-nums">vol. {owned.missing.join(', ')}</span>
 				</p>
 			{/if}
 
@@ -474,7 +474,7 @@
 						autocomplete="off"
 						placeholder="none"
 						aria-invalid={price === null}
-						class="h-12 w-full rounded-xl border border-input bg-background px-3 font-mono text-lg tabular-nums outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
+						class="h-12 w-full rounded-xl border border-input bg-background px-3 text-lg tabular-nums outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
 					/>
 				</label>
 				<LocationToggle {settings} />
@@ -538,7 +538,7 @@
 								aria-label="Reading actions — {slotTitle(slot)}"
 								class="relative flex aspect-square w-full flex-col items-center justify-center rounded-xl border border-border bg-card transition-colors active:bg-accent"
 							>
-								<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
+								<span class="text-lg font-semibold tabular-nums">{slot.volume}</span>
 								<span class="text-[10px] font-medium text-muted-foreground">
 									{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
 								</span>
@@ -568,7 +568,7 @@
 										? 'border-primary bg-primary text-primary-foreground'
 										: 'border-dashed border-foreground/30 text-muted-foreground'}"
 								>
-									<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
+									<span class="text-lg font-semibold tabular-nums">{slot.volume}</span>
 									<span class="text-[10px]">missing</span>
 									{#if on}<Check class="absolute top-1 right-1 h-3.5 w-3.5" />{/if}
 								</button>
@@ -583,7 +583,7 @@
 									{#if pending === slot.volume}
 										<LoaderCircle class="h-5 w-5 animate-spin" />
 									{:else}
-										<span class="font-mono text-lg font-semibold tabular-nums">{slot.volume}</span>
+										<span class="text-lg font-semibold tabular-nums">{slot.volume}</span>
 										<span class="flex items-center gap-0.5 text-[10px]">
 											<Plus class="h-2.5 w-2.5" />missing
 										</span>
@@ -608,7 +608,7 @@
 										? 'border-2 border-primary text-primary'
 										: 'border-dashed border-border text-muted-foreground'}"
 							>
-								<span class="font-mono text-lg font-semibold tabular-nums">{v}</span>
+								<span class="text-lg font-semibold tabular-nums">{v}</span>
 								{#if v === owned.next}<span class="text-[10px] font-semibold">next</span>{/if}
 								{#if on}<Check class="absolute top-1 right-1 h-3.5 w-3.5" />{/if}
 							</button>
@@ -636,7 +636,7 @@
 								<LoaderCircle class="h-5 w-5 animate-spin" />
 							{:else}
 								<Plus class="h-5 w-5" />
-								<span class="font-mono text-lg tabular-nums">Vol. {owned.next}</span>
+								<span class="text-lg tabular-nums">Vol. {owned.next}</span>
 							{/if}
 						</button>
 					</li>
@@ -697,7 +697,7 @@
 							>
 								<Minus class="h-4 w-4" />
 							</button>
-							<span class="w-9 text-center font-mono text-base font-semibold tabular-nums">
+							<span class="w-9 text-center text-base font-semibold tabular-nums">
 								{released ?? '—'}
 							</span>
 							<button

@@ -107,6 +107,10 @@
 }
 
 @theme inline {
+	/* Google Sans (self-hosted, @fontsource-variable/google-sans) for English and Thai on every device */
+	--font-sans:
+		'Google Sans Variable', ui-sans-serif, system-ui, sans-serif, 'Leelawadee UI', 'Thonburi',
+		'Noto Sans Thai';
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);

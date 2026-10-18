@@ -286,7 +286,7 @@
 						{/if}
 					</Table.Cell>
 					<!-- Volumes owned — counted from the books, never typed in -->
-					<Table.Cell class="font-mono text-sm tabular-nums">
+					<Table.Cell class="text-sm tabular-nums">
 						{row.bookCount}
 					</Table.Cell>
 					<Table.Cell>

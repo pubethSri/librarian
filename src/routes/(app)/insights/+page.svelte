@@ -371,7 +371,7 @@
 												class="ml-1"
 											/>
 										{:else}
-											<span class="ml-1 font-mono text-muted-foreground">
+											<span class="ml-1 text-muted-foreground tabular-nums">
 												Vol. {book.volumeNumber}
 											</span>
 										{/if}

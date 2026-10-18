@@ -239,7 +239,7 @@
 						<Table.Body>
 							{#each s.books as book (book.id)}
 								<Table.Row>
-									<Table.Cell class="font-mono font-medium tabular-nums">
+									<Table.Cell class="font-medium tabular-nums">
 										{#if book.isExtra}
 											<ExtraBadge {book} />
 										{:else}
@@ -260,7 +260,7 @@
 									<Table.Cell class="text-sm text-muted-foreground">
 										{formatDate(book.boughtAt)}
 									</Table.Cell>
-									<Table.Cell class="font-mono text-sm text-muted-foreground tabular-nums">
+									<Table.Cell class="text-sm text-muted-foreground tabular-nums">
 										{book.price ? `฿${Number(book.price).toFixed(2)}` : '—'}
 									</Table.Cell>
 									<Table.Cell>

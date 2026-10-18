@@ -255,7 +255,7 @@
 										{@const vol = { volumeNumber: chip.volume, isExtra: chip.isExtra }}
 										{@const name = volumeText(vol).replace(/^./, (c) => c.toUpperCase())}
 										<span
-											class="inline-flex h-6 min-w-7 items-center justify-center rounded-md border border-border bg-muted/50 px-1.5 font-mono text-xs text-foreground tabular-nums"
+											class="inline-flex h-6 min-w-7 items-center justify-center rounded-md border border-border bg-muted/50 px-1.5 text-xs text-foreground tabular-nums"
 											title={chip.copies > 1 ? `${name} — ${chip.copies} copies` : name}
 										>
 											{volumeLabel(vol)}{#if chip.copies > 1}<span

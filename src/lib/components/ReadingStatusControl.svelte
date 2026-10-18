@@ -164,7 +164,7 @@
 				>
 					{READING_STATUS_LABELS[status]}
 					{#if timesRead > 1}
-						<span class="font-mono text-[10px] tabular-nums opacity-70">×{timesRead}</span>
+						<span class="text-[10px] tabular-nums opacity-70">×{timesRead}</span>
 					{/if}
 					<ChevronDown class="h-3 w-3 opacity-60" />
 				</button>

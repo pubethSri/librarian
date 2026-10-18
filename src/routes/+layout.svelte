@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '@fontsource-variable/google-sans/wght.css';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';

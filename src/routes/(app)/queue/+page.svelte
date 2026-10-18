@@ -143,8 +143,7 @@
 						{#each queue as item, i (item.bookId)}
 							{@const label = `${item.seriesShortName} ${volumeText(item)}`}
 							<Table.Row>
-								<Table.Cell class="font-mono text-muted-foreground tabular-nums">{i + 1}</Table.Cell
-								>
+								<Table.Cell class="text-muted-foreground tabular-nums">{i + 1}</Table.Cell>
 								<Table.Cell>
 									<a href={resolve(`/series/${item.seriesId}`)} class="font-medium hover:underline"
 										>{item.seriesShortName}</a
