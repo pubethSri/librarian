@@ -5,6 +5,7 @@
 
 import type { BookListItem, BookLocation, ReadingStatus, SeriesListItem } from '$lib/types';
 import { latestVolume } from '$lib/utils/volume';
+import { rowDay } from '$lib/reading';
 
 // ─── Search ──────────────────────────────────────────────────────────────────
 
@@ -335,8 +336,10 @@ export function parseVolume(text: string): number | null {
 // every watchlist series' next volume (and the gaps below it), plus any
 // series — watchlist or not — with **confirmed new volumes**: its
 // `totalVolumes` ("Released up to vol. N", set by hand) is past the latest
-// volume owned. Confirmed items come first in their group. Also the text
-// that Copy gives.
+// volume owned. The watchlist is the priority (decided 2026-10-18): within a
+// group, watchlist + released first, then released but not followed, then
+// the rest of the watchlist; a series bought from today and with nothing known
+// left to buy is "ticked off" and goes last. Also the text that Copy gives.
 
 export type HitlistSeriesLike = SearchableSeries & {
 	type: SeriesListItem['type'];
@@ -358,7 +361,18 @@ export type HitlistItem<T extends HitlistSeriesLike = HitlistSeriesLike> = {
 	missing: number[];
 	/** Books owned (extras and copies included) */
 	owned: number;
+	/** Regular volumes bought today (purchase day = `today`), sorted */
+	boughtToday: number[];
+	/** Bought from today and nothing known left (no gaps, nothing confirmed): ticked off */
+	done: boolean;
 };
+
+/** Hitlist order within a group: 0 watchlist + released, 1 released, 2 watchlist, 3 ticked off */
+export function hitlistRank(item: Pick<HitlistItem, 'series' | 'confirmedTo' | 'done'>): number {
+	if (item.done) return 3;
+	if (item.confirmedTo !== null) return item.series.watchlist ? 0 : 1;
+	return 2;
+}
 
 export type HitlistGroup<T extends HitlistSeriesLike = HitlistSeriesLike> = {
 	/** null = no publisher recorded */
@@ -376,22 +390,38 @@ export function confirmedTo(totalVolumes: number | null | undefined, next: numbe
 	return totalVolumes != null && totalVolumes >= next ? totalVolumes : null;
 }
 
+/** A book as the Hitlist reads it: the volume grid's fields plus the purchase day */
+export type HitlistBookLike = OwnedBookLike & { boughtAt?: string | Date | null };
+
 /**
  * The Hitlist: watchlist series and series with confirmed new volumes that
- * carry every selected tag, grouped by publisher (A→Z, unknown last);
- * within a group confirmed items first, then by name.
+ * carry every selected tag, grouped by publisher (A→Z, unknown last); within
+ * a group by `hitlistRank`, then by name. `today` (the device's day) marks
+ * what was bought today.
  */
 export function buildHitlist<T extends HitlistSeriesLike>(
 	series: readonly T[],
-	booksBySeries: ReadonlyMap<number, readonly OwnedBookLike[]>,
-	tagIds: readonly number[] = []
+	booksBySeries: ReadonlyMap<number, readonly HitlistBookLike[]>,
+	tagIds: readonly number[] = [],
+	today: string | null = null
 ): HitlistGroup<T>[] {
 	const groups = new Map<string | null, HitlistItem<T>[]>();
 	for (const s of series) {
 		if (!tagIds.every((id) => s.tags.some((t) => t.id === id))) continue;
-		const owned = ownedVolumes(booksBySeries.get(s.id) ?? []);
+		const books = booksBySeries.get(s.id) ?? [];
+		const owned = ownedVolumes(books);
 		const confirmed = confirmedTo(s.totalVolumes, owned.next);
 		if (!s.watchlist && confirmed === null) continue;
+		const boughtToday =
+			today === null
+				? []
+				: [
+						...new Set(
+							books
+								.filter((b) => !b.isExtra && b.boughtAt && rowDay(b.boughtAt) === today)
+								.map((b) => Number(b.volumeNumber))
+						)
+					].sort((a, b) => a - b);
 		const publisher = s.publisher?.trim() || null;
 		const list = groups.get(publisher) ?? [];
 		list.push({
@@ -399,7 +429,9 @@ export function buildHitlist<T extends HitlistSeriesLike>(
 			next: owned.next,
 			confirmedTo: confirmed,
 			missing: owned.missing,
-			owned: owned.total
+			owned: owned.total,
+			boughtToday,
+			done: boughtToday.length > 0 && owned.missing.length === 0 && confirmed === null
 		});
 		groups.set(publisher, list);
 	}
@@ -409,10 +441,66 @@ export function buildHitlist<T extends HitlistSeriesLike>(
 			publisher,
 			items: items.sort(
 				(a, b) =>
-					Number(b.confirmedTo !== null) - Number(a.confirmedTo !== null) ||
-					a.series.shortName.localeCompare(b.series.shortName)
+					hitlistRank(a) - hitlistRank(b) || a.series.shortName.localeCompare(b.series.shortName)
 			)
 		}));
+}
+
+// ─── Hitlist series bar + "Bought" sheet ─────────────────────────────────────
+
+export type HitlistSegment = 'owned' | 'missing' | 'next' | 'released';
+
+export type HitlistBarModel =
+	| { kind: 'segments'; segments: HitlistSegment[] }
+	| { kind: 'continuous'; total: number; owned: number; at: number };
+
+/**
+ * The series at a glance: one segment per regular volume up to the next one
+ * (or the last confirmed): owned, missing (a gap), the next to buy, released
+ * beyond it. Past `maxSegments` a continuous bar: owned volumes filled, the
+ * next one marked `at` 0…1.
+ */
+export function hitlistBar(
+	item: Pick<HitlistItem, 'next' | 'confirmedTo' | 'missing'>,
+	maxSegments = 20
+): HitlistBarModel {
+	const last = Math.max(item.next, item.confirmedTo ?? 0);
+	const gaps = new Set(item.missing);
+	const segments: HitlistSegment[] = [];
+	for (let n = 1; n <= last; n++) {
+		segments.push(
+			n === item.next ? 'next' : n > item.next ? 'released' : gaps.has(n) ? 'missing' : 'owned'
+		);
+	}
+	if (segments.length <= maxSegments) return { kind: 'segments', segments };
+	return {
+		kind: 'continuous',
+		total: segments.length,
+		owned: segments.filter((x) => x === 'owned').length,
+		at: (item.next - 0.5) / segments.length
+	};
+}
+
+export type BoughtChoices = {
+	/** Gaps below the latest owned */
+	missing: number[];
+	/** The next volume and the confirmed ones after it */
+	fresh: number[];
+	/** Further volumes, for "+ more" (`ahead` of them) */
+	more: number[];
+	/** Preselected: the next volume */
+	preset: number[];
+};
+
+/** The volumes the "Bought" sheet offers for a Hitlist row */
+export function boughtChoices(
+	item: Pick<HitlistItem, 'next' | 'confirmedTo' | 'missing'>,
+	ahead = 12
+): BoughtChoices {
+	const lastFresh = Math.max(item.next, item.confirmedTo ?? item.next);
+	const fresh = Array.from({ length: lastFresh - item.next + 1 }, (_, i) => item.next + i);
+	const more = Array.from({ length: Math.max(0, ahead) }, (_, i) => lastFresh + 1 + i);
+	return { missing: [...item.missing], fresh, more, preset: [item.next] };
 }
 
 /** Series and confirmed series on a Hitlist */

@@ -66,6 +66,7 @@
 	--highlight-ink: #77601e;
 	--info: #2b7de0;
 	--info-ink: #2368bd;
+	--info-light: #8fbaf3;
 	--bar-read: #8b8b93;
 	/* Diamond tile, 26×56: grey lines at 3% (canvas) and 1.5% (sidebar) */
 	--tiles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='56' viewBox='0 0 26 56'%3E%3Cg fill='none' stroke='%2318181b' stroke-opacity='0.03' stroke-width='1.1'%3E%3Cpath d='M13 3 23 28 13 53 3 28Z'/%3E%3Cpath d='M0-25 10 0 0 25-10 0Z'/%3E%3Cpath d='M26-25 36 0 26 25 16 0Z'/%3E%3Cpath d='M0 31 10 56 0 81-10 56Z'/%3E%3Cpath d='M26 31 36 56 26 81 16 56Z'/%3E%3C/g%3E%3C/svg%3E");
@@ -152,6 +153,7 @@
 	--color-highlight-ink: var(--highlight-ink);
 	--color-info: var(--info);
 	--color-info-ink: var(--info-ink);
+	--color-info-light: var(--info-light);
 	--color-bar-read: var(--bar-read);
 }
 

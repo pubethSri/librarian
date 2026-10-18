@@ -18,6 +18,9 @@ import {
 	withBookCount,
 	withoutBook,
 	buildHitlist,
+	boughtChoices,
+	hitlistBar,
+	hitlistRank,
 	hitlistTags,
 	hitlistText,
 	currentFairId,
@@ -611,6 +614,83 @@ describe('hitlist', () => {
 		expect(normalizeReleased(0)).toBeNull();
 		expect(normalizeReleased(null)).toBeNull();
 		expect(normalizeReleased(Number.NaN)).toBeNull();
+	});
+
+	it('ranks: watchlist + released, released, watchlist, then ticked off', () => {
+		const today = '2026-10-24';
+		const bought = (id: number, volumeNumber: number, boughtAt: string) => ({
+			...vol(id, volumeNumber),
+			boughtAt
+		});
+		const list = [
+			s(1, 'Zeta watched released', 'P', { totalVolumes: 3 }),
+			s(2, 'Beta released only', 'P', { watchlist: false, totalVolumes: 2 }),
+			s(3, 'Alpha watched', 'P'),
+			s(4, 'Aaa bought today', 'P')
+		];
+		const owned = new Map([
+			[1, [vol(1, 1)]],
+			[2, [vol(2, 1)]],
+			[3, [vol(3, 1)]],
+			[4, [bought(4, 1, '2026-10-24T00:00:00.000Z')]]
+		]);
+		const items = buildHitlist(list, owned, [], today)[0].items;
+		expect(items.map((i) => i.series.id)).toEqual([1, 2, 3, 4]);
+		expect(items.map(hitlistRank)).toEqual([0, 1, 2, 3]);
+		expect(items[3]).toMatchObject({ boughtToday: [1], done: true });
+	});
+
+	it('ticks off only when nothing known is left to buy', () => {
+		const today = '2026-10-24';
+		const at = '2026-10-24T00:00:00.000Z';
+		const list = [
+			s(1, 'Gap left', 'P'),
+			s(2, 'More released', 'P', { totalVolumes: 5 }),
+			s(3, 'Bought yesterday', 'P')
+		];
+		const owned = new Map([
+			[1, [vol(1, 1), { ...vol(2, 3), boughtAt: at }]],
+			[2, [{ ...vol(3, 1), boughtAt: at }]],
+			[3, [{ ...vol(4, 1), boughtAt: '2026-10-23T00:00:00.000Z' }]]
+		]);
+		const items = buildHitlist(list, owned, [], today)[0].items;
+		const byId = (id: number) => items.find((i) => i.series.id === id)!;
+		expect(byId(1)).toMatchObject({ boughtToday: [3], missing: [2], done: false });
+		expect(byId(2)).toMatchObject({ boughtToday: [1], confirmedTo: 5, done: false });
+		expect(byId(3)).toMatchObject({ boughtToday: [], done: false });
+		expect(buildHitlist(list, owned)[0].items.every((i) => i.boughtToday.length === 0)).toBe(true);
+	});
+
+	it('draws the Hitlist bar: owned, gaps, next, released beyond', () => {
+		expect(hitlistBar({ next: 5, confirmedTo: 6, missing: [3] })).toEqual({
+			kind: 'segments',
+			segments: ['owned', 'owned', 'missing', 'owned', 'next', 'released']
+		});
+		expect(hitlistBar({ next: 1, confirmedTo: null, missing: [] })).toEqual({
+			kind: 'segments',
+			segments: ['next']
+		});
+		expect(hitlistBar({ next: 24, confirmedTo: 25, missing: [2] })).toEqual({
+			kind: 'continuous',
+			total: 25,
+			owned: 22,
+			at: 23.5 / 25
+		});
+	});
+
+	it("offers the Bought sheet's volumes, the next one preselected", () => {
+		expect(boughtChoices({ next: 10, confirmedTo: 11, missing: [4, 5] }, 3)).toEqual({
+			missing: [4, 5],
+			fresh: [10, 11],
+			more: [12, 13, 14],
+			preset: [10]
+		});
+		expect(boughtChoices({ next: 6, confirmedTo: null, missing: [] }, 2)).toEqual({
+			missing: [],
+			fresh: [6],
+			more: [7, 8],
+			preset: [6]
+		});
 	});
 
 	it('patches the released volume into the cached series list', () => {

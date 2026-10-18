@@ -25,7 +25,9 @@ describe('hitlistImageLines', () => {
 		next,
 		confirmedTo,
 		missing,
-		owned: next - 1
+		owned: next - 1,
+		boughtToday: [],
+		done: false
 	});
 	const groups: HitlistGroup[] = [
 		{

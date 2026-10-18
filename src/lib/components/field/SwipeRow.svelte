@@ -17,6 +17,8 @@
 		rightLabel = '',
 		rightIcon: RightIcon,
 		disabled = false,
+		class: className = '',
+		surface = 'bg-background',
 		children
 	}: {
 		onswipe: () => void;
@@ -29,6 +31,10 @@
 		rightLabel?: string;
 		rightIcon?: Icon;
 		disabled?: boolean;
+		/** Outer shape, e.g. `rounded-xl` for a card row (the strip is clipped to it) */
+		class?: string;
+		/** The sliding layer's background; `bg-transparent` when the child is its own card */
+		surface?: string;
 		children: Snippet;
 	} = $props();
 
@@ -87,7 +93,7 @@
 	const armed = $derived(Math.abs(offset) >= THRESHOLD);
 </script>
 
-<div class="relative overflow-hidden">
+<div class="relative overflow-hidden {className}">
 	{#if offset < 0}
 		<div
 			aria-hidden="true"
@@ -118,7 +124,7 @@
 	{/if}
 	<div
 		role="presentation"
-		class="relative bg-background select-none {dragging ? '' : 'transition-transform duration-200'}"
+		class="relative {surface} select-none {dragging ? '' : 'transition-transform duration-200'}"
 		style="transform: translateX({offset}px); touch-action: pan-y"
 		onpointerdown={down}
 		onpointermove={move}
