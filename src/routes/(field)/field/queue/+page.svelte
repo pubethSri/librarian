@@ -27,6 +27,8 @@
 	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import { createSeriesListQuery } from '$lib/queries/series';
 	import {
+		createQueueBatchAddMutation,
+		createQueueBatchRemoveMutation,
 		createQueueOrderMutation,
 		createQueueQuery,
 		createQueueRemoveMutation
@@ -53,6 +55,8 @@
 	const queueQuery = createQueueQuery({ fresh: true });
 	const orderMutation = createQueueOrderMutation();
 	const removeMutation = createQueueRemoveMutation();
+	const removeRunMutation = createQueueBatchRemoveMutation();
+	const restoreMutation = createQueueBatchAddMutation();
 
 	const seriesQuery = createSeriesListQuery();
 	const fairsQuery = createBookfairsListQuery();
@@ -132,6 +136,32 @@
 		});
 	}
 
+	/**
+	 * Swipe left on a closed run: the whole run leaves the queue. Undo queues it again
+	 * and puts the old order back (`reorder` on the server keeps everything else).
+	 */
+	function removeRun(items: QueueItem[]) {
+		const ids = items.map((i) => i.bookId);
+		const before = queue.map((i) => i.bookId);
+		const name = `${items[0].seriesShortName} ${runChipLabel(items)}`;
+		removeRunMutation.mutate(ids, {
+			onSuccess: () =>
+				toast.success(`${name}: removed from the queue`, {
+					duration: 6000,
+					action: {
+						label: 'Undo',
+						onClick: () =>
+							restoreMutation.mutate(ids, {
+								onSuccess: () =>
+									orderMutation.mutate(before, { onError: (err) => toast.error(err.message) }),
+								onError: (err) => toast.error(err.message)
+							})
+					}
+				}),
+			onError: (err) => toast.error(err.message)
+		});
+	}
+
 	const letter = (l: QueueItem['location']) => (l === 'apartment' ? 'A' : 'H');
 </script>
 
@@ -176,11 +206,11 @@
 					{@const opened = isRun && openRuns.includes(first.bookId)}
 					<li>
 						<SwipeRow
-							label="Remove"
+							label={isRun ? `Remove ${run.items.length}` : 'Remove'}
 							icon={ListMinus}
 							tone="remove"
 							disabled={opened}
-							onswipe={() => remove(first)}
+							onswipe={() => (isRun ? removeRun(run.items) : remove(first))}
 							rightLabel={first.readingStatus === 'read' ? 'Re-read' : 'Finished'}
 							rightIcon={CircleCheck}
 							onswiperight={() => open(first, at, 'finish')}
@@ -322,8 +352,8 @@
 				{/each}
 			</ol>
 			<p class="mt-2 px-1 text-xs text-muted-foreground">
-				Swipe right when you've finished one, left to remove it; tap for more. On a closed run, both
-				act on its first volume.
+				Swipe right when you've finished one, left to remove it; tap for more. On a closed run,
+				right finishes its first volume and left removes the whole run.
 			</p>
 		{/if}
 

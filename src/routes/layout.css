@@ -193,3 +193,34 @@
 .bg-canvas :is([data-slot='input'], [data-slot='textarea'], [data-slot='select-trigger']) {
 	background-color: var(--card);
 }
+
+/* Display test switch (app.html, ?fx=…): effects off on one device, to find a lag */
+html[data-fx~='noblur'] *,
+html[data-fx~='noblur'] *::before,
+html[data-fx~='noblur'] *::after {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+html[data-fx~='notiles'] .bg-canvas,
+html[data-fx~='notiles'] .bg-sidebar-tiles {
+	background-image: none !important;
+}
+html[data-fx~='noanim'] *,
+html[data-fx~='noanim'] *::before,
+html[data-fx~='noanim'] *::after {
+	animation-duration: 0s !important;
+	transition-duration: 0s !important;
+}
+html[data-fx] body::after {
+	content: 'display test';
+	position: fixed;
+	bottom: 4px;
+	left: 4px;
+	z-index: 100;
+	pointer-events: none;
+	border-radius: 4px;
+	background: #b91c1c;
+	padding: 1px 6px;
+	font-size: 10px;
+	color: #fff;
+}

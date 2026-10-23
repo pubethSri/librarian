@@ -13,8 +13,8 @@
 7. **Runs** — Queue tab: consecutive volumes of one series are **one row**: "ดอกรัก" with **↻ Vol. 1–22** and a gold span on the bar; "ชิโนะกับเร็น Vol. 3–5" without ↻ (not from vol. 1). No "re-read" text on runs. Numbers count runs (1, 2, 3…); the header counts books.
 8. **Move a run** — ▲ / ▼ on a run moves the whole run past its neighbour. Single books move as before.
 9. **Open a run** — the chevron opens it: its volumes indented, each with ▲▼ that reorder **inside** the run (first ▲ and last ▼ greyed). Swipe a volume inside → Finished / Remove as usual. Chevron again closes it.
-10. **Swipes on a closed run** — swipe right → the Finished sheet for its **first** volume; swipe left → removes only the first volume (the run gets one shorter).
+10. **Swipes on a closed run** — swipe right → the Finished sheet for its **first** volume; swipe left (the strip says "Remove N") → the **whole run** leaves the queue, toast with **Undo** → Undo puts it back in the same place. To remove some volumes only, open the run and swipe those.
 11. **Back to the queue** — start a queued book (tap it → Started today) → it's in **Reading now** with a ↶ beside Finished → tap ↶ → toast "… back in the queue · #1", it's first in Up next again and **Unread** (on the desktop its reading history is empty again; a re-read goes back to Read). Also from Find: tap a tile you're reading → the sheet shows **Back to the queue** instead of Add to queue.
-12. **Desktop** — `/queue` on the PC: a gold-tinted header row per run (chip, ↻, "N books", bar, run ▲▼) with its books under it (their ▲▼ move within the run). Reading now rows have **Back to the queue**.
+12. **Desktop** — `/queue` on the PC: a gold-tinted row per run ("10–12", ▸ name, chip, ↻, "N books", bar, run ▲▼, ✕ = remove the whole run with Undo), **closed by default**; click the name to open it and see its books (their ▲▼ move within the run). Reading now rows have **Back to the queue**.
 
 Remove anything you queued on scratch when done (the run's books: open the run and swipe them, or Undo).

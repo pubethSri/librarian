@@ -1,6 +1,16 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { ArrowDown, ArrowUp, BookOpen, ListOrdered, RotateCcw, Undo2, X } from '@lucide/svelte';
+	import {
+		ArrowDown,
+		ArrowUp,
+		BookOpen,
+		ChevronDown,
+		ChevronRight,
+		ListOrdered,
+		RotateCcw,
+		Undo2,
+		X
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -11,6 +21,8 @@
 	import { createBooksListQuery } from '$lib/queries/books';
 	import {
 		createBackToQueueMutation,
+		createQueueBatchAddMutation,
+		createQueueBatchRemoveMutation,
 		createQueueOrderMutation,
 		createQueueQuery,
 		createQueueRemoveMutation
@@ -39,12 +51,45 @@
 	const orderMutation = createQueueOrderMutation();
 	const removeMutation = createQueueRemoveMutation();
 	const backToQueue = createBackToQueueMutation();
+	const removeRunMutation = createQueueBatchRemoveMutation();
+	const restoreMutation = createQueueBatchAddMutation();
 
 	const queue = $derived(queueQuery.data ?? []);
 	const books = $derived(booksQuery.data ?? []);
 	const readingNow = $derived(currentlyReading(books));
 	/** Consecutive books of one series = a run, moved as one (`queueRuns`) */
 	const runs = $derived(queueRuns(queue, books));
+	/** Runs opened to show their books, by their first book (closed by default) */
+	let openRuns = $state<number[]>([]);
+
+	function toggleRun(firstId: number) {
+		openRuns = openRuns.includes(firstId)
+			? openRuns.filter((id) => id !== firstId)
+			: [...openRuns, firstId];
+	}
+
+	/** ✕ on a run: the whole run leaves the queue; Undo queues it again in its old place */
+	function removeRun(items: typeof queue) {
+		const ids = items.map((i) => i.bookId);
+		const before = queue.map((i) => i.bookId);
+		const name = `${items[0].seriesShortName} ${runChipLabel(items)}`;
+		removeRunMutation.mutate(ids, {
+			onSuccess: () =>
+				toast.success(`${name}: removed from the queue`, {
+					duration: 6000,
+					action: {
+						label: 'Undo',
+						onClick: () =>
+							restoreMutation.mutate(ids, {
+								onSuccess: () =>
+									orderMutation.mutate(before, { onError: (err) => toast.error(err.message) }),
+								onError: (err) => toast.error(err.message)
+							})
+					}
+				}),
+			onError: (err) => toast.error(err.message)
+		});
+	}
 
 	const locationClass: Record<BookLocation, string> = {
 		apartment: 'border-info/45 text-info-ink',
@@ -180,11 +225,26 @@
 					<Table.Body>
 						{#each runs as run, r (run.items[0].bookId)}
 							{@const isRun = run.items.length > 1}
+							{@const opened = isRun && openRuns.includes(run.items[0].bookId)}
 							{#if isRun}
 								<Table.Row class="bg-highlight-soft/40 hover:bg-highlight-soft/40">
-									<Table.Cell></Table.Cell>
+									<Table.Cell class="text-muted-foreground tabular-nums">
+										{queue.indexOf(run.items[0]) + 1}–{queue.indexOf(
+											run.items[run.items.length - 1]
+										) + 1}
+									</Table.Cell>
 									<Table.Cell colspan={3}>
-										<span class="font-medium">{run.items[0].seriesShortName}</span>
+										<button
+											type="button"
+											onclick={() => toggleRun(run.items[0].bookId)}
+											aria-expanded={opened}
+											class="inline-flex items-center gap-1 font-medium hover:underline"
+										>
+											{#if opened}<ChevronDown
+													class="h-4 w-4 text-muted-foreground"
+												/>{:else}<ChevronRight class="h-4 w-4 text-muted-foreground" />{/if}
+											{run.items[0].seriesShortName}
+										</button>
 										<span
 											class="ml-2 inline-flex items-center gap-1 rounded-md bg-highlight-soft px-1.5 text-xs leading-5 font-semibold text-highlight-ink tabular-nums"
 										>
@@ -216,12 +276,20 @@
 											>
 												<ArrowDown class="h-4 w-4" />
 											</button>
-											<span class="w-7"></span>
+											<button
+												class="inline-flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-destructive disabled:opacity-30"
+												aria-label="Remove the whole run from the queue"
+												title="Remove the whole run"
+												disabled={removeRunMutation.isPending}
+												onclick={() => removeRun(run.items)}
+											>
+												<X class="h-4 w-4" />
+											</button>
 										</div>
 									</Table.Cell>
 								</Table.Row>
 							{/if}
-							{#each run.items as item, k (item.bookId)}
+							{#each !isRun || opened ? run.items : [] as item, k (item.bookId)}
 								{@const i = queue.indexOf(item)}
 								{@const label = `${item.seriesShortName} ${volumeText(item)}`}
 								<Table.Row class={isRun ? 'bg-highlight-soft/15' : ''}>
