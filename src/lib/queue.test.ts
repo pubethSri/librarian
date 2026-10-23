@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
 	buildPile,
+	justBought,
+	moveRun,
+	queueChoices,
+	queueRuns,
+	runChipLabel,
+	spanLabel,
 	chipLabel,
 	endPosition,
 	leavesQueue,
@@ -240,5 +246,159 @@ describe('chipLabel', () => {
 	it('names the volume or the extra', () => {
 		expect(chipLabel({ volumeNumber: '6.0', isExtra: false })).toBe('Vol. 6');
 		expect(chipLabel({ volumeNumber: '4.5', isExtra: true })).toBe('Extra');
+	});
+});
+
+describe('justBought', () => {
+	const bought = (
+		seriesId: number,
+		volume: number,
+		day: string,
+		where: { fair?: number; source?: 'bookstore' | 'online' | 'bookfair' } = {},
+		status: ReadingStatus = 'unread'
+	) => ({
+		...book(seriesId, volume, status),
+		boughtAt: `${day}T00:00:00.000Z`,
+		source: where.source ?? (where.fair ? ('bookfair' as const) : null),
+		sourceEventId: where.fair ?? null
+	});
+	const fairs = [{ id: 31, name: 'มหกรรมหนังสือระดับชาติ 31' }];
+	const today = '2026-10-24';
+
+	it('groups a fair across its days, other buys by source and day, newest first', () => {
+		const groups = justBought(
+			[
+				bought(1, 8, '2026-10-23', { fair: 31 }),
+				bought(3, 1, '2026-10-24', { fair: 31 }),
+				bought(2, 14, '2026-10-12', { source: 'bookstore' }),
+				bought(2, 15, '2026-10-05', { source: 'online' })
+			],
+			fairs,
+			today
+		);
+		expect(groups.map((g) => [g.label, g.from, g.to])).toEqual([
+			['มหกรรมหนังสือระดับชาติ 31', '2026-10-23', '2026-10-24'],
+			['Bookstore · Oct 12', '2026-10-12', '2026-10-12'],
+			['Online · Oct 5', '2026-10-05', '2026-10-05']
+		]);
+		expect(groups[0].groups.map((g) => g.name)).toEqual(['86', 'Silent Witch']);
+	});
+
+	it('lists unread books only, drops empty groups and anything older than 60 days', () => {
+		const groups = justBought(
+			[
+				bought(1, 8, '2026-10-23', { fair: 31 }),
+				bought(1, 9, '2026-10-23', { fair: 31 }, 'read'),
+				bought(2, 1, '2026-10-20', { source: 'bookstore' }, 'reading'),
+				bought(3, 1, '2026-08-25', { source: 'online' }),
+				bought(3, 2, '2026-08-26', { source: 'online' })
+			],
+			fairs,
+			today
+		);
+		expect(groups.map((g) => g.label)).toEqual(['มหกรรมหนังสือระดับชาติ 31', 'Online · Aug 26']);
+		expect([groups[0].unread, groups[0].total]).toEqual([1, 2]);
+	});
+
+	it('filters series like Find', () => {
+		const list = [
+			bought(1, 8, '2026-10-23', { fair: 31 }),
+			bought(3, 1, '2026-10-23', { fair: 31 })
+		];
+		expect(justBought(list, fairs, today, { query: '86' })[0].groups.map((g) => g.name)).toEqual([
+			'86'
+		]);
+	});
+});
+
+describe('queueChoices', () => {
+	it('the rest you own: the tapped volume, then the unread ones after it, extras in order', () => {
+		const sw = [
+			book(1, 10, 'read'),
+			book(1, 11),
+			book(1, 11.5, 'unread', { isExtra: true }),
+			book(1, 12),
+			book(1, 13, 'read')
+		];
+		const choices = queueChoices(sw, sw[1]);
+		expect(choices.rest.map((b) => b.volumeNumber)).toEqual(['11', '11.5', '12']);
+	});
+
+	it('from the start: every volume in order, one copy each, never one being read', () => {
+		const sw = [book(1, 2, 'read'), book(1, 1, 'read'), book(1, 3, 'reading'), book(1, 4)];
+		const copy = book(1, 2, 'unread');
+		const choices = queueChoices([...sw, copy], sw[3]);
+		expect(choices.fromStart.map((b) => b.volumeNumber)).toEqual(['1', '2', '4']);
+		expect(choices.fromStart[1].id).toBe(copy.id);
+		expect(choices.rereads).toBe(1);
+	});
+});
+
+describe('spanLabel / runChipLabel', () => {
+	it('names a span by its regular volumes and counts the extras', () => {
+		const list = [book(1, 11), book(1, 11.5, 'unread', { isExtra: true }), book(1, 12)];
+		expect(spanLabel(list)).toBe('vol. 11–12 + 1 extra');
+		expect(runChipLabel(list)).toBe('Vol. 11–12 + 1 extra');
+		expect(runChipLabel([book(1, 4)])).toBe('Vol. 4');
+	});
+});
+
+describe('queueRuns / moveRun', () => {
+	const item = (bookId: number, seriesId: number, volumeNumber: number, timesRead = 0) => ({
+		bookId,
+		seriesId,
+		volumeNumber: String(volumeNumber),
+		timesRead
+	});
+	const owned = [book(1, 1), book(1, 2), book(2, 3), book(2, 4)];
+
+	it('groups consecutive books of one series; a re-read from vol. 1 is "from the start"', () => {
+		const runs = queueRuns(
+			[item(1, 1, 1, 1), item(2, 1, 2), item(3, 2, 4), item(4, 1, 3), item(5, 2, 3, 1)],
+			owned
+		);
+		expect(runs.map((r) => [r.seriesId, r.items.map((i) => i.bookId), r.fromStart])).toEqual([
+			[1, [1, 2], true],
+			[2, [3], false],
+			[1, [4], false],
+			[2, [5], false]
+		]);
+	});
+
+	it('a first read from vol. 1 is not marked', () => {
+		expect(queueRuns([item(1, 1, 1), item(2, 1, 2)], owned)[0].fromStart).toBe(false);
+	});
+
+	it('moves a whole run past its neighbour', () => {
+		const runs = queueRuns([item(1, 1, 1), item(2, 1, 2), item(3, 2, 3), item(4, 2, 4)], owned);
+		expect(moveRun(runs, 1, 'up')).toEqual([3, 4, 1, 2]);
+		expect(moveRun(runs, 0, 'up')).toEqual([1, 2, 3, 4]);
+	});
+});
+
+describe('seriesBar for a run', () => {
+	const withTimes = (b: PileBookLike) => ({ ...b, timesRead: b.readingStatus === 'read' ? 1 : 0 });
+
+	it('marks every volume of the run, an extra after the volume it follows', () => {
+		const owned = [book(1, 1, 'read'), book(1, 2), book(1, 3)].map(withTimes);
+		const run = [
+			{ seriesId: 1, volumeNumber: '2', isExtra: false },
+			{ seriesId: 1, volumeNumber: '2.5', isExtra: true },
+			{ seriesId: 1, volumeNumber: '3', isExtra: false }
+		];
+		expect(seriesBar(owned, run)).toEqual({
+			kind: 'segments',
+			segments: ['read', 'this', 'this', 'this']
+		});
+	});
+
+	it('a long run is a span on the continuous bar', () => {
+		const owned = Array.from({ length: 23 }, (_, i) =>
+			withTimes(book(2, i + 1, i < 8 ? 'read' : 'unread'))
+		);
+		const run = owned.map((b) => ({ seriesId: 2, volumeNumber: b.volumeNumber, isExtra: false }));
+		const bar = seriesBar(owned, run);
+		expect(bar).toMatchObject({ kind: 'continuous', total: 23, read: 0 });
+		expect(bar?.kind === 'continuous' && [bar.at, bar.to]).toEqual([0.5 / 23, 22.5 / 23]);
 	});
 });

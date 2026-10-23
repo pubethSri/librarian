@@ -35,9 +35,18 @@
 			class="absolute top-px left-0 h-1 rounded-full {read}"
 			style="width: {(model.read / model.total) * 100}%"
 		></span>
-		<span
-			class="absolute top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-highlight"
-			style="left: {model.at * 100}%"
-		></span>
+		{#if model.to !== undefined}
+			<!-- A run: its span in gold -->
+			<span
+				class="absolute top-0 h-1.5 rounded-full bg-highlight"
+				style="left: calc({model.at * 100}% - 3px); width: calc({(model.to - model.at) *
+					100}% + 6px)"
+			></span>
+		{:else}
+			<span
+				class="absolute top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-highlight"
+				style="left: {model.at * 100}%"
+			></span>
+		{/if}
 	</span>
 {/if}

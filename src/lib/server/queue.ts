@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from 'drizzle-orm';
+import { asc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { books, reading, readingQueue, series } from '$lib/server/db/schema';
 import { currentStatus, timesRead } from '$lib/reading';
@@ -100,4 +100,28 @@ export async function queueItems(tx: Db, bookIds?: number[]): Promise<QueueItem[
 			timesRead: timesRead(list)
 		};
 	});
+}
+
+/**
+ * Queue several books in the given order, at the end (Add to queue's options) or
+ * at the top (Back to the queue). Books already queued are skipped and keep their
+ * place. Call inside a transaction holding the queue-order lock. Returns the
+ * newly queued ids, in order.
+ */
+export async function enqueue(tx: Db, bookIds: number[], at: 'end' | 'top'): Promise<number[]> {
+	const already = await queuedAmong(tx, bookIds);
+	const fresh = [...new Set(bookIds)].filter((id) => !already.has(id));
+	if (fresh.length === 0) return [];
+	const [bounds] = await tx
+		.select({
+			min: sql<number | null>`min(${readingQueue.position})`,
+			max: sql<number | null>`max(${readingQueue.position})`
+		})
+		.from(readingQueue);
+	const start = at === 'end' ? (bounds?.max ?? 0) + 1 : (bounds?.min ?? 1) - fresh.length;
+	await tx
+		.insert(readingQueue)
+		.values(fresh.map((bookId, i) => ({ bookId, position: start + i })))
+		.onConflictDoNothing({ target: readingQueue.bookId });
+	return fresh;
 }

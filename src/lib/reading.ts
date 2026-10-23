@@ -60,6 +60,17 @@ export function timesRead(rows: readonly ReadingRowLike[]): number {
  * @param latest the book's newest reading row, or null if it has none
  * @param now    the timestamp to stamp, or null for "date unknown" (backfill)
  */
+/**
+ * "Back to the queue" for a book being read: the start never happened. The
+ * read-through being read is removed — a first read goes back to Unread, a
+ * re-read to Read (and a resumed Dropped one too: dropping stays in history only
+ * if it's an earlier row). Returns that row's id; null when not being read.
+ */
+export function planUnstart<T extends ReadingRowLike>(rows: readonly T[]): T['id'] | null {
+	const latest = latestReading(rows);
+	return latest?.status === 'reading' ? latest.id : null;
+}
+
 export function planReadingChange(
 	latest: ReadingRowLike | null,
 	target: ReadingStatus,

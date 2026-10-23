@@ -1,11 +1,12 @@
 <script lang="ts">
 	// "Reading now" on the Field Queue tab: every Reading book with one big Finished
 	// button (finished today; a recorded start is kept) — the toast then offers to
-	// queue the next owned volume.
-	import { BookOpen, CircleCheck, LoaderCircle } from '@lucide/svelte';
+	// queue the next owned volume. ↶ puts a book back: not really started, so the
+	// start is undone and it returns to the top of the queue.
+	import { BookOpen, CircleCheck, LoaderCircle, Undo2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { createLogReadMutation } from '$lib/queries/reading';
-	import { createQueueAddMutation } from '$lib/queries/queue';
+	import { createBackToQueueMutation, createQueueAddMutation } from '$lib/queries/queue';
 	import { nextToQueue, offerLabel, seriesBar } from '$lib/queue';
 	import SeriesBar from '$lib/components/queue/SeriesBar.svelte';
 	import { currentlyReading, todayLocal } from '$lib/field/logic';
@@ -17,9 +18,24 @@
 
 	const logMutation = createLogReadMutation({ patch: true });
 	const queueAdd = createQueueAddMutation();
+	const backToQueue = createBackToQueueMutation();
 	let pendingId = $state<number | null>(null);
 
 	const reading = $derived(currentlyReading(books));
+
+	async function putBack(book: BookListItem) {
+		if (pendingId !== null) return;
+		const name = `${book.seriesShortName} ${volumeText(book)}`;
+		pendingId = book.id;
+		try {
+			await backToQueue.mutateAsync(book.id);
+			toast.success(`${name}: back in the queue · #1`);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'Failed to put it back');
+		} finally {
+			pendingId = null;
+		}
+	}
 
 	async function finished(book: BookListItem) {
 		if (pendingId !== null) return;
@@ -69,6 +85,16 @@
 							<span class="block text-xs opacity-80">{volumeText(book)}</span>
 							<SeriesBar model={seriesBar(books, book)} tone="dark" class="mt-1.5" />
 						</span>
+					</button>
+					<button
+						type="button"
+						onclick={() => putBack(book)}
+						disabled={pendingId !== null}
+						aria-label="Back to the queue — {book.seriesShortName} {volumeText(book)} not started"
+						title="Back to the queue"
+						class="flex min-h-12 w-11 shrink-0 items-center justify-center rounded-lg text-primary-foreground/80 active:bg-white/10 disabled:opacity-50"
+					>
+						<Undo2 class="h-5 w-5" />
 					</button>
 					<button
 						type="button"

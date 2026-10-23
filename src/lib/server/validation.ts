@@ -98,6 +98,15 @@ export const readingDaysBody = z.object({
 /** POST /api/queue */
 export const queueAddBody = z.object({ bookId: id });
 
+/** POST / DELETE /api/queue/batch — several books, in order, each once */
+export const queueBatchBody = z.object({
+	bookIds: z
+		.array(id, { error: 'Must be a list of book ids' })
+		.min(1, 'No books given')
+		.max(300)
+		.refine((ids) => new Set(ids).size === ids.length, 'A book is listed twice')
+});
+
 /** PUT /api/queue/order — the whole queue, top first, each book once */
 export const queueOrderBody = z.object({
 	bookIds: z

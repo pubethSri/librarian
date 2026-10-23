@@ -4,7 +4,7 @@ import {
 	useQueryClient,
 	type QueryClient
 } from '@tanstack/svelte-query';
-import type { BookListItem, QueueItem } from '$lib/types';
+import type { BookListItem, QueueItem, ReadingSummary } from '$lib/types';
 import { FRESH_MS } from './series';
 
 // The reading queue (rules in $lib/queue). Every write patches the cached queue
@@ -37,9 +37,10 @@ export function createQueueQuery(opts: { fresh?: boolean } = {}) {
 	}));
 }
 
-function markQueued(qc: QueryClient, bookId: number, queued: boolean) {
+function markQueued(qc: QueryClient, bookIds: number | readonly number[], queued: boolean) {
+	const ids = new Set(typeof bookIds === 'number' ? [bookIds] : bookIds);
 	qc.setQueryData<BookListItem[]>(['books'], (list) =>
-		list?.map((b) => (b.id === bookId ? { ...b, queued } : b))
+		list?.map((b) => (ids.has(b.id) ? { ...b, queued } : b))
 	);
 	// Series details (['series', id]) carry the flag too — not the series list
 	qc.invalidateQueries({
@@ -107,5 +108,84 @@ export function createQueueOrderMutation() {
 			if (context?.previous) queryClient.setQueryData(['queue'], context.previous);
 		},
 		onSuccess: (items) => queryClient.setQueryData(['queue'], items)
+	}));
+}
+
+/**
+ * Mutation: queue several books at the end, in order (the options sheet: the rest
+ * you own, Read from the start). Already queued ones are skipped.
+ */
+export function createQueueBatchAddMutation() {
+	const queryClient = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: (bookIds: number[]) =>
+			send<{ items: QueueItem[]; skipped: number }>(
+				'/api/queue/batch',
+				'POST',
+				{ bookIds },
+				'Failed to add to the queue'
+			),
+		onSuccess: ({ items }) => {
+			queryClient.setQueryData<QueueItem[]>(['queue'], (list) =>
+				list ? [...list, ...items.filter((i) => !list.some((q) => q.bookId === i.bookId))] : list
+			);
+			markQueued(
+				queryClient,
+				items.map((i) => i.bookId),
+				true
+			);
+		}
+	}));
+}
+
+/** Mutation: take several books out of the queue (the Undo of a batch add) */
+export function createQueueBatchRemoveMutation() {
+	const queryClient = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: (bookIds: number[]) =>
+			send<{ bookIds: number[] }>(
+				'/api/queue/batch',
+				'DELETE',
+				{ bookIds },
+				'Failed to remove from the queue'
+			),
+		onSuccess: ({ bookIds }) => {
+			const ids = new Set(bookIds);
+			queryClient.setQueryData<QueueItem[]>(['queue'], (list) =>
+				list?.filter((i) => !ids.has(i.bookId))
+			);
+			markQueued(queryClient, bookIds, false);
+		}
+	}));
+}
+
+/**
+ * Mutation: Back to the queue — a book being read wasn't really started: its
+ * read-through goes and it returns to the top of the queue (POST /api/queue/return).
+ */
+export function createBackToQueueMutation() {
+	const queryClient = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: (bookId: number) =>
+			send<ReadingSummary>('/api/queue/return', 'POST', { bookId }, 'Failed to put it back'),
+		onSuccess: (summary) => {
+			queryClient.setQueryData<BookListItem[]>(['books'], (list) =>
+				list?.map((b) =>
+					b.id === summary.bookId
+						? {
+								...b,
+								readingStatus: summary.readingStatus,
+								timesRead: summary.timesRead,
+								queued: summary.queued
+							}
+						: b
+				)
+			);
+			queryClient.invalidateQueries({ queryKey: ['queue'] });
+			queryClient.invalidateQueries({ queryKey: ['reading', summary.bookId] });
+			for (const queryKey of [['series'], ['insights']]) {
+				queryClient.invalidateQueries({ queryKey, refetchType: 'none' });
+			}
+		}
 	}));
 }

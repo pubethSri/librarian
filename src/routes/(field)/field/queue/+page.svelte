@@ -9,11 +9,14 @@
 	import {
 		ArrowDown,
 		ArrowUp,
+		ChevronDown,
+		ChevronRight,
+		ChevronUp,
 		CircleCheck,
 		ListMinus,
-		ChevronRight,
 		ListPlus,
-		LoaderCircle
+		LoaderCircle,
+		RotateCcw
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import CurrentlyReading from '$lib/components/field/CurrentlyReading.svelte';
@@ -29,7 +32,16 @@
 		createQueueRemoveMutation
 	} from '$lib/queries/queue';
 	import { getFieldSettings } from '$lib/field/settings.svelte';
-	import { chipLabel, moveInQueue, seriesBar, type QueueMove } from '$lib/queue';
+	import {
+		chipLabel,
+		moveInQueue,
+		moveRun,
+		queueRuns,
+		runChipLabel,
+		seriesBar,
+		type QueueMove
+	} from '$lib/queue';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import SeriesBar from '$lib/components/queue/SeriesBar.svelte';
 	import type { VolumeSlot } from '$lib/field/logic';
 	import { extraTitle, volumeText } from '$lib/utils/volume';
@@ -47,6 +59,27 @@
 
 	const queue = $derived(queueQuery.data ?? []);
 	const books = $derived(booksQuery.data ?? []);
+	/** Consecutive books of one series = a run, moved as one (`queueRuns`) */
+	const runs = $derived(queueRuns(queue, books));
+	/** Runs opened to reorder inside, by their first book */
+	let openRuns = $state<number[]>([]);
+
+	function toggleRun(firstId: number) {
+		openRuns = openRuns.includes(firstId)
+			? openRuns.filter((id) => id !== firstId)
+			: [...openRuns, firstId];
+	}
+
+	/** A book's place in the whole queue (1 = top) */
+	function positionOf(bookId: number): number {
+		return queue.findIndex((i) => i.bookId === bookId) + 1;
+	}
+
+	function shiftRun(index: number, to: 'up' | 'down') {
+		orderMutation.mutate(moveRun(runs, index, to), {
+			onError: (err) => toast.error(err.message)
+		});
+	}
 
 	// The unread pile card → the pile stories (② is about the chip's fair, else the latest)
 	let storiesOpen = $state(false);
@@ -136,81 +169,161 @@
 			</div>
 		{:else}
 			<ol class="divide-y divide-border overflow-hidden rounded-xl border border-border">
-				{#each queue as item, i (item.bookId)}
-					{@const away = item.location !== settings.location}
+				{#each runs as run, r (run.items[0].bookId)}
+					{@const first = run.items[0]}
+					{@const at = positionOf(first.bookId)}
+					{@const isRun = run.items.length > 1}
+					{@const opened = isRun && openRuns.includes(first.bookId)}
 					<li>
 						<SwipeRow
 							label="Remove"
 							icon={ListMinus}
 							tone="remove"
-							onswipe={() => remove(item)}
-							rightLabel={item.readingStatus === 'read' ? 'Re-read' : 'Finished'}
+							disabled={opened}
+							onswipe={() => remove(first)}
+							rightLabel={first.readingStatus === 'read' ? 'Re-read' : 'Finished'}
 							rightIcon={CircleCheck}
-							onswiperight={() => open(item, i + 1, 'finish')}
+							onswiperight={() => open(first, at, 'finish')}
 						>
-							<div class="flex min-h-14 items-center gap-1 pr-1">
+							<div
+								class="flex min-h-14 items-center gap-0.5 pr-1 {opened
+									? 'bg-highlight-soft/40'
+									: ''}"
+							>
 								<button
 									type="button"
-									onclick={() => open(item, i + 1)}
-									aria-label="Reading actions — {item.seriesShortName} {volumeText(item)}"
-									class="flex min-h-14 min-w-0 flex-1 items-center gap-3 pl-3 text-left active:bg-accent {away
+									onclick={() => (opened ? toggleRun(first.bookId) : open(first, at))}
+									aria-label="{opened
+										? 'Close'
+										: 'Reading actions —'} {first.seriesShortName} {isRun
+										? runChipLabel(run.items)
+										: volumeText(first)}"
+									class="flex min-h-14 min-w-0 flex-1 items-center gap-3 pl-3 text-left active:bg-accent {first.location !==
+									settings.location
 										? 'opacity-50'
 										: ''}"
 								>
 									<span class="w-5 shrink-0 text-sm text-muted-foreground tabular-nums">
-										{i + 1}
+										{r + 1}
 									</span>
 									<span class="min-w-0 flex-1">
 										<span class="block truncate text-sm font-medium text-foreground">
-											{item.seriesShortName}{#if extraTitle(item)}
-												· {extraTitle(item)}{/if}
+											{first.seriesShortName}{#if !isRun && extraTitle(first)}
+												· {extraTitle(first)}{/if}
 										</span>
 										<span class="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 											<span
-												class="shrink-0 rounded-md bg-highlight-soft px-1.5 text-xs leading-5 font-semibold text-highlight-ink tabular-nums"
+												class="flex shrink-0 items-center gap-1 rounded-md bg-highlight-soft px-1.5 text-xs leading-5 font-semibold text-highlight-ink tabular-nums"
 											>
-												{chipLabel(item)}
+												{#if run.fromStart}
+													<RotateCcw class="h-3 w-3" aria-label="Read from the start" />
+												{/if}
+												{isRun ? runChipLabel(run.items) : chipLabel(first)}
 											</span>
-											<SeriesBar model={seriesBar(books, item)} />
-											{#if item.readingStatus === 'read'}
+											<SeriesBar model={seriesBar(books, run.items)} />
+											{#if !isRun && first.readingStatus === 'read'}
 												<span class="shrink-0">re-read</span>
-											{:else if item.readingStatus === 'dropped'}
+											{:else if !isRun && first.readingStatus === 'dropped'}
 												<span class="shrink-0">dropped</span>
 											{/if}
 										</span>
 									</span>
 									<span
 										class="shrink-0 rounded border border-info/45 px-1.5 text-[11px] font-semibold text-info-ink"
-										title={BOOK_LOCATION_LABELS[item.location]}
+										title={BOOK_LOCATION_LABELS[first.location]}
 									>
-										{letter(item.location)}
+										{letter(first.location)}
 									</span>
 								</button>
+								{#if isRun}
+									<button
+										type="button"
+										onclick={() => toggleRun(first.bookId)}
+										aria-expanded={opened}
+										aria-label="{opened ? 'Close' : 'Open'} the run ({run.items.length} books)"
+										class="flex h-11 w-9 items-center justify-center rounded-lg text-muted-foreground active:bg-accent"
+									>
+										{#if opened}<ChevronUp class="h-5 w-5" />{:else}<ChevronDown
+												class="h-5 w-5"
+											/>{/if}
+									</button>
+								{/if}
 								<button
 									type="button"
-									aria-label="Move up"
-									disabled={i === 0 || orderMutation.isPending}
-									onclick={() => move(item.bookId, 'up')}
-									class="flex h-11 w-10 items-center justify-center rounded-lg text-muted-foreground active:bg-accent disabled:opacity-25"
+									aria-label={isRun ? 'Move the run up' : 'Move up'}
+									disabled={r === 0 || orderMutation.isPending}
+									onclick={() => shiftRun(r, 'up')}
+									class="flex h-11 w-9 items-center justify-center rounded-lg text-muted-foreground active:bg-accent disabled:opacity-25"
 								>
 									<ArrowUp class="h-5 w-5" />
 								</button>
 								<button
 									type="button"
-									aria-label="Move down"
-									disabled={i === queue.length - 1 || orderMutation.isPending}
-									onclick={() => move(item.bookId, 'down')}
-									class="flex h-11 w-10 items-center justify-center rounded-lg text-muted-foreground active:bg-accent disabled:opacity-25"
+									aria-label={isRun ? 'Move the run down' : 'Move down'}
+									disabled={r === runs.length - 1 || orderMutation.isPending}
+									onclick={() => shiftRun(r, 'down')}
+									class="flex h-11 w-9 items-center justify-center rounded-lg text-muted-foreground active:bg-accent disabled:opacity-25"
 								>
 									<ArrowDown class="h-5 w-5" />
 								</button>
 							</div>
 						</SwipeRow>
+						{#if opened}
+							<ol class="divide-y divide-border border-t border-border bg-highlight-soft/20">
+								{#each run.items as item, k (item.bookId)}
+									<li>
+										<SwipeRow
+											label="Remove"
+											icon={ListMinus}
+											tone="remove"
+											onswipe={() => remove(item)}
+											rightLabel={item.readingStatus === 'read' ? 'Re-read' : 'Finished'}
+											rightIcon={CircleCheck}
+											onswiperight={() => open(item, positionOf(item.bookId), 'finish')}
+										>
+											<div class="flex min-h-12 items-center gap-0.5 pr-1">
+												<button
+													type="button"
+													onclick={() => open(item, positionOf(item.bookId))}
+													aria-label="Reading actions — {item.seriesShortName} {volumeText(item)}"
+													class="flex min-h-12 min-w-0 flex-1 items-center pl-11 text-left text-sm text-foreground active:bg-accent"
+												>
+													{#if item.isExtra}
+														<ExtraBadge book={item} />
+													{:else}
+														{chipLabel(item)}
+													{/if}
+												</button>
+												<button
+													type="button"
+													aria-label="Earlier in the run"
+													disabled={k === 0 || orderMutation.isPending}
+													onclick={() => move(item.bookId, 'up')}
+													class="flex h-11 w-9 items-center justify-center rounded-lg text-muted-foreground active:bg-accent disabled:opacity-25"
+												>
+													<ArrowUp class="h-4 w-4" />
+												</button>
+												<button
+													type="button"
+													aria-label="Later in the run"
+													disabled={k === run.items.length - 1 || orderMutation.isPending}
+													onclick={() => move(item.bookId, 'down')}
+													class="flex h-11 w-9 items-center justify-center rounded-lg text-muted-foreground active:bg-accent disabled:opacity-25"
+												>
+													<ArrowDown class="h-4 w-4" />
+												</button>
+											</div>
+										</SwipeRow>
+									</li>
+								{/each}
+							</ol>
+						{/if}
 					</li>
 				{/each}
 			</ol>
 			<p class="mt-2 px-1 text-xs text-muted-foreground">
-				Swipe right when you've finished one, left to remove it; tap for more.
+				Swipe right when you've finished one, left to remove it; tap for more. On a closed run, both
+				act on its first volume.
 			</p>
 		{/if}
 

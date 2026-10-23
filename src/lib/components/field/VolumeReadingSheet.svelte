@@ -12,12 +12,17 @@
 		ListMinus,
 		ListPlus,
 		LoaderCircle,
-		RotateCcw
+		RotateCcw,
+		Undo2
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import ReadForm, { type ReadFormResult } from '$lib/components/reading/ReadForm.svelte';
 	import { createLogReadMutation, createReadingStatusMutation } from '$lib/queries/reading';
-	import { createQueueAddMutation, createQueueRemoveMutation } from '$lib/queries/queue';
+	import {
+		createBackToQueueMutation,
+		createQueueAddMutation,
+		createQueueRemoveMutation
+	} from '$lib/queries/queue';
 	import { nextToQueue, offerLabel } from '$lib/queue';
 	import { formatDay } from '$lib/console/logic';
 	import { todayLocal, type VolumeSlot } from '$lib/field/logic';
@@ -49,8 +54,13 @@
 	const logMutation = createLogReadMutation({ patch: true });
 	const queueAdd = createQueueAddMutation();
 	const queueRemove = createQueueRemoveMutation();
+	const backToQueue = createBackToQueueMutation();
 	const busy = $derived(
-		statusMutation.isPending || logMutation.isPending || queueAdd.isPending || queueRemove.isPending
+		statusMutation.isPending ||
+			logMutation.isPending ||
+			queueAdd.isPending ||
+			queueRemove.isPending ||
+			backToQueue.isPending
 	);
 
 	let finishing = $state(false);
@@ -101,6 +111,18 @@
 			close();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to update the queue');
+		}
+	}
+
+	/** Being read but not really started: undo the start, back to the top of the queue */
+	async function putBack() {
+		if (!slot?.bookId || busy) return;
+		try {
+			await backToQueue.mutateAsync(slot.bookId);
+			toast.success(`${name}: back in the queue · #1`);
+			close();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'Failed to put it back');
 		}
 	}
 
@@ -207,27 +229,39 @@
 									<ArrowUpToLine class="h-5 w-5 text-muted-foreground" /> Move to top
 								</button>
 							{/if}
-							<button
-								type="button"
-								class="{action} flex-1 {onmovetop ? 'justify-center' : ''}"
-								disabled={busy}
-								onclick={toggleQueue}
-							>
-								{#if queueAdd.isPending || queueRemove.isPending}
-									<LoaderCircle class="h-5 w-5 animate-spin text-muted-foreground" />
-								{:else if slot.queuedId !== null}
-									<ListMinus class="h-5 w-5 text-muted-foreground" />
-								{:else}
-									<ListPlus class="h-5 w-5 text-muted-foreground" />
-								{/if}
-								{#if slot.queuedId === null}
-									Add to reading queue
-								{:else if onmovetop}
-									Remove
-								{:else}
-									In queue ✓ · Remove
-								{/if}
-							</button>
+							{#if slot.status === 'reading'}
+								<!-- Not really started: undo the start, back to the top of the queue -->
+								<button type="button" class="{action} flex-1" disabled={busy} onclick={putBack}>
+									{#if backToQueue.isPending}
+										<LoaderCircle class="h-5 w-5 animate-spin text-muted-foreground" />
+									{:else}
+										<Undo2 class="h-5 w-5 text-muted-foreground" />
+									{/if}
+									Back to the queue
+								</button>
+							{:else}
+								<button
+									type="button"
+									class="{action} flex-1 {onmovetop ? 'justify-center' : ''}"
+									disabled={busy}
+									onclick={toggleQueue}
+								>
+									{#if queueAdd.isPending || queueRemove.isPending}
+										<LoaderCircle class="h-5 w-5 animate-spin text-muted-foreground" />
+									{:else if slot.queuedId !== null}
+										<ListMinus class="h-5 w-5 text-muted-foreground" />
+									{:else}
+										<ListPlus class="h-5 w-5 text-muted-foreground" />
+									{/if}
+									{#if slot.queuedId === null}
+										Add to reading queue
+									{:else if onmovetop}
+										Remove
+									{:else}
+										In queue ✓ · Remove
+									{/if}
+								</button>
+							{/if}
 						</div>
 					</div>
 				{/if}

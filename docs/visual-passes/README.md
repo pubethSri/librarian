@@ -6,6 +6,7 @@ Click-through test scripts for the parts only a person can check (look, feel, ph
 
 | Date       | Visual pass                                                                                            | Status                                                 |
 | ---------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| 2026-10-23 | [Queue round: chips, options sheet, runs, Back to the queue](2026-10-23-queue-round.md)                | ⬜ Pending — after the second fair visit is fine       |
 | 2026-10-23 | [Extras in Field Mode + extra titles](2026-10-23-extras.md)                                            | ✅ Passed 2026-10-23, deployed                         |
 | 2026-10-27 | [Pile-height stories + Fun page (pile pace)](2026-10-27-pile-stories.md)                               | ✅ Passed 2026-10-23, merged + pushed                  |
 | 2026-10-21 | [B7 trial run at a bookstore (Oct 21–22)](2026-10-21-b7-trial-run.md)                                  | ✅ Passed 2026-10-18 (early, no fixes)                 |

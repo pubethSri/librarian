@@ -8,6 +8,7 @@ import {
 	latestReading,
 	planLogRead,
 	planReadingChange,
+	planUnstart,
 	rowDay,
 	shiftDay,
 	timesRead
@@ -231,5 +232,22 @@ describe('planLogRead ("I read this")', () => {
 			id: 2,
 			set: { status: 'read', finishedAt: null }
 		});
+	});
+});
+
+describe('planUnstart (Back to the queue)', () => {
+	it('removes the read-through being read: a first read → Unread, a re-read → Read', () => {
+		const first = row({ id: 4, status: 'reading', startedAt: '2026-10-20T00:00:00Z' });
+		expect(planUnstart([first])).toBe(4);
+		const done = row({ id: 5, status: 'read', createdAt: '2026-01-01T00:00:00Z' });
+		const again = row({ id: 6, status: 'reading', createdAt: '2026-10-20T00:00:00Z' });
+		expect(planUnstart([done, again])).toBe(6);
+		expect(currentStatus([done])).toBe('read');
+	});
+
+	it('does nothing for a book that is not being read', () => {
+		expect(planUnstart([])).toBeNull();
+		expect(planUnstart([row({ status: 'read' })])).toBeNull();
+		expect(planUnstart([row({ status: 'dropped' })])).toBeNull();
 	});
 });
