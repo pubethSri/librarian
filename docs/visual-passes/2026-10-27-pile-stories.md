@@ -1,6 +1,6 @@
 # Visual pass — Pile-height stories + Fun page
 
-- **Status:** ⬜ Pending — after the fair (branch `feature/pile-stories`, deploy after Oct 26)
+- **Status:** ✅ Passed 2026-10-23 → merged into `main` and pushed the same day (branch `feature/pile-stories`)
 - **Feature:** STATUS.md → "Pile-height stories" and "Fun page + pile pace"; ROADMAP → Phase 6
 
 Run it after the merge + push, on production (the fair's haul is the real story ②). Before that, the branch can be seen on the scratch dev server (`dev-test-db`, port 5174).

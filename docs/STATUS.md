@@ -3,28 +3,54 @@
 > **This file is the single source of truth for "where the project is now."** Visual-pass scripts (the click-through tests you run) live one per file in [`visual-passes/`](visual-passes/README.md).
 > Roadmap / future scope lives in [`ROADMAP.md`](./ROADMAP.md); how to work in the repo lives in [`../CLAUDE.md`](../CLAUDE.md); product vision in [`context.md`](./context.md); design in [`design_direction.md`](./design_direction.md). Update _this_ file at every version bump.
 
-## State as of 2026-10-18 (evening)
+## State as of 2026-10-23
 
 - **Current version:** v0.3 — **complete, tag pending**, the **Bookfair release**: usable from a phone at the bookfair opening 2026-10-23 (attending 24–26). Done: B1–B7, Insights I1–I6 and the Field Mode feedback round. **Deployed 2026-10-17** (target was Oct 20); **B7 trial run passed 2026-10-18** (ahead of the Oct 21–22 slot), no fixes needed. Left: tag `v0.3` (on the docs commit that records B7) on your OK.
 - **Machine:** Windows 11 since 2026-10-13 (see Environment below).
-- **Latest (2026-10-18, later):** **B7 trial run passed** — every step of [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md) on production, queue and Hitlist round included. The sheet-animation lag on the Samsung A13 (step 10) **didn't get in the way** → no fix; it stays an optional Q5 item (A13 tweak). **v0.6 social / playful proposals** written in `ROADMAP.md` → Phase 6 (to pick from, nothing decided).
-- **Before that (2026-10-18):** **v0.4 reading queue + app style + Hitlist round deployed** (`75f65a0`): Neon backed up (`temp/backups/prod-20261018-1717.dump`), **migration 0003 applied to Neon** (journal 3 → 4 entries; `reading_queue` empty; 388 books / 66 series untouched), `main` fast-forwarded from `feature/v0.4-queue` (19 commits) and pushed — Vercel redeployed. Live: reading queue (desktop `/queue`, phone Queue tab with swipe right = finished / left = remove, the grouped pile), app style (Gold + Blue on Stone, faint diamond tiles, Google Sans, series bars), Hitlist (watchlist = priority: black + blue diamond / black / white, booth signs + jump, series bar, ticked off today, swipe left = Bought → drafts). Earlier (2026-10-17): B6 — production at https://librarian-alpha.vercel.app (Vercel + Neon), PWA Install fixed (`f965a52`).
-- **Branches:** `main` = everything, **pushed** (`origin/main` = `75f65a0`, 2026-10-18; Vercel deploys every push to `main`). Merged and safe to delete: `feature/v0.4-queue`, `docs/queue-before-b7`, `fix/books-table-volume`, `feature/b4-quick-add`, `feature/b5-hitlist`, `feature/field-feedback`, `feature/b6-deploy`, `feature/reading-log`, `claude/musing-gauss-e6b0df`.
+- **Latest (2026-10-23):** **first fair day done** (มหกรรมหนังสือระดับชาติ 31) — the phone app and the flow worked (Hitlist at the booth, Field Mode from the receipt while queueing / resting). Your feedback → the **fair round 2 plan** below (Extras in Field Mode + extra titles, queue round, a stories planning session); a **second visit ≈ Oct 30**. **Pile-height stories + Fun page: visual pass passed 2026-10-23 → merged into `main` and pushed** the same day (pulled ahead of "after Oct 26": done, no migration, nothing touched by the fair round).
+- **Before that (2026-10-18, later):** **B7 trial run passed** — every step of [`visual-passes/2026-10-21-b7-trial-run.md`](visual-passes/2026-10-21-b7-trial-run.md) on production, queue and Hitlist round included. The sheet-animation lag on the Samsung A13 (step 10) **didn't get in the way** → no fix; it stays an optional Q5 item (A13 tweak). **v0.6 social / playful proposals** written in `ROADMAP.md` → Phase 6 (to pick from, nothing decided).
+- **Earlier (2026-10-18):** **v0.4 reading queue + app style + Hitlist round deployed** (`75f65a0`): Neon backed up (`temp/backups/prod-20261018-1717.dump`), **migration 0003 applied to Neon** (journal 3 → 4 entries; `reading_queue` empty; 388 books / 66 series untouched), `main` fast-forwarded from `feature/v0.4-queue` (19 commits) and pushed — Vercel redeployed. Live: reading queue (desktop `/queue`, phone Queue tab with swipe right = finished / left = remove, the grouped pile), app style (Gold + Blue on Stone, faint diamond tiles, Google Sans, series bars), Hitlist (watchlist = priority: black + blue diamond / black / white, booth signs + jump, series bar, ticked off today, swipe left = Bought → drafts). Earlier (2026-10-17): B6 — production at https://librarian-alpha.vercel.app (Vercel + Neon), PWA Install fixed (`f965a52`).
+- **Branches:** `main` = everything, **pushed** (2026-10-23, pile stories + Fun page + these docs; before that `75f65a0`, 2026-10-18; Vercel deploys every push to `main`). Merged and safe to delete: `feature/pile-stories`, `feature/v0.4-queue`, `docs/queue-before-b7`, `fix/books-table-volume`, `feature/b4-quick-add`, `feature/b5-hitlist`, `feature/field-feedback`, `feature/b6-deploy`, `feature/reading-log`, `claude/musing-gauss-e6b0df`.
 - **v0.4 reading queue (2026-10-18):** Q0–Q4 built, visual pass passed, **deployed** with the app style and the Hitlist round (sections below). Q5 polish after the fair.
-- **Next:** tag `v0.3` (your OK) → 👤 **create the Oct 2026 fair in production** if not done yet (Bookfairs page: มหกรรมหนังสือระดับชาติ 31, 2026-10-23) → the fair Oct 23–26 → v0.4 Q5 polish + tag → v0.5 = the phone app (offline) → v0.6 social & playful (pick from the proposals in `ROADMAP.md`).
+- **Next:** the **fair round 2 plan** below — ① ~~Fun page → prod~~ ✅ 2026-10-23 → ② **Extras** (Field Mode + titles) live by ~Oct 28 → ③ **queue round** → ④ **stories planning session** before the second visit (≈ Oct 30) → the fair Wrapped / fair insights after it → v0.4 Q5 polish + tag → v0.5 = the phone app (offline) → v0.6 social & playful. Tag `v0.3` still waits for your OK.
 
-### Next session — start here (B7 passed → tag v0.3 → the fair → v0.4 Q5)
+### Next session — start here (fair round 2: Extras → queue round → stories session)
 
-**B7 passed 2026-10-18** — the app you trial-ran is the fair app; don't push feature work to `main` before Oct 26 unless something breaks at the fair. After the fair: drafts from the Hitlist's Bought sheet are reviewed on the desktop (Drafts tile), then Q5.
+**First fair day 2026-10-23 went well**; you go back **≈ Oct 30** (some planned books hadn't arrived yet). The "no feature pushes before Oct 26" rule is replaced by: **whatever goes to `main` before the second visit must be tried on your phone first** (same idea as B7 — the fair app is a tested app), so step ② is live **≥ 2 days before the visit (~Oct 28)**. After the visits: drafts from the Hitlist's Bought sheet are reviewed on the desktop (Drafts tile); the fair Wrapped and fair-related fun insights wait until after the second visit.
 
-**Schedule to the fair** (fair opens Oct 23, you attend 24–26):
+**Order (agreed 2026-10-23):**
 
-| Day       | Work                                                                                                                        |
-| --------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Oct 16–17 | ~~B4, B5, feedback round, **B6 deploy**~~ ✅                                                                                |
-| Oct 18–20 | **v0.4 reading queue** Q0–Q4 (handoff below) → your visual pass → merge + push. Create the Oct 2026 fair **in production**. |
-| Oct 21–22 | ~~**B7** trial run at a bookstore~~ ✅ passed early, 2026-10-18 (queue included, no fixes) → tag `v0.3`                     |
-| After 26  | v0.4 **Q5 polish** → tag `v0.4`                                                                                             |
+| #   | Work                                                                                                                                                                    | When                                               |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| ①   | ~~**Fun page + pile stories → prod**~~ ✅ visual pass passed, merged + pushed 2026-10-23                                                                                | done                                               |
+| ②   | **Extras** — add an extra from Field Mode + an extra **title** (migration `0004`); mock-ups first                                                                       | live by ~Oct 28, tried on your phone first         |
+| ③   | **Queue round** — Add-to-queue chips, the volume options sheet, series runs in the queue; mock-ups first                                                                | after ②; not needed at the fair — may slip past it |
+| ④   | **Stories planning session** — better fair Instagram stories: photo ideas and challenges (color hunt, stamp-rally route…), story templates for your photos, pile height | **before the second visit** — wins over ③ if tight |
+
+Design of each step: "Fair round 2 plan" below.
+
+#### Fair round 2 plan (your feedback from the fair, 2026-10-23)
+
+**② Extras**
+
+- **Add an extra in Field Mode** (today only the desktop's New Volume can): a **+ Extra** tile at the end of Find's volume grid → a small sheet **After vol. [N ▾] · Title [ ]**; the **sort position is computed** (8.5, then 8.6 for a second extra after 8 — you never type it). The Hitlist's **Bought** sheet gets the same "+ Extra" (sets are bought at the booth). Your case: a set of vol. 8 + "รวมตอนสั้น" + "รวมตอนพิเศษ", entered on the desktop as 8.5 / 8.6 — told apart only by the number.
+- **Extra title:** a **general, optional `books.title` column** (migration `0004`, nullable — regular volumes leave it empty, nothing else changes); **the UI offers it for extras only for now** (your call — regular volumes get it only if a use case shows up). Shown wherever `volumeText` / `volumeLabel` speak of an extra: **"Extra · รวมตอนสั้น"** instead of "extra (after vol. 8)"; no title → as today. Editable in Edit Book, New Volume and the new Field sheet; carried by the Airtable export.
+- Then: your two existing extras get their titles (Edit Book).
+
+**③ Queue round** (phone Add to queue, `/field/queue/add`; desktop where it fits)
+
+- **What you saw:** new-series books _are_ in the Unread pile — but A→Z across ~100 unread books, so today's buys were buried; the missing piece is recency.
+- **Chips (names OK'd):** **Just bought** (bought in the last ~60 days, newest first, **grouped by where**: the fair "มหกรรมหนังสือระดับชาติ 31 · 23 unread", then "Bookstore · 12 Oct"…) · **Continue** (today's "Continue your series") · **Unread** (all unread, A→Z — today's list) · **Everything** (with Read / Dropped, for re-reads — replaces "Include read"). Opens on **Just bought** when it has books, else **Continue**.
+- **A bookfair section** = the fair groups inside Just bought, not a fifth chip. Clearing an _older_ fair's pile could later be a "Queue the unread ones" button on the desktop bookfair page (only if wanted).
+- **Tap a volume → options sheet** (swipe stays the quick single queue): **Queue vol. 11** · **Queue vol. 11–12** (every unread owned volume after it, extras in order) · **Read from the start · vol. 1–12** on **any** series, finished or not (your correction: a series that sat in the pile long enough gets re-read from vol. 1 so you don't forget details) — every owned volume in reading order, read or not. Each option is one request with one Undo; already-queued volumes and the one being read are skipped.
+- **Grouping = automatic runs** (your pick, no stored groups): consecutive queue entries of the same series show as one block ("Series · vol. 11–12" + its series bar), and ▲▼ / drag move the whole block; open a block to reorder inside it. Mixing in another series splits the run. No table, positions stay flat.
+
+**④ Stories planning session** (your idea; planning only, then build what's picked)
+
+- For 3–4 years your fair stories were the fair poster + the haul piled on a cleared table (~40 books → some covers hidden). Goal: **better-looking fair stories**.
+- Bring: **photo ideas** to take at the fair; **fun challenges** for the second visit or the next fair — e.g. a **color hunt** (a color chosen before the fair, find covers that fit), the **stamp rally** (you sweep the whole hall, the manga / LN section is always at the end → a "route" story); **story formats** that use your photos (you send photos → templates / layouts with the fair name, date, haul numbers). The pile height stays its own story.
+- How it can work: story templates in the app, drawn on the same 1080×1920 canvas as the pile stories (your photos + text + stats), and/or Claude laying out sample photos in the session to compare looks.
+- After the second visit: fair Wrapped (6.3 style) and the fair-related fun insights.
 
 #### Handoff — what the next session needs to know
 
@@ -96,7 +122,7 @@ Five commits on `feature/v0.4-queue` (from `main` = `a56061b`), plus this docs c
 
 **To deploy (on your OK):** back up Neon (`npm run db:backup`), apply `drizzle/0003` to Neon (`drizzle-kit migrate` with the unpooled URL, as for 0002), then fast-forward `main` to `feature/v0.4-queue` and push → Vercel redeploys. Then create the Oct 2026 fair in production (handoff 2) and run B7.
 
-#### Pile-height stories (v0.6, pulled forward for the fair) — built 2026-10-18 on `feature/pile-stories`, deploy after Oct 26
+#### Pile-height stories (v0.6, pulled forward for the fair) — built 2026-10-18 on `feature/pile-stories`; visual pass passed 2026-10-23, merged + pushed the same day
 
 Your idea: 1–2 Instagram-story images — ① how tall the unread pile is now, ② how much a bookfair added to it. Mock-ups shown 2026-10-18 (two styles); **your picks:**
 
@@ -108,11 +134,11 @@ Your idea: 1–2 Instagram-story images — ① how tall the unread pile is now,
 
 **Flow (your OK 2026-10-18):** a gold-bordered **pile card** at the end of the phone **Queue** tab ("Your pile · 1.78 m / 101 unread · Pile story") → a full-screen **Instagram-style viewer** (bars on top, tap right = next / left = back, ✕, Esc and ← → on a keyboard) → **Save both** (both PNGs to the share sheet in one go) or **This one**. Story ② is the fair in the header chip once it has books, else the latest fair with books; none → story ① only. The **bookfair page** has a **Pile story** button (fairs with books) for that fair's two stories.
 
-**Built (branch `feature/pile-stories`, not merged — deploy after Oct 26):** pure `$lib/stories/pile` (`inPile`, `pileOf`, `fairAdd`, `formatHeight`, `compareHeight` — cat 25 cm … two-storey house 7 m, "about as tall as" within 5 % —, `storyFair`, file names) and `$lib/stories/pileImage` (`pileStory` / `fairStory` text, `pxPerCm` fits the taller of the pile and the door, max 8 px/cm; `stackLayout` = one grey per series run, the fair's in gold, a small fixed wobble per book; `drawStory` on a 1080×1920 canvas), 22 tests. Viewer `$lib/components/stories/PileStories.svelte` (draws when opened, after `document.fonts.ready`; object URLs freed on close). Saving moved to `$lib/utils/saveImages` (several files per share; the Hitlist's Save image uses it too). **Checked:** 375 tests (was 353), `check` 0 errors (21 warnings, as before), lint, build. Browser pre-check on the scratch DB (port 5175, test cookie): Queue card "1.78 m · 101 unread"; story ① 1080×1920 PNG (~376 KB), "About as tall as a person"; tap → story ② (scratch fair #12, Thai name in gold, +2 cm); left tap back; Esc closes; bookfair #5 → "+54 cm · 43 new books · 39 already read"; no console errors. Saving itself (share sheet) needs the phone. **Your check:** [`visual-passes/2026-10-27-pile-stories.md`](visual-passes/2026-10-27-pile-stories.md).
+**Built (branch `feature/pile-stories`; merged + pushed 2026-10-23 after your visual pass):** pure `$lib/stories/pile` (`inPile`, `pileOf`, `fairAdd`, `formatHeight`, `compareHeight` — cat 25 cm … two-storey house 7 m, "about as tall as" within 5 % —, `storyFair`, file names) and `$lib/stories/pileImage` (`pileStory` / `fairStory` text, `pxPerCm` fits the taller of the pile and the door, max 8 px/cm; `stackLayout` = one grey per series run, the fair's in gold, a small fixed wobble per book; `drawStory` on a 1080×1920 canvas), 22 tests. Viewer `$lib/components/stories/PileStories.svelte` (draws when opened, after `document.fonts.ready`; object URLs freed on close). Saving moved to `$lib/utils/saveImages` (several files per share; the Hitlist's Save image uses it too). **Checked:** 375 tests (was 353), `check` 0 errors (21 warnings, as before), lint, build. Browser pre-check on the scratch DB (port 5175, test cookie): Queue card "1.78 m · 101 unread"; story ① 1080×1920 PNG (~376 KB), "About as tall as a person"; tap → story ② (scratch fair #12, Thai name in gold, +2 cm); left tap back; Esc closes; bookfair #5 → "+54 cm · 43 new books · 39 already read"; no console errors. Saving itself (share sheet) needs the phone. **Your check:** [`visual-passes/2026-10-27-pile-stories.md`](visual-passes/2026-10-27-pile-stories.md).
 
 - **Follow-up (2026-10-18, your ask):** book thickness in the stack **varies** — each series ±20 %, each book ±15 % (fixed per book, so the image is the same every time), widths too; the stack is rescaled so its height stays the true one. Checked on the scratch DB.
 
-#### Fun page + pile pace — "how long to clear the pile?" (your idea 2026-10-18) — built on `feature/pile-stories`
+#### Fun page + pile pace — "how long to clear the pile?" (your idea 2026-10-18) — built on `feature/pile-stories`; visual pass passed 2026-10-23, merged + pushed
 
 Mock-ups shown 2026-10-18. A sheet from the Queue tab's pile card, two tabs:
 
@@ -612,6 +638,18 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 
 - **Purchase dates of 10 Dec 2023 → unknown** (your call): that is the day you started logging, and the Airtable import (`scripts/migrate-airtable.ts`) used each record's "Created" time as `bought_at`, so 95 books carried it and skewed Insights. Set to `NULL` in production (after `prod-20261021-0918.dump`; old values kept in `temp/backups/prod-2023-12-10-bought_at.csv`) and in the local dev copy. No code change — Insights already count undated books separately. Production now: 388 books, 99 undated.
 
+### Fair-round-2 Decisions (2026-10-23)
+
+- **Pile stories + Fun page deployed now** (visual pass passed 2026-10-23), ahead of "after Oct 26": finished, no migration, independent of the fair-round work — and smaller deploys keep a rollback small. Not bundled with the Extras / queue changes.
+- **Order:** ① Fun → prod, ② Extras, ③ queue round, ④ stories planning session — ④ comes **before the second visit (≈ Oct 30)** even if ③ isn't done, because challenge / photo ideas only help before the visit; ③ isn't used at the fair. Fair Wrapped and fair-related fun insights wait until after the second visit.
+- **Pre-fair rule:** anything pushed before the second visit is tried on your phone first; Extras live by ~Oct 28.
+- **`books.title`:** a general nullable column, **offered in the UI for extras only** (your call: "if making it general doesn't hurt, extras for now; reconsider for regular volumes when a use case appears").
+- **Extra sort position is computed** in Field Mode (next free tenth after the chosen volume), not typed.
+- **Queue chips:** Just bought · Continue · Unread · Everything (names OK'd); a fair = a group inside Just bought, not its own chip.
+- **Read from the start** works on **any** series, not only finished ones (your correction).
+- **Queue grouping = automatic runs** of consecutive same-series entries (your pick over stored groups).
+- Each of ② and ③ gets a **mock-up round** before code (design before build).
+
 ## Environment
 
 - **Windows 11** since 2026-10-13 (was Arch Linux). Repo at `C:\librarian`; `core.autocrlf=input` + `.gitattributes` force LF. Shell: PowerShell, Git Bash also available.
@@ -754,3 +792,4 @@ Why: reads don't happen at a screen. A book grabbed in a rush is started and fin
 | 2026-10-18 | **Fun page** (`/fun`, below Insights; your call: fun features in one place, desktop first): the unread pile + Pile stories, and **How long to clear the pile?** (My pace with Christmases / Songkrans / bookfairs / years older / slow-pace jokes, By the fair with a guessed spring-fair date and the 2.5-a-day flag, Keep buying switch). Stack books vary in thickness. Tests 376 → 395. On `feature/pile-stories`.                                                                                                                                                                                                        |
 | 2026-10-18 | **Ideas shelf** added to `ROADMAP.md` (lowest priority, not confirmed): AniList lookup, Taste Map, Your shelf in X colors, Smarter "What should I read next?", Pile-risk meter; Wrapped (6.3) gets **Claude's notes** (written in a session from an Export stats JSON, no AI API). Docs only.                                                                                                                                                                                                                                                                                                                                 |
 | 2026-10-21 | **Data fix:** 95 purchase dates of 10 Dec 2023 (the Airtable import's "Created" time, i.e. your first logging day) set to unknown in production and the local copy; Neon backed up first. No code change.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-10-23 | **First fair day** (มหกรรมหนังสือระดับชาติ 31): the phone flow worked. **Pile-height stories + Fun page** visual pass passed → merged into `main` and pushed (with these docs). Your feedback → **fair round 2 plan**: ② Extras in Field Mode + an extra title (`books.title`, extras-only UI), ③ queue round (Just bought / Continue / Unread / Everything, options sheet with Read from the start, automatic series runs), ④ stories planning session before the second visit (≈ Oct 30). Docs only.                                                                                                                        |
