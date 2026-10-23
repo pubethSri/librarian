@@ -299,9 +299,7 @@
 	{#if selectedId === null}
 		<!-- ─── Search ─────────────────────────────────────────────────────── -->
 		<!-- Full-bleed Stone strip: hides rows scrolling under the box without a visible card edge -->
-		<div
-			class="sticky top-12 z-20 mx-[calc(50%-50vw)] bg-(--canvas)/95 px-[calc(50vw-50%)] pt-1 pb-3 backdrop-blur"
-		>
+		<div class="sticky top-12 z-20 mx-[calc(50%-50vw)] bg-(--canvas) px-[calc(50vw-50%)] pt-1 pb-3">
 			<h1 class="sr-only">Field Mode</h1>
 			<label class="relative block">
 				<span class="sr-only">Find a series</span>
@@ -667,7 +665,7 @@
 				<!-- Room for the action bar, then the bar itself just above the tabs -->
 				<div class="h-20" aria-hidden="true"></div>
 				<div
-					class="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 py-2 backdrop-blur"
+					class="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background px-4 py-2"
 				>
 					<button
 						type="button"

@@ -14,7 +14,7 @@
 	<main class="flex-1 transition-all duration-200 {$sidebarCollapsed ? 'md:ml-12' : 'md:ml-44'}">
 		<!-- Header with breadcrumb -->
 		<header
-			class="sticky top-0 z-30 flex h-12 items-center border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-8"
+			class="sticky top-0 z-30 flex h-12 items-center border-b border-border bg-background px-6 md:px-8"
 		>
 			<!-- Spacer for mobile hamburger -->
 			<div class="w-10 md:hidden"></div>

@@ -42,7 +42,7 @@
 
 <div class="min-h-dvh overflow-x-hidden bg-canvas">
 	<header
-		class="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden"
+		class="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-background px-4 print:hidden"
 	>
 		<span class="sr-only">Field Mode</span>
 		<FairPicker {settings} fairs={bookfairsQuery.data} />
@@ -61,7 +61,7 @@
 
 	<nav
 		aria-label="Field Mode"
-		class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/85 print:hidden"
+		class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] print:hidden"
 	>
 		<ul class="mx-auto grid max-w-md grid-cols-4">
 			{#each tabs as tab (tab.href)}

@@ -4,19 +4,6 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="text-scale" content="scale" />
-		<script>
-			// Display test switch (to find a lag): ?fx=noblur,notiles,noanim turns those
-			// effects off on this device until ?fx= clears it. Rules in layout.css.
-			try {
-				var fxParam = new URLSearchParams(location.search).get('fx');
-				if (fxParam !== null) {
-					if (fxParam) localStorage.setItem('librarian.fx', fxParam);
-					else localStorage.removeItem('librarian.fx');
-				}
-				var fx = localStorage.getItem('librarian.fx');
-				if (fx) document.documentElement.dataset.fx = fx.split(',').join(' ');
-			} catch (e) {}
-		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

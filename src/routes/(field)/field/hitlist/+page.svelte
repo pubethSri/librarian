@@ -228,7 +228,7 @@
 						onclick={() => (jumpOpen = true)}
 						aria-label="{group.publisher ?? 'Unknown publisher'}, {group.items
 							.length} series — jump to another publisher"
-						class="sticky top-12 z-10 -mx-4 mb-2 flex w-[calc(100%+2rem)] items-center gap-2 bg-(--canvas)/95 px-5 py-2 text-left backdrop-blur print:static print:mx-0 print:w-full print:px-1 print:py-0 print:pb-1"
+						class="sticky top-12 z-10 -mx-4 mb-2 flex w-[calc(100%+2rem)] items-center gap-2 bg-(--canvas) px-5 py-2 text-left print:static print:mx-0 print:w-full print:px-1 print:py-0 print:pb-1"
 					>
 						<span class="h-2 w-2 shrink-0 rotate-45 bg-highlight" aria-hidden="true"></span>
 						<span
