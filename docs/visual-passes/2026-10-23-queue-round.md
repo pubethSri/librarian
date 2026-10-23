@@ -1,6 +1,6 @@
 # Visual pass — Queue round: Just bought / Continue / Unread / Everything, options sheet, runs, Back to the queue
 
-- **Status:** ⬜ Pending — your check (not needed at the fair, so it can wait until after the second visit)
+- **Status:** ✅ Passed 2026-10-23 on your phone (feedback applied: swipe left removes a whole run, desktop runs fold, no blur) → deployed the same day
 - **Feature:** STATUS.md → "Fair round 2 plan" → ③ Queue round (built 2026-10-23); branch `feature/queue-round`; mock-ups at https://claude.ai/artifact/FgurrWqN1GtUg4TBRLLfoa
 - **Setup:** `node .claude/dev-test-db.mjs --host` on the laptop (scratch DB, port 5174), phone at `http://<laptop-IP>:5174/field/queue`. No migration. Queueing on scratch is safe; Undo or remove what you add.
 
