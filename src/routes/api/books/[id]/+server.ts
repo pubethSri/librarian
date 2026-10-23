@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { books } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { normalizeTitle } from '$lib/utils/volume';
 
 // GET /api/books/[id] — Get single book with reading history
 export const GET: RequestHandler = async ({ params }) => {
@@ -40,6 +41,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 	if (body.volumeNumber !== undefined)
 		updateFields.volumeNumber = Number(body.volumeNumber).toFixed(1);
 	if (body.isExtra !== undefined) updateFields.isExtra = body.isExtra === true;
+	if (body.title !== undefined) updateFields.title = normalizeTitle(body.title);
 	if (body.location !== undefined) updateFields.location = body.location;
 	if (body.boughtAt !== undefined)
 		updateFields.boughtAt = body.boughtAt ? new Date(body.boughtAt) : null;

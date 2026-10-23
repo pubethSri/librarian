@@ -7,8 +7,10 @@
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import LocationToggle from '$lib/components/field/LocationToggle.svelte';
 	import VolumeReadingSheet from '$lib/components/field/VolumeReadingSheet.svelte';
+	import AddExtraSheet from '$lib/components/field/AddExtraSheet.svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		ArrowLeft,
@@ -85,6 +87,8 @@
 
 	/** The owned tile whose reading sheet is open */
 	let readingSlot = $state<VolumeSlot | null>(null);
+	/** The Add an extra sheet */
+	let addingExtra = $state(false);
 
 	// ─── Quick add ──────────────────────────────────────────────────────────
 	const settings = getFieldSettings();
@@ -275,7 +279,11 @@
 	}
 
 	function slotTitle(slot: VolumeSlot): string {
-		const name = volumeText({ volumeNumber: slot.volume, isExtra: slot.isExtra });
+		const name = volumeText({
+			volumeNumber: slot.volume,
+			isExtra: slot.isExtra,
+			title: slot.title
+		});
 		if (slot.copies === 0) return `${name}: not owned`;
 		const where = slot.locations.map((l) => BOOK_LOCATION_LABELS[l]).join(', ');
 		const state = slot.status === 'reading' ? ' · reading' : slot.read ? ' · read' : '';
@@ -640,6 +648,18 @@
 							{/if}
 						</button>
 					</li>
+					<li>
+						<button
+							type="button"
+							onclick={() => (addingExtra = true)}
+							disabled={!settings.ready}
+							aria-label="Add an extra (side story, collection…)"
+							class="flex aspect-square w-full flex-col items-center justify-center gap-0.5 rounded-xl border-[1.5px] border-dashed border-highlight bg-highlight-soft text-highlight-ink transition-colors active:bg-highlight/20 disabled:opacity-50"
+						>
+							<Plus class="h-4 w-4" />
+							<span class="text-xs font-semibold">Extra</span>
+						</button>
+					</li>
 				{/if}
 			</ol>
 
@@ -746,12 +766,11 @@
 								{#if slot.status === 'reading'}
 									<BookOpen class="h-3 w-3 text-sky-600 dark:text-sky-400" />
 								{/if}
-								<span class="text-foreground">
-									{volumeText({ volumeNumber: slot.volume, isExtra: true }).replace(
-										/^extra/,
-										'Extra'
-									)}
-								</span>
+								<ExtraBadge
+									book={{ volumeNumber: slot.volume, isExtra: true, title: slot.title }}
+									place={slot.title !== null}
+									class="text-foreground"
+								/>
 								<span class="text-[10px] font-medium text-muted-foreground">
 									{locationLetters(slot.locations)}{slot.copies > 1 ? ` ×${slot.copies}` : ''}
 								</span>
@@ -780,6 +799,13 @@
 				bind:slot={readingSlot}
 				seriesName={selected.shortName}
 				books={booksQuery.data ?? []}
+			/>
+			<AddExtraSheet
+				bind:open={addingExtra}
+				series={selected}
+				{owned}
+				books={booksQuery.data ?? []}
+				price={priceText}
 			/>
 		{/if}
 	{/if}

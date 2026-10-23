@@ -1,0 +1,1 @@
+ALTER TABLE "books" ADD COLUMN "title" varchar(200);

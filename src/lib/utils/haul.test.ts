@@ -10,6 +10,7 @@ function book(overrides: Partial<BookListItem> = {}): BookListItem {
 		seriesFullName: 'Mushoku Tensei',
 		volumeNumber: '1',
 		isExtra: false,
+		title: null,
 		location: 'apartment',
 		boughtAt: null,
 		price: null,

@@ -32,7 +32,7 @@
 	import { chipLabel, moveInQueue, seriesBar, type QueueMove } from '$lib/queue';
 	import SeriesBar from '$lib/components/queue/SeriesBar.svelte';
 	import type { VolumeSlot } from '$lib/field/logic';
-	import { volumeText } from '$lib/utils/volume';
+	import { extraTitle, volumeText } from '$lib/utils/volume';
 	import { formatHeight, pileOf, storyFair } from '$lib/stories/pile';
 	import { BOOK_LOCATION_LABELS, type QueueItem, type SeriesType } from '$lib/types';
 
@@ -70,6 +70,7 @@
 		sheetSlot = {
 			volume: Number(item.volumeNumber),
 			isExtra: item.isExtra,
+			title: item.title,
 			copies: 1,
 			locations: [item.location],
 			read: item.timesRead > 0,
@@ -161,7 +162,8 @@
 									</span>
 									<span class="min-w-0 flex-1">
 										<span class="block truncate text-sm font-medium text-foreground">
-											{item.seriesShortName}
+											{item.seriesShortName}{#if extraTitle(item)}
+												· {extraTitle(item)}{/if}
 										</span>
 										<span class="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 											<span

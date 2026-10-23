@@ -51,6 +51,8 @@ export const books = pgTable('books', {
 	volumeNumber: numeric('volume_number', { precision: 4, scale: 1 }).notNull(),
 	// An extra (side story, short-story collection…) — volumeNumber is then only its sort position
 	isExtra: boolean('is_extra').default(false).notNull(),
+	// As printed on the cover ("รวมตอนสั้น") — set on extras only for now; it tells them apart
+	title: varchar('title', { length: 200 }),
 	location: bookLocationEnum('location').default('home').notNull(),
 	boughtAt: timestamp('bought_at', { withTimezone: true }),
 	price: numeric('price', { precision: 10, scale: 2 }),

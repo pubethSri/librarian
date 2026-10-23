@@ -29,6 +29,8 @@ export type InsightsInput = {
 		seriesId: number;
 		volumeNumber: string;
 		isExtra: boolean;
+		/** An extra's title (optional in fixtures) */
+		title?: string | null;
 		boughtAt: string | null;
 		price: string | null;
 		source: BookSource | null;
@@ -58,6 +60,7 @@ export type BookFact = {
 	seriesId: number;
 	volumeNumber: number;
 	isExtra: boolean;
+	title: string | null;
 	type: SeriesType;
 	/** Purchase day `YYYY-MM-DD`, null when unknown */
 	boughtDay: string | null;
@@ -183,6 +186,7 @@ export function buildBookFacts(input: InsightsInput): BookFact[] {
 			seriesId: b.seriesId,
 			volumeNumber: Number(b.volumeNumber),
 			isExtra: b.isExtra,
+			title: b.title ?? null,
 			type,
 			boughtDay: dayOf(b.boughtAt),
 			price: price !== null && Number.isFinite(price) ? price : null,

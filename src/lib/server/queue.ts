@@ -57,6 +57,7 @@ export async function queueItems(tx: Db, bookIds?: number[]): Promise<QueueItem[
 			seriesFullName: series.fullName,
 			volumeNumber: books.volumeNumber,
 			isExtra: books.isExtra,
+			title: books.title,
 			location: books.location,
 			isDraft: books.isDraft
 		})

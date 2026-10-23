@@ -65,7 +65,9 @@
 	});
 
 	const name = $derived(
-		slot ? `${seriesName} ${volumeText({ volumeNumber: slot.volume, isExtra: slot.isExtra })}` : ''
+		slot
+			? `${seriesName} ${volumeText({ volumeNumber: slot.volume, isExtra: slot.isExtra, title: slot.title })}`
+			: ''
 	);
 	const isRead = $derived(slot?.status === 'read');
 

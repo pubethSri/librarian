@@ -93,6 +93,7 @@ export function computeBacklog(
 			seriesShortName: seriesById.get(b.seriesId)?.shortName ?? '?',
 			volumeNumber: b.volumeNumber,
 			isExtra: b.isExtra,
+			title: b.title,
 			boughtDay: b.boughtDay as string
 		}));
 

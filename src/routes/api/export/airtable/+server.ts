@@ -13,6 +13,7 @@ export const GET: RequestHandler = async () => {
 			seriesType: series.type,
 			seriesPublisher: series.publisher,
 			volumeNumber: books.volumeNumber,
+			title: books.title,
 			location: books.location,
 			createdAt: books.createdAt
 		})
@@ -23,7 +24,8 @@ export const GET: RequestHandler = async () => {
 	// Build CSV
 	const header = 'Name,Volume,Where,Book_Name,Fullname,Type,Publisher,Created';
 	const rows = allBooks.map((b) => {
-		const name = `${b.seriesShortName} ${b.volumeNumber}`;
+		// An extra's title follows its sort position ("Silent Witch 8.5 รวมตอนสั้น")
+		const name = [b.seriesShortName, b.volumeNumber, b.title].filter(Boolean).join(' ');
 		const volume = b.volumeNumber;
 		const where = b.location === 'home' ? 'Home' : 'Apartment';
 		const bookName = escapeCsv(b.seriesShortName);

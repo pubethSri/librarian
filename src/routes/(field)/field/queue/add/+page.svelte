@@ -7,6 +7,7 @@
 	import { ArrowLeft, ListOrdered, ListPlus, LoaderCircle, RotateCcw, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import SwipeRow from '$lib/components/field/SwipeRow.svelte';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import { createBooksListQuery } from '$lib/queries/books';
 	import {
 		createQueueAddMutation,
@@ -82,7 +83,12 @@
 		<div class="flex min-h-14 items-center gap-3 pr-1 pl-4">
 			<span class="min-w-0 flex-1">
 				<span class="block truncate text-sm font-medium text-foreground">
-					{withSeries ? name(book) : volumeText(book).replace(/^./, (c) => c.toUpperCase())}
+					{#if book.isExtra}
+						{withSeries ? book.seriesShortName : ''}
+						<ExtraBadge {book} />
+					{:else}
+						{withSeries ? name(book) : volumeText(book).replace(/^./, (c) => c.toUpperCase())}
+					{/if}
 				</span>
 				{#if hint(book)}
 					<span class="flex items-center gap-1 text-xs text-muted-foreground">

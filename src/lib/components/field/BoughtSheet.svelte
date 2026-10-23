@@ -5,21 +5,28 @@
 	// today from the chip, one batch with `onlyIfMissing`, one Undo. Nothing is saved
 	// until Save, so a stray swipe at a booth is harmless. Books are saved as drafts,
 	// to review on the desktop after the fair (Drafts tile, Books table's Draft filter).
+	// "+ Extra" adds extras with their titles in the same Save (`extraPlan`).
 	import * as Sheet from '$lib/components/ui/sheet';
-	import { LoaderCircle } from '@lucide/svelte';
+	import { LoaderCircle, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import ExtraRows from '$lib/components/field/ExtraRows.svelte';
 	import LocationToggle from '$lib/components/field/LocationToggle.svelte';
 	import { createMultiAddMutation, createUndoAddMutation } from '$lib/queries/field';
 	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import { getFieldSettings } from '$lib/field/settings.svelte';
 	import {
+		addedSummary,
 		addVolumes,
 		boughtChoices,
+		extraPlan,
+		extraPlanLabel,
 		lastPrice,
 		parsePrice,
 		purchaseFields,
 		toggleVolume,
+		usedTitles,
 		volumeRanges,
+		type ExtraPlan,
 		type HitlistItem
 	} from '$lib/field/logic';
 	import type { BookListItem, SeriesListItem } from '$lib/types';
@@ -41,6 +48,19 @@
 	let selection = $state<number[]>([]);
 	let showMore = $state(false);
 	let priceText = $state('');
+	let withExtras = $state(false);
+	let extraAfter = $state(0);
+	let extraTitles = $state<string[]>(['']);
+
+	const seriesBooks = $derived(item ? books.filter((b) => b.seriesId === item?.series.id) : []);
+	const suggestions = $derived(usedTitles(books));
+	const extras = $derived(withExtras ? extraPlan(seriesBooks, extraAfter, extraTitles, false) : []);
+	/** Everything Save adds: the picked volumes, then the extras */
+	const plan = $derived<ExtraPlan[] | null>(
+		extras === null
+			? null
+			: [...selection.map((v) => ({ volumeNumber: v, isExtra: false, title: null })), ...extras]
+	);
 
 	const choices = $derived(item ? boughtChoices(item) : null);
 	const fairName = $derived(
@@ -50,7 +70,9 @@
 	);
 	const price = $derived(parsePrice(priceText));
 	const busy = $derived(multiAdd.isPending);
-	const canSave = $derived(settings.ready && !busy && price !== null && selection.length > 0);
+	const canSave = $derived(
+		settings.ready && !busy && price !== null && plan !== null && plan.length > 0
+	);
 
 	// Each opening starts fresh: the next volume picked, the series' last price
 	$effect(() => {
@@ -58,6 +80,8 @@
 		const current = item;
 		selection = boughtChoices(current).preset;
 		showMore = false;
+		withExtras = false;
+		extraTitles = [''];
 		const p = lastPrice(books.filter((b) => b.seriesId === current.series.id));
 		priceText = p === null ? '' : String(p);
 	});
@@ -66,33 +90,43 @@
 		item = null;
 	}
 
+	/** Extras follow the highest volume picked, else the latest owned */
+	function toggleExtras() {
+		withExtras = !withExtras;
+		if (!withExtras) return;
+		const regular = seriesBooks.filter((b) => !b.isExtra).map((b) => Number(b.volumeNumber));
+		extraAfter = Math.floor(Math.max(0, ...(selection.length > 0 ? selection : regular)));
+		extraTitles = [''];
+	}
+
 	async function save() {
 		if (!item || !canSave || price === null) return;
+		if (!plan) return;
 		const series = item.series;
-		const volumes = [...selection];
 		try {
 			const result = await multiAdd.mutateAsync({
 				series,
-				books: volumes.map((volumeNumber) => ({
+				books: plan.map((b) => ({
 					seriesId: series.id,
-					volumeNumber,
-					isExtra: false,
+					volumeNumber: b.volumeNumber,
+					isExtra: b.isExtra,
+					title: b.title,
 					location: settings.location,
 					price,
 					...purchaseFields(settings.fairId, settings.today),
 					isDraft: true
 				}))
 			});
-			const added = result.books.map((b) => Number(b.volumeNumber));
 			const skipped = result.skipped.map((b) => Number(b.volumeNumber));
 			const already = skipped.length > 0 ? `already had vol. ${volumeRanges(skipped)}` : '';
 			close();
-			if (added.length > 0) {
+			if (result.books.length > 0) {
 				const ids = result.books.map((b) => b.id);
-				toast.success(`Added vol. ${volumeRanges(added)}`, {
+				const what = addedSummary(result.books);
+				toast.success(`Added ${what}`, {
 					description: [series.shortName, 'saved as draft', already].filter(Boolean).join(' · '),
 					duration: 6000,
-					action: { label: 'Undo', onClick: () => undo(ids, series.id, added) }
+					action: { label: 'Undo', onClick: () => undo(ids, series.id, what) }
 				});
 			} else {
 				toast.warning(`Nothing added — ${already}`, { description: series.shortName });
@@ -102,8 +136,7 @@
 		}
 	}
 
-	async function undo(bookIds: number[], seriesId: number, volumes: number[]) {
-		const label = `vol. ${volumeRanges(volumes)}`;
+	async function undo(bookIds: number[], seriesId: number, label: string) {
 		try {
 			await undoAdd.mutateAsync({ bookIds, seriesId });
 			toast(`Removed ${label}`);
@@ -165,6 +198,14 @@
 								>+ more</button
 							>
 						{/if}
+						<button
+							type="button"
+							aria-pressed={withExtras}
+							onclick={toggleExtras}
+							class="{chip} gap-1 border-[1.5px] text-sm text-highlight-ink {withExtras
+								? 'border-highlight bg-highlight-soft'
+								: 'border-dashed border-highlight'}"><Plus class="h-3.5 w-3.5" />Extra</button
+						>
 					</div>
 					{#if choices.missing.length > 0 || choices.fresh.length > 1}
 						<div class="flex flex-wrap gap-2">
@@ -191,6 +232,20 @@
 					{/if}
 				</div>
 
+				{#if withExtras}
+					<div class="space-y-2 rounded-xl border border-highlight/30 bg-highlight-soft/40 p-3">
+						<p class="text-xs font-semibold tracking-wide text-highlight-ink uppercase">
+							Extras · come after
+						</p>
+						<ExtraRows bind:after={extraAfter} bind:titles={extraTitles} {suggestions} />
+						{#if extras === null}
+							<p class="text-sm text-destructive">
+								No room for more extras after vol. {extraAfter} — add them on the desktop.
+							</p>
+						{/if}
+					</div>
+				{/if}
+
 				<div class="flex items-end gap-2">
 					<label class="min-w-0 flex-1">
 						<span class="text-xs text-muted-foreground">Price each ฿</span>
@@ -215,9 +270,13 @@
 					class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground active:opacity-80 disabled:opacity-40"
 				>
 					{#if busy}<LoaderCircle class="h-5 w-5 animate-spin" />{/if}
-					{selection.length === 0
-						? 'Pick a volume'
-						: `Save · ${selection.length === 1 ? `vol. ${selection[0]}` : `${selection.length} volumes`}`}
+					{#if withExtras}
+						{plan ? `Save · ${extraPlanLabel(plan)}` : 'No room for the extras'}
+					{:else}
+						{selection.length === 0
+							? 'Pick a volume'
+							: `Save · ${selection.length === 1 ? `vol. ${selection[0]}` : `${selection.length} volumes`}`}
+					{/if}
 				</button>
 			</div>
 		{/if}

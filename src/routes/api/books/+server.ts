@@ -4,7 +4,7 @@ import { db } from '$lib/server/db';
 import { books, reading, series, seriesTags, tags } from '$lib/server/db/schema';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { currentStatus, timesRead } from '$lib/reading';
-import { findSameVolume } from '$lib/utils/volume';
+import { findSameVolume, normalizeTitle } from '$lib/utils/volume';
 import { lockSeriesInserts } from '$lib/server/locks';
 import { queuedAmong } from '$lib/server/queue';
 
@@ -40,6 +40,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			seriesFullName: series.fullName,
 			volumeNumber: books.volumeNumber,
 			isExtra: books.isExtra,
+			title: books.title,
 			location: books.location,
 			boughtAt: books.boughtAt,
 			price: books.price,
@@ -145,6 +146,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		seriesId: body.seriesId,
 		volumeNumber: Number(body.volumeNumber).toFixed(1),
 		isExtra: body.isExtra === true,
+		title: normalizeTitle(body.title),
 		location: body.location || 'home',
 		boughtAt: body.boughtAt ? new Date(body.boughtAt) : null,
 		price: body.price === '' || body.price == null ? null : body.price,

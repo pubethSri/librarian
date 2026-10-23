@@ -7,7 +7,7 @@
 
 import type { ReadingStatus } from '$lib/types';
 import { matchScore, type SearchableSeries } from '$lib/field/logic';
-import type { VolumeLike } from '$lib/utils/volume';
+import { extraTitle, type VolumeLike } from '$lib/utils/volume';
 
 /** Whether a reading change to `target` takes a queued book out (start or finish) */
 export function leavesQueue(target: ReadingStatus): boolean {
@@ -108,9 +108,11 @@ export function ownedSeries(
 	return [...map.values()];
 }
 
-/** The toast button offering the next volume: "Queue vol. 5" / "Queue the extra" */
+/** The toast button offering the next volume: "Queue vol. 5" / "Queue รวมตอนสั้น" / "Queue the extra" */
 export function offerLabel(book: VolumeLike): string {
-	return book.isExtra ? 'Queue the extra' : `Queue vol. ${Number(book.volumeNumber)}`;
+	if (!book.isExtra) return `Queue vol. ${Number(book.volumeNumber)}`;
+	const title = extraTitle(book);
+	return title ? `Queue ${title}` : 'Queue the extra';
 }
 
 // ─── The pile (phone: Add to queue) ──────────────────────────────────────────

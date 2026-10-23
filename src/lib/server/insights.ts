@@ -14,6 +14,7 @@ export async function loadInsightsInput(): Promise<InsightsInput> {
 				seriesId: books.seriesId,
 				volumeNumber: books.volumeNumber,
 				isExtra: books.isExtra,
+				title: books.title,
 				boughtAt: books.boughtAt,
 				price: books.price,
 				source: books.source,

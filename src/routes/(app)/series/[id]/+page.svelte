@@ -241,7 +241,7 @@
 								<Table.Row>
 									<Table.Cell class="font-medium tabular-nums">
 										{#if book.isExtra}
-											<ExtraBadge {book} />
+											<ExtraBadge {book} place />
 										{:else}
 											{book.volumeNumber}
 										{/if}

@@ -4,7 +4,7 @@ import { db } from '$lib/server/db';
 import { books, series } from '$lib/server/db/schema';
 import { inArray } from 'drizzle-orm';
 import { lockSeriesInserts } from '$lib/server/locks';
-import { splitMissing } from '$lib/utils/volume';
+import { normalizeTitle, splitMissing } from '$lib/utils/volume';
 
 // POST /api/books/batch — Create multiple books at once
 export const POST: RequestHandler = async ({ request }) => {
@@ -37,6 +37,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		seriesId: b.seriesId as number,
 		volumeNumber: Number(b.volumeNumber).toFixed(1),
 		isExtra: b.isExtra === true,
+		title: normalizeTitle(b.title),
 		location: (b.location as string) || 'home',
 		boughtAt: b.boughtAt ? new Date(b.boughtAt as string) : null,
 		// 0 is a real price (a free book); only a missing/blank price is untracked

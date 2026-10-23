@@ -9,6 +9,7 @@
 	import { createBookUpdateMutation } from '$lib/queries/books';
 	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import type { BookLocation, BookSource } from '$lib/types';
+	import { normalizeTitle, TITLE_MAX } from '$lib/utils/volume';
 	import { toast } from 'svelte-sonner';
 
 	/** Accepts both BookListItem and BookWithReadings — only the editable fields matter */
@@ -16,6 +17,7 @@
 		id: number;
 		volumeNumber: string;
 		isExtra: boolean;
+		title: string | null;
 		location: BookLocation;
 		source: BookSource | null;
 		sourceEventId: number | null;
@@ -39,6 +41,7 @@
 	// bind:value on a number input yields a number (null when empty), not a string
 	let volumeNumber = $state<number | null>(Number(book.volumeNumber));
 	let isExtra = $state(book.isExtra);
+	let title = $state(book.title ?? '');
 	let location = $state<BookLocation>(book.location);
 	let source = $state<BookSource | ''>(book.source || '');
 	let sourceEventId = $state<number | null>(book.sourceEventId);
@@ -50,6 +53,7 @@
 	$effect(() => {
 		volumeNumber = Number(book.volumeNumber);
 		isExtra = book.isExtra;
+		title = book.title ?? '';
 		location = book.location;
 		source = book.source || '';
 		sourceEventId = book.sourceEventId;
@@ -72,6 +76,8 @@
 				id: book.id,
 				volumeNumber,
 				isExtra,
+				// Offered on extras only; a book made regular keeps its title, unseen
+				...(isExtra ? { title: normalizeTitle(title) } : {}),
 				location,
 				source: source || undefined,
 				sourceEventId: source === 'bookfair' ? (sourceEventId ?? undefined) : null,
@@ -79,7 +85,11 @@
 				price: price ? Number(price) : undefined,
 				isDraft
 			});
-			toast.success(isExtra ? 'Extra volume updated' : `Volume ${volumeNumber} updated`);
+			toast.success(
+				isExtra
+					? `${normalizeTitle(title) ?? 'Extra volume'} updated`
+					: `Volume ${volumeNumber} updated`
+			);
 			onclose?.();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to update book');
@@ -98,7 +108,9 @@
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>
-				{book.isExtra ? 'Edit Extra Volume' : `Edit Volume ${Number(book.volumeNumber)}`}
+				{book.isExtra
+					? `Edit Extra${book.title ? ` · ${book.title}` : ''}`
+					: `Edit Volume ${Number(book.volumeNumber)}`}
 			</Dialog.Title>
 			<Dialog.Description>Update this volume's details.</Dialog.Description>
 		</Dialog.Header>
@@ -106,10 +118,17 @@
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
 				<Label for="edit-vol-num">{isExtra ? 'Sort position' : 'Volume Number *'}</Label>
-				<Input id="edit-vol-num" type="number" step="0.5" min="0" bind:value={volumeNumber} />
+				<Input
+					id="edit-vol-num"
+					type="number"
+					step={isExtra ? '0.1' : '0.5'}
+					min="0"
+					bind:value={volumeNumber}
+				/>
 				{#if isExtra}
 					<p class="text-xs text-muted-foreground">
-						Only orders the extra — 4.5 sits between volumes 4 and 5. It shows as “Extra”.
+						Only orders the extra — 8.5 sits between volumes 8 and 9, 8.6 after it. It shows by its
+						title.
 					</p>
 				{/if}
 			</div>
@@ -120,6 +139,22 @@
 				</Label>
 				<Switch id="edit-extra-toggle" bind:checked={isExtra} />
 			</div>
+
+			{#if isExtra}
+				<div class="space-y-2">
+					<Label for="edit-extra-title">Title</Label>
+					<Input
+						id="edit-extra-title"
+						bind:value={title}
+						maxlength={TITLE_MAX}
+						placeholder="e.g. รวมตอนสั้น"
+						autocomplete="off"
+					/>
+					<p class="text-xs text-muted-foreground">
+						As printed on the cover — shown instead of the number.
+					</p>
+				</div>
+			{/if}
 
 			<div class="space-y-2">
 				<Label>Location</Label>

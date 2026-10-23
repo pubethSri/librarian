@@ -138,6 +138,9 @@ describe('offerLabel', () => {
 	it('names the volume, or the extra', () => {
 		expect(offerLabel({ volumeNumber: '5.0', isExtra: false })).toBe('Queue vol. 5');
 		expect(offerLabel({ volumeNumber: '4.5', isExtra: true })).toBe('Queue the extra');
+		expect(offerLabel({ volumeNumber: '4.5', isExtra: true, title: 'รวมตอนสั้น' })).toBe(
+			'Queue รวมตอนสั้น'
+		);
 	});
 });
 

@@ -18,6 +18,7 @@
 	import { moveInQueue, nextToQueue, offerLabel, seriesBar, type QueueMove } from '$lib/queue';
 	import SeriesBar from '$lib/components/queue/SeriesBar.svelte';
 	import { volumeText } from '$lib/utils/volume';
+	import ExtraBadge from '$lib/components/ExtraBadge.svelte';
 	import { BOOK_LOCATION_LABELS, type BookListItem, type BookLocation } from '$lib/types';
 
 	// The reading queue: what to read next. A pool — the order is a preference;
@@ -148,7 +149,11 @@
 									<a href={resolve(`/series/${item.seriesId}`)} class="font-medium hover:underline"
 										>{item.seriesShortName}</a
 									>
-									<span class="text-muted-foreground">{volumeText(item)}</span>
+									{#if item.isExtra}
+										<ExtraBadge book={item} class="ml-1 text-muted-foreground" />
+									{:else}
+										<span class="text-muted-foreground">{volumeText(item)}</span>
+									{/if}
 									{#if item.readingStatus === 'read'}
 										<Badge variant="outline" class="ml-2 text-xs">re-read</Badge>
 									{/if}

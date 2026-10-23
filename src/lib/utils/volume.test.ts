@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { findSameVolume, splitMissing, latestVolume, volumeLabel, volumeText } from './volume';
+import {
+	extraPlace,
+	extraTitle,
+	findSameVolume,
+	latestVolume,
+	nextExtraPositions,
+	normalizeTitle,
+	splitMissing,
+	volumeLabel,
+	volumeText
+} from './volume';
 
 describe('volumeLabel', () => {
 	it('shows a regular volume as its number, without the stored decimal', () => {
@@ -9,6 +19,13 @@ describe('volumeLabel', () => {
 
 	it('shows an extra as "Extra", never its sort position', () => {
 		expect(volumeLabel({ volumeNumber: '4.5', isExtra: true })).toBe('Extra');
+	});
+
+	it("shows a titled extra by its title, and ignores a regular volume's title", () => {
+		expect(volumeLabel({ volumeNumber: '8.5', isExtra: true, title: 'รวมตอนสั้น' })).toBe(
+			'รวมตอนสั้น'
+		);
+		expect(volumeLabel({ volumeNumber: '8.0', isExtra: false, title: 'Special' })).toBe('8');
 	});
 });
 
@@ -24,6 +41,76 @@ describe('volumeText', () => {
 
 	it('places an extra sorted first before vol. 1', () => {
 		expect(volumeText({ volumeNumber: '0.5', isExtra: true })).toBe('extra (before vol. 1)');
+	});
+
+	it('names a titled extra by its title; a blank title counts as none', () => {
+		expect(volumeText({ volumeNumber: '8.6', isExtra: true, title: 'รวมตอนพิเศษ' })).toBe(
+			'รวมตอนพิเศษ'
+		);
+		expect(volumeText({ volumeNumber: '8.6', isExtra: true, title: '  ' })).toBe(
+			'extra (after vol. 8)'
+		);
+	});
+});
+
+describe('normalizeTitle', () => {
+	it('trims, collapses inner spaces and turns blank into null', () => {
+		expect(normalizeTitle('  รวม   ตอนสั้น ')).toBe('รวม ตอนสั้น');
+		expect(normalizeTitle('')).toBeNull();
+		expect(normalizeTitle('   ')).toBeNull();
+		expect(normalizeTitle(null)).toBeNull();
+		expect(normalizeTitle(42)).toBeNull();
+	});
+
+	it('cuts a title to 200 characters', () => {
+		expect(normalizeTitle('a'.repeat(250))).toHaveLength(200);
+	});
+});
+
+describe('extraTitle / extraPlace', () => {
+	it('gives the title of an extra only', () => {
+		expect(extraTitle({ volumeNumber: '8.5', isExtra: true, title: 'Side Story' })).toBe(
+			'Side Story'
+		);
+		expect(extraTitle({ volumeNumber: '8.0', isExtra: false, title: 'Side Story' })).toBeNull();
+		expect(extraTitle({ volumeNumber: '8.5', isExtra: true })).toBeNull();
+	});
+
+	it('places an extra by the volume it follows', () => {
+		expect(extraPlace({ volumeNumber: '8.6', isExtra: true })).toBe('after vol. 8');
+		expect(extraPlace({ volumeNumber: '0.5', isExtra: true })).toBe('before vol. 1');
+	});
+});
+
+describe('nextExtraPositions', () => {
+	const v = (n: string, isExtra = true) => ({ volumeNumber: n, isExtra });
+
+	it('starts at .5 when nothing sits between the two volumes', () => {
+		expect(nextExtraPositions([v('8.0', false), v('9.0', false)], 8)).toEqual([8.5]);
+		expect(nextExtraPositions([], 8, 2)).toEqual([8.5, 8.6]);
+	});
+
+	it('goes after the extras already there', () => {
+		expect(nextExtraPositions([v('8.5'), v('4.5')], 8, 2)).toEqual([8.6, 8.7]);
+		expect(nextExtraPositions([v('8.5'), v('8.6')], 8)).toEqual([8.7]);
+	});
+
+	it('keeps a low extra in place and still starts at .5', () => {
+		expect(nextExtraPositions([v('8.2')], 8)).toEqual([8.5]);
+	});
+
+	it('uses the free tenths below once the tail is full', () => {
+		expect(nextExtraPositions([v('8.5'), v('8.9')], 8)).toEqual([8.8]);
+		expect(nextExtraPositions([v('8.9')], 8, 2)).toEqual([8.7, 8.8]);
+	});
+
+	it('places extras before vol. 1 below 1', () => {
+		expect(nextExtraPositions([v('1.0', false)], 0)).toEqual([0.5]);
+	});
+
+	it('returns fewer when all nine tenths are taken', () => {
+		const full = [1, 2, 3, 4, 5, 6, 7, 8].map((k) => v(`3.${k}`));
+		expect(nextExtraPositions(full, 3, 2)).toEqual([3.9]);
 	});
 });
 

@@ -66,6 +66,8 @@ export type PreviewRow = {
 	/** Sort position; shown as "Extra" when isExtra */
 	volumeNumber: number;
 	isExtra: boolean;
+	/** An extra's title */
+	title: string | null;
 	location: BookLocation;
 	source: BookSource | null;
 	/** The bookfair the book is linked to, if any */

@@ -4,7 +4,13 @@
 // the next volume to buy. Pure — no runes, no DOM; unit-tested.
 
 import type { BookListItem, BookLocation, ReadingStatus, SeriesListItem } from '$lib/types';
-import { latestVolume } from '$lib/utils/volume';
+import {
+	extraTitle,
+	latestVolume,
+	nextExtraPositions,
+	normalizeTitle,
+	type VolumeLike
+} from '$lib/utils/volume';
 import { rowDay } from '$lib/reading';
 
 // ─── Search ──────────────────────────────────────────────────────────────────
@@ -73,6 +79,8 @@ export type OwnedBookLike = {
 	id: number;
 	volumeNumber: string | number;
 	isExtra: boolean;
+	/** An extra's title */
+	title?: string | null;
 	location: BookLocation;
 	readingStatus: ReadingStatus;
 	timesRead: number;
@@ -84,6 +92,8 @@ export type VolumeSlot = {
 	/** Regular volume number, or the extra's sort position */
 	volume: number;
 	isExtra: boolean;
+	/** An extra's title (the first copy that has one); null when none */
+	title: string | null;
 	/** 0 = a gap: a regular volume below the latest that isn't owned */
 	copies: number;
 	/** Where the copies are, one entry per copy */
@@ -130,6 +140,7 @@ function slotOf(volume: number, isExtra: boolean, books: readonly OwnedBookLike[
 	return {
 		volume,
 		isExtra,
+		title: books.find((b) => b.title)?.title ?? null,
 		copies: books.length,
 		locations: books.map((b) => b.location),
 		read: books.some((b) => b.timesRead > 0),
@@ -674,4 +685,72 @@ export function volumeRanges(volumes: readonly number[]): string {
 		i = j;
 	}
 	return parts.join(', ');
+}
+
+// ─── Extras from the phone (fair round 2) ───────────────────────────────────
+
+/** A book an "Add an extra" save creates */
+export type ExtraPlan = { volumeNumber: number; isExtra: boolean; title: string | null };
+
+/**
+ * What saving the extras sheet adds: the regular volume `after` first when
+ * `withVolume` (extras bought as a set with it), then one extra per title row, in
+ * the order typed, at the next free tenths after `after` (8.5, 8.6…). A blank row
+ * is an extra without a title. Null when there is no room left after `after`.
+ */
+export function extraPlan(
+	seriesBooks: readonly VolumeLike[],
+	after: number,
+	titles: readonly string[],
+	withVolume: boolean
+): ExtraPlan[] | null {
+	const positions = nextExtraPositions(seriesBooks, after, titles.length);
+	if (positions.length < titles.length) return null;
+	return [
+		...(withVolume && after >= 1 ? [{ volumeNumber: after, isExtra: false, title: null }] : []),
+		...titles.map((t, i) => ({
+			volumeNumber: positions[i],
+			isExtra: true,
+			title: normalizeTitle(t)
+		}))
+	];
+}
+
+/** The save button: "vol. 8 + 2 extras", "1 extra" */
+export function extraPlanLabel(plan: readonly ExtraPlan[]): string {
+	const regular = plan.filter((b) => !b.isExtra).map((b) => b.volumeNumber);
+	const extras = plan.filter((b) => b.isExtra).length;
+	return [
+		regular.length > 0 ? `vol. ${volumeRanges(regular)}` : '',
+		extras > 0 ? `${extras} extra${extras > 1 ? 's' : ''}` : ''
+	]
+		.filter(Boolean)
+		.join(' + ');
+}
+
+/** A toast's "what was added": "vol. 8 + รวมตอนสั้น, รวมตอนพิเศษ", "vol. 9 + an extra" */
+export function addedSummary(books: readonly VolumeLike[]): string {
+	const regular = books.filter((b) => !b.isExtra).map((b) => Number(b.volumeNumber));
+	const extras = books.filter((b) => b.isExtra);
+	const titled = extras.map(extraTitle).filter((t): t is string => t !== null);
+	const untitled = extras.length - titled.length;
+	const extraParts = [
+		...titled,
+		...(untitled === 0 ? [] : [untitled === 1 ? 'an extra' : `${untitled} extras`])
+	];
+	return [regular.length > 0 ? `vol. ${volumeRanges(regular)}` : '', extraParts.join(', ')]
+		.filter(Boolean)
+		.join(' + ');
+}
+
+/** Title suggestions: the extras' titles in the collection, newest first, each once */
+export function usedTitles(
+	books: readonly (VolumeLike & { createdAt: string })[],
+	limit = 6
+): string[] {
+	const titles = [...books]
+		.filter((b) => extraTitle(b) !== null)
+		.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+		.map((b) => extraTitle(b) as string);
+	return [...new Set(titles)].slice(0, limit);
 }

@@ -7,7 +7,8 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import { Switch } from '$lib/components/ui/switch';
 	import SeriesSearch from '$lib/components/forms/SeriesSearch.svelte';
-	import { createBookMutation } from '$lib/queries/books';
+	import { createBookMutation, createBooksListQuery } from '$lib/queries/books';
+	import { latestVolume, nextExtraPositions, normalizeTitle, TITLE_MAX } from '$lib/utils/volume';
 	import { createBookfairsListQuery } from '$lib/queries/bookfairs';
 	import type { SeriesListItem, BookLocation, BookSource } from '$lib/types';
 	import { toast } from 'svelte-sonner';
@@ -21,10 +22,12 @@
 
 	const bookMutation = createBookMutation();
 	const bookfairsQuery = createBookfairsListQuery();
+	const booksQuery = createBooksListQuery();
 
 	let selectedSeriesId = $state<number | null>(preselectedSeriesId);
 	let volumeNumber = $state<number>(1);
 	let isExtra = $state(false);
+	let title = $state('');
 	let location = $state<BookLocation>('apartment');
 	let source = $state<BookSource | ''>('');
 	let sourceEventId = $state<number | null>(null);
@@ -41,12 +44,21 @@
 		selectedSeriesId = preselectedSeriesId;
 		volumeNumber = 1;
 		isExtra = false;
+		title = '';
 		location = 'apartment';
 		source = '';
 		sourceEventId = null;
 		boughtAt = new Date().toISOString().split('T')[0];
 		price = '';
 		isDraft = false;
+	}
+
+	/** Switched to Extra: the next free sort position after the latest volume (8.5, 8.6…) */
+	function onExtraChange(on: boolean) {
+		if (!on || !selectedSeriesId) return;
+		const own = (booksQuery.data ?? []).filter((b) => b.seriesId === selectedSeriesId);
+		const [position] = nextExtraPositions(own, latestVolume(own));
+		if (position !== undefined) volumeNumber = position;
 	}
 
 	function handleSubmit() {
@@ -60,6 +72,7 @@
 				seriesId: selectedSeriesId,
 				volumeNumber,
 				isExtra,
+				title: isExtra ? normalizeTitle(title) : undefined,
 				location,
 				source: source || undefined,
 				sourceEventId: source === 'bookfair' && sourceEventId ? sourceEventId : undefined,
@@ -69,7 +82,11 @@
 			},
 			{
 				onSuccess: () => {
-					toast.success(isExtra ? 'Extra volume added' : `Volume ${volumeNumber} added`);
+					toast.success(
+						isExtra
+							? `${normalizeTitle(title) ?? 'Extra volume'} added`
+							: `Volume ${volumeNumber} added`
+					);
 					resetForm();
 					open = false;
 				},
@@ -99,10 +116,17 @@
 
 			<div class="space-y-2">
 				<Label for="volume-number">{isExtra ? 'Sort position' : 'Volume Number'}</Label>
-				<Input id="volume-number" type="number" step="0.5" min="0" bind:value={volumeNumber} />
+				<Input
+					id="volume-number"
+					type="number"
+					step={isExtra ? '0.1' : '0.5'}
+					min="0"
+					bind:value={volumeNumber}
+				/>
 				{#if isExtra}
 					<p class="text-xs text-muted-foreground">
-						Only orders the extra — 4.5 sits between volumes 4 and 5. It shows as “Extra”.
+						Only orders the extra — 8.5 sits between volumes 8 and 9, 8.6 after it. It shows by its
+						title.
 					</p>
 				{/if}
 			</div>
@@ -111,8 +135,24 @@
 				<Label for="extra-toggle" class="text-sm font-normal text-muted-foreground">
 					Extra volume (side story, short-story collection…)
 				</Label>
-				<Switch id="extra-toggle" bind:checked={isExtra} />
+				<Switch id="extra-toggle" bind:checked={isExtra} onCheckedChange={onExtraChange} />
 			</div>
+
+			{#if isExtra}
+				<div class="space-y-2">
+					<Label for="extra-title">Title</Label>
+					<Input
+						id="extra-title"
+						bind:value={title}
+						maxlength={TITLE_MAX}
+						placeholder="e.g. รวมตอนสั้น"
+						autocomplete="off"
+					/>
+					<p class="text-xs text-muted-foreground">
+						As printed on the cover — shown instead of the number.
+					</p>
+				</div>
+			{/if}
 
 			<div class="space-y-2">
 				<Label>Location</Label>

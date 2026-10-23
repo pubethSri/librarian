@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+	addedSummary,
+	extraPlan,
+	extraPlanLabel,
+	usedTitles,
 	confirmedTo,
 	currentlyReading,
 	readingTarget,
@@ -140,6 +144,7 @@ describe('ownedVolumes', () => {
 			{
 				volume: 1,
 				isExtra: false,
+				title: null,
 				copies: 1,
 				locations: ['apartment'],
 				read: true,
@@ -150,6 +155,7 @@ describe('ownedVolumes', () => {
 			{
 				volume: 2,
 				isExtra: false,
+				title: null,
 				copies: 2,
 				locations: ['home', 'apartment'],
 				read: false,
@@ -160,6 +166,7 @@ describe('ownedVolumes', () => {
 			{
 				volume: 3,
 				isExtra: false,
+				title: null,
 				copies: 0,
 				locations: [],
 				read: false,
@@ -170,6 +177,7 @@ describe('ownedVolumes', () => {
 			{
 				volume: 4,
 				isExtra: false,
+				title: null,
 				copies: 1,
 				locations: ['apartment'],
 				read: false,
@@ -420,6 +428,7 @@ describe('cache patches', () => {
 		seriesId: 3,
 		volumeNumber: '10.0',
 		isExtra: false,
+		title: null,
 		location: 'apartment' as const,
 		boughtAt: '2026-10-17T00:00:00.000Z',
 		price: '175.00',
@@ -711,5 +720,85 @@ describe('hitlist', () => {
 		const list = [{ id: 1, totalVolumes: null }] as unknown as Parameters<typeof withReleased>[0];
 		expect(withReleased(list, 1, 7)?.[0].totalVolumes).toBe(7);
 		expect(withReleased(undefined, 1, 7)).toBeUndefined();
+	});
+});
+
+describe('extras from the phone', () => {
+	const owned = [
+		{ volumeNumber: '7.0', isExtra: false },
+		{ volumeNumber: '4.5', isExtra: true, title: 'Side Story' }
+	];
+
+	it('plans the set: vol. 8 first, then the extras in the order typed', () => {
+		expect(extraPlan(owned, 8, ['รวมตอนสั้น', ' รวมตอนพิเศษ '], true)).toEqual([
+			{ volumeNumber: 8, isExtra: false, title: null },
+			{ volumeNumber: 8.5, isExtra: true, title: 'รวมตอนสั้น' },
+			{ volumeNumber: 8.6, isExtra: true, title: 'รวมตอนพิเศษ' }
+		]);
+	});
+
+	it('plans extras alone after the ones already there; a blank row has no title', () => {
+		expect(extraPlan(owned, 4, [''], false)).toEqual([
+			{ volumeNumber: 4.6, isExtra: true, title: null }
+		]);
+	});
+
+	it('never adds a vol. 0 for extras before vol. 1', () => {
+		expect(extraPlan([], 0, ['Prologue'], true)).toEqual([
+			{ volumeNumber: 0.5, isExtra: true, title: 'Prologue' }
+		]);
+	});
+
+	it('returns null when the gap has no room left', () => {
+		const full = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => ({
+			volumeNumber: `2.${k}`,
+			isExtra: true
+		}));
+		expect(extraPlan(full, 2, ['x'], false)).toBeNull();
+	});
+
+	it('labels the save button', () => {
+		expect(extraPlanLabel(extraPlan(owned, 8, ['a', 'b'], true) ?? [])).toBe('vol. 8 + 2 extras');
+		expect(extraPlanLabel(extraPlan(owned, 8, ['a'], false) ?? [])).toBe('1 extra');
+	});
+
+	it('sums up what was added, by title', () => {
+		expect(
+			addedSummary([
+				{ volumeNumber: '8.0', isExtra: false },
+				{ volumeNumber: '8.5', isExtra: true, title: 'รวมตอนสั้น' },
+				{ volumeNumber: '8.6', isExtra: true, title: 'รวมตอนพิเศษ' }
+			])
+		).toBe('vol. 8 + รวมตอนสั้น, รวมตอนพิเศษ');
+		expect(
+			addedSummary([
+				{ volumeNumber: '9.0', isExtra: false },
+				{ volumeNumber: '9.5', isExtra: true, title: null }
+			])
+		).toBe('vol. 9 + an extra');
+		expect(
+			addedSummary([
+				{ volumeNumber: '9.5', isExtra: true },
+				{ volumeNumber: '9.6', isExtra: true }
+			])
+		).toBe('2 extras');
+	});
+
+	it('suggests titles used before, newest first, each once', () => {
+		const b = (title: string | null, createdAt: string, isExtra = true) => ({
+			volumeNumber: '1.5',
+			isExtra,
+			title,
+			createdAt
+		});
+		expect(
+			usedTitles([
+				b('รวมตอนสั้น', '2026-01-01'),
+				b('Side Story', '2026-03-01'),
+				b('รวมตอนสั้น', '2026-02-01'),
+				b(null, '2026-04-01'),
+				b('Not an extra', '2026-05-01', false)
+			])
+		).toEqual(['Side Story', 'รวมตอนสั้น']);
 	});
 });

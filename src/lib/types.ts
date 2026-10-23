@@ -79,6 +79,8 @@ export type BookWithReadings = {
 	volumeNumber: string;
 	/** An extra volume — volumeNumber is then only its sort position */
 	isExtra: boolean;
+	/** As printed on the cover; set on extras (tells them apart), null otherwise */
+	title: string | null;
 	location: BookLocation;
 	boughtAt: string | null;
 	price: string | null;
@@ -147,6 +149,8 @@ export type BookListItem = {
 	volumeNumber: string;
 	/** An extra volume — volumeNumber is then only its sort position */
 	isExtra: boolean;
+	/** As printed on the cover; set on extras (tells them apart), null otherwise */
+	title: string | null;
 	location: BookLocation;
 	boughtAt: string | null;
 	price: string | null;
@@ -181,6 +185,8 @@ export type CreateBookPayload = {
 	seriesId: number;
 	volumeNumber: number;
 	isExtra?: boolean;
+	/** An extra's title; blank → null */
+	title?: string | null;
 	location?: BookLocation;
 	boughtAt?: string;
 	price?: number;
@@ -257,6 +263,7 @@ export type QueueItem = {
 	seriesFullName: string;
 	volumeNumber: string;
 	isExtra: boolean;
+	title: string | null;
 	location: BookLocation;
 	isDraft: boolean;
 	readingStatus: ReadingStatus;
@@ -331,6 +338,7 @@ export type BacklogBook = {
 	seriesShortName: string;
 	volumeNumber: number;
 	isExtra: boolean;
+	title: string | null;
 	boughtDay: string;
 };
 
